@@ -1,0 +1,8 @@
+dofile("jvml_data/vm/classloader.lua")
+jcd = "minecraft_server.1.7.4/"
+loadLuaClass("jvml_data/native/java/lang/Object.lua","java.lang.Object")
+loadLuaClass("jvml_data/native/java/io/PrintStream.lua","java.io.PrintStream")
+loadLuaClass("jvml_data/native/java/lang/System.lua","java.lang.System")
+print(loadJavaClass("MyFirstProgram.class"))
+
+findMethod(class["MyFirstProgram"],"main([Ljava/lang/String;)V")[1]()
