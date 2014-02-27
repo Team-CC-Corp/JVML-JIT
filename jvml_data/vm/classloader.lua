@@ -402,6 +402,13 @@ function loadJavaClass(file)
 		end
 		return c
 	end
+
+	local function createClass(super_class)
+		local s
+		if super_class then s = resolveClass(cp[super_class]) end
+		return s:extend()
+	end
+
 	local function createCodeFunction(code)
 		return function(...)
 			local stack = {}
@@ -740,7 +747,7 @@ function loadJavaClass(file)
 		local super_class = u2()
 
 		cn = cp[cp[this_class].name_index].bytes:gsub("/",".")
-		local Class = resolveClass(cp[super_class]):extend()
+		local Class = createClass(super_class)
 		
 		--start processing the data
 		Class.name = cn
