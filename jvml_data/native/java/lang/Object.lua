@@ -107,4 +107,16 @@ Object.methods.hashCode = {acc=METHOD_ACC.PUBLIC+METHOD_ACC.NATIVE,function (thi
 	return this.hashCode
 end}
 
+
+
+Object:addMethods({
+	acc=METHOD_ACC.PUBLIC+METHOD_ACC.NATIVE,
+	function(this)
+	end,
+	desc={
+		{type="void"}
+	},
+	name = "<init>"
+})
+
 return Object

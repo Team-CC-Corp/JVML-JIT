@@ -406,6 +406,9 @@ function loadJavaClass(file)
 		return function(...)
 			local stack = {}
 			local lvars = {}
+			for i,v in ipairs({...}) do
+				lvars[i - 1] = v
+			end
 			local sp = 1
 			local function push(i)
 				--print(i)
@@ -649,6 +652,27 @@ function loadJavaClass(file)
 					if mt.desc[#mt.desc].type ~= "void" then
 						push(ret)
 					end
+				elseif inst == 0xB7 then
+					--invokespecial
+					local mr = cp[u2()]
+					local cl = resolveClass(cp[mr.class_index])
+					local name = cp[cp[mr.name_and_type_index].name_index].bytes..cp[cp[mr.name_and_type_index].descriptor_index].bytes
+					local mt = findMethod(cl,name)
+					local args = {}
+					for i=#mt.desc-1,1,-1 do
+						args[i+1] = pop()
+					end
+					args[1] = pop()
+					local obj = args[1].data
+					if bit.band(mt.acc,METHOD_ACC.NATIVE) == METHOD_ACC.NATIVE then
+						for i=1, #args do
+							args[i] = args[i].data
+						end
+					end
+					local ret = mt[1](unpack(args))
+					if mt.desc[#mt.desc].type ~= "void" then
+						push(ret)
+					end
 				elseif inst == 0xB8 then
 					--invokestatic
 					local mr = cp[u2()]
@@ -668,6 +692,11 @@ function loadJavaClass(file)
 					if mt.desc[#mt.desc].type ~= "void" then
 						push(ret)
 					end
+				elseif inst == 0xBB then
+					--new
+					local cr = cp[u2()]
+					local obj = resolveClass(cr):new()
+					push({type="ObjectRef", data=obj})
 				else
 					error("Unknown Opcode: "..string.format("%x",inst))
 				end
@@ -709,49 +738,48 @@ function loadJavaClass(file)
 		local access_flags = u2()
 		local this_class = u2()
 		local super_class = u2()
-		local interfaces_count = u2()
-		local interfaces = {}
-		for i=0, interfaces_count-1 do
-			interfaces[i] = u2()
-		end
-		local fields_count = u2()
-		local fields = {}
-		for i=0, fields_count-1 do
-			fields[i] = field_info()
-			fields[fields[i].name] = fields[i]
-		end
-		local methods_count = u2()
-		local methods = {}
-		for i=1, methods_count do
-			methods[i] = method_info()
-			--find code attrib
-			local ca
-			for i, v in pairs(methods[i].attributes) do
-				print(v.name)
-				if v.code then ca = v break end
-			end
-			if ca then
-				methods[i][1] = createCodeFunction(ca.code)
-			else
-				print(methods[i].name," doesn't have code")
-			end
-		end
-		local attrib_count = u2()
-		local attributes = {}
-		for i=0, attrib_count-1 do
-			attributes[i] = attribute()
-		end
+
 		cn = cp[cp[this_class].name_index].bytes:gsub("/",".")
-		local super = cp[cp[super_class].name_index].bytes:gsub("/",".")
-		local Class = class[super]:extend()
+		local Class = resolveClass(cp[super_class]):extend()
 		
 		--start processing the data
 		Class.name = cn
 		Class.acc = access_flags
-		Class.interfaces = interfaces
-		Class.fields = fields
-		Class.methods = methods
-		Class.attributes = attributes
+
+		local interfaces_count = u2()
+		Class.interfaces = {}
+		for i=0, interfaces_count-1 do
+			interfaces[i] = u2()
+		end
+		local fields_count = u2()
+		for i=0, fields_count-1 do
+			Class.fields[i] = field_info()
+			Class.fields[Class.fields[i].name] = Class.fields[i]
+		end
+		local methods_count = u2()
+		local initialCount = #Class.methods
+		for index=1, methods_count do
+			local i = index + initialCount
+			Class.methods[i] = method_info()
+			--find code attrib
+			local ca
+			for _, v in pairs(Class.methods[i].attributes) do
+				--print(v.name)
+				if v.code then ca = v break end
+			end
+			if ca then
+				Class.methods[i][1] = createCodeFunction(ca.code)
+			else
+				print(Class.methods[i].name," doesn't have code")
+			end
+		end
+		local attrib_count = u2()
+		Class.attributes = {}
+		for i=0, attrib_count-1 do
+			Class.attributes[i] = attribute()
+		end
+
+
 		class[cn] = Class
 	end)
 	fh.close()
