@@ -3,11 +3,15 @@ import cc.*;
 
 class Test {
 	public void m() {
-		System.out.println("Test");
+		System.out.println("Test.m");
 	}
 }
 
 class Yo extends Test {
+	@Override public void m() {
+		super.m();
+		System.out.println("Yo.m");
+	}
 	public void v() {
 		m();
 	}

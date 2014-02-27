@@ -765,9 +765,19 @@ function loadJavaClass(file)
 		end
 		local methods_count = u2()
 		local initialCount = #Class.methods
+		local subtractor = 0
 		for index=1, methods_count do
-			local i = index + initialCount
-			Class.methods[i] = method_info()
+			local i = index + initialCount - subtractor
+
+			local m = method_info()
+			for i2,v in ipairs(Class.methods) do
+				if v.name == m.name then
+					i = i2
+					subtractor = subtractor + 1
+				end
+			end
+
+			Class.methods[i] = m
 			--find code attrib
 			local ca
 			for _, v in pairs(Class.methods[i].attributes) do
