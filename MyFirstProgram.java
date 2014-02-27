@@ -8,6 +8,10 @@ class Test {
 }
 
 class Yo extends Test {
+	public Yo() {
+		System.out.println("Yo constructor");
+	}
+
 	@Override public void m() {
 		super.m();
 		System.out.println("Yo.m");

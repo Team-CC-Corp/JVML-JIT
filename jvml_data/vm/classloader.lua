@@ -1,5 +1,13 @@
 --This will load class files and will register them--
-class = {}
+local class = {}
+natives = {["java.lang.Object"]={
+	["registerNatives()V"] = function()
+		local path = fs.combine(jcd, "CCLib/java/lang/native")
+		for i,v in ipairs(fs.list(path)) do
+			dofile(fs.combine(path, v))
+		end
+	end
+}}
 os.loadAPI(fs.combine(jcd, "jvml_data/vm/bigInt"))
 
 function findMethod(c,name)
@@ -9,6 +17,53 @@ function findMethod(c,name)
 			return c.methods[i]
 		end
 	end
+end
+
+function newInstance(class)
+	local obj = {fields={},methods={},name=class.name,class=class}
+	for i, v in pairs(class.fields) do
+		obj.fields[i] = {type=v.type,attrib=v.attrib,value=nil}
+	end
+	for i, v in pairs(class.methods) do
+		obj.methods[i] = v
+	end
+	
+	return obj
+end
+
+function classByName(cn)
+	local c = class[cn]
+	if not c then
+		local cd = cn:gsub("%.","/")
+		local _ =
+		loadLuaClass(fs.combine(jcd, "jvml_data/native/"..cd..".lua"),cn)
+		or
+		loadJavaClass(fs.combine(jcd, cd..".class"))
+		or
+		loadJavaClass(fs.combine(fs.combine(jcd, "CCLib"), cd..".class"))
+		if not _ then
+			error("Cannot find class "..cn,0)
+		else
+			c = class[cn]
+		end
+	end
+	return c
+end
+
+function createClass(super_name)
+	local cls = {}
+	cls.fields = {}
+	cls.methods = {}
+	if super_name then -- we have a custom Object class file which won't have a super
+		local super = classByName(super_name)
+		for i,v in pairs(super.fields) do
+			cls.fields[i] = v
+		end
+		for i,v in pairs(super.methods) do
+			cls.methods[i] = v
+		end
+	end
+	return cls
 end
 
 function asInt(d)
@@ -386,28 +441,10 @@ function loadJavaClass(file)
 	end
 	
 	local function resolveClass(c)
-		local cd = cp[c.name_index].bytes
 		local cn = cp[c.name_index].bytes:gsub("/",".")
-		local c = class[cn]
-		if not c then
-			local _ =
-			loadLuaClass(fs.combine(jcd, "jvml_data/native/"..cd..".lua"),cn)
-			or
-			loadJavaClass(fs.combine(jcd, cd..".class"))
-			if not _ then
-				error("Cannot find class "..cn,0)
-			else
-				c = class[cn]
-			end
-		end
-		return c
+		return classByName(cn)
 	end
 
-	local function createClass(super_class)
-		local s
-		if super_class then s = resolveClass(cp[super_class]) end
-		return s:extend()
-	end
 
 	local function createCodeFunction(code)
 		return function(...)
@@ -638,6 +675,12 @@ function loadJavaClass(file)
 					local cl = resolveClass(cp[fr.class_index])
 					local name = cp[cp[fr.name_and_type_index].name_index].bytes
 					push(asObjRef(cl.fields[name].value))
+				elseif inst == 0xB3 then
+					--putstatic
+					local fr = cp[u2()]
+					local cl = resolveClass(cp[fr.class_index])
+					local name = cp[cp[fr.name_and_type_index].name_index].bytes
+					cl.fields[name].value = pop().data
 				elseif inst == 0xB6 then
 					--invokevirtual
 					local mr = cp[u2()]
@@ -702,8 +745,8 @@ function loadJavaClass(file)
 				elseif inst == 0xBB then
 					--new
 					local cr = cp[u2()]
-					local obj = resolveClass(cr):new()
-					push({type="objref", data=obj})
+					local obj = newInstance(resolveClass(cr))
+					push(asObjRef(obj))
 				else
 					error("Unknown Opcode: "..string.format("%x",inst))
 				end
@@ -747,7 +790,11 @@ function loadJavaClass(file)
 		local super_class = u2()
 
 		cn = cp[cp[this_class].name_index].bytes:gsub("/",".")
-		local Class = createClass(super_class)
+		local super
+		if cp[super_class] then -- Object.class won't
+			super = cp[cp[super_class].name_index].bytes:gsub("/",".")
+		end
+		local Class = createClass(super)
 		
 		--start processing the data
 		Class.name = cn
@@ -771,6 +818,7 @@ function loadJavaClass(file)
 
 			local m = method_info()
 			for i2,v in ipairs(Class.methods) do
+				--print(v.name)
 				if v.name == m.name then
 					i = i2
 					subtractor = subtractor + 1
@@ -780,14 +828,22 @@ function loadJavaClass(file)
 			Class.methods[i] = m
 			--find code attrib
 			local ca
-			for _, v in pairs(Class.methods[i].attributes) do
+			for _, v in pairs(m.attributes) do
 				--print(v.name)
 				if v.code then ca = v break end
 			end
 			if ca then
-				Class.methods[i][1] = createCodeFunction(ca.code)
+				m[1] = createCodeFunction(ca.code)
+			elseif bit.band(m.acc,METHOD_ACC.NATIVE) == METHOD_ACC.NATIVE then
+				if not natives[cn] then natives[cn] = {} end
+				m[1] = function(...)
+					if not natives[cn][m.name] then
+						error("Native not implemented: " .. m.name)
+					end
+					return natives[cn][m.name](...)
+				end
 			else
-				print(Class.methods[i].name," doesn't have code")
+				print(m.name," doesn't have code")
 			end
 		end
 		local attrib_count = u2()

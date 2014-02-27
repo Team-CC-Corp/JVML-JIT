@@ -2,11 +2,12 @@ package cc;
 public final class Computer
 {
 	private Computer() {}
-	public static void shutdown() {}
-	public static void restart() {}
-	public static void sleep(double s) {}
-	public static boolean isTurtle() {return false;}
-	public static int getTime() {return 0;}
+	public static native void shutdown();
+	public static native void restart();
+	public static native void sleep(double s);
+	public static native boolean isTurtle();
+	public static native int getTime();
+	
 	public static String getVersion() {return null;}
 	public static int getComputerID() {return 0;}
 	public static String getComputerLabel() {return null;}

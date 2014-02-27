@@ -1,8 +1,5 @@
 jcd = fs.combine("", shell.getRunningProgram():sub(1, -1 - #(fs.getName(shell.getRunningProgram()))))
 dofile(fs.combine(jcd, "jvml_data/vm/classloader.lua"))
-loadLuaClass(fs.combine(jcd, "jvml_data/native/java/lang/Object.lua"),"java.lang.Object")
-loadLuaClass(fs.combine(jcd, "jvml_data/native/java/io/PrintStream.lua"),"java.io.PrintStream")
-loadLuaClass(fs.combine(jcd, "jvml_data/native/java/lang/System.lua"),"java.lang.System")
 print(loadJavaClass(fs.combine(jcd, "MyFirstProgram.class")))
 
-findMethod(class["MyFirstProgram"],"main([Ljava/lang/String;)V")[1]()
+findMethod(classByName("MyFirstProgram"),"main([Ljava/lang/String;)V")[1]()
