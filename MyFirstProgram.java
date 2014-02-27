@@ -27,4 +27,8 @@ public class MyFirstProgram {
 	{
 		return 6;
 	}
+
+	static {
+		System.out.println("Test static");
+	}
 }

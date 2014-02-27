@@ -779,8 +779,14 @@ function loadJavaClass(file)
 			Class.attributes[i] = attribute()
 		end
 
-
 		class[cn] = Class
+
+
+		-- invoke static{}
+		local staticmr = findMethod(Class, "<clinit>()V")
+		if staticmr then
+			staticmr[1]()
+		end
 	end)
 	fh.close()
 	if not s then error(e,0) end
