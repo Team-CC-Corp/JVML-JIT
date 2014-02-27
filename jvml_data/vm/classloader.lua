@@ -1,7 +1,6 @@
 --This will load class files and will register them--
 class = {}
-jcd = ""
-os.loadAPI("jvml_data/vm/bigInt")
+os.loadAPI(fs.combine(jcd, "jvml_data/vm/bigInt"))
 
 function findMethod(c,name)
 	if not c then error("class expected, got nil",2) end
@@ -96,7 +95,6 @@ function loadLuaClass(file,cn)
 end
 
 function loadJavaClass(file)
-	file = jcd..file
 	if not fs.exists(file) then return false end
 	local fh = fs.open(file,"rb")
 	local cn
@@ -387,6 +385,23 @@ function loadJavaClass(file)
 		return field
 	end
 	
+	local function resolveClass(c)
+		local cd = cp[c.name_index].bytes
+		local cn = cp[c.name_index].bytes:gsub("/",".")
+		local c = class[cn]
+		if not c then
+			local _ =
+			loadLuaClass(fs.combine(jcd, "jvml_data/native/"..cd..".lua"),cn)
+			or
+			loadJavaClass(fs.combine(jcd, cd..".class"))
+			if not _ then
+				error("Cannot find class "..cn,0)
+			else
+				c = class[cn]
+			end
+		end
+		return c
+	end
 	local function createCodeFunction(code)
 		return function(...)
 			local stack = {}
@@ -408,23 +423,6 @@ function loadJavaClass(file)
 			end
 			local function u2()
 				return bit.blshift(u1(),8) + u1()
-			end
-			local function resolveClass(c)
-				local cd = cp[c.name_index].bytes
-				local cn = cp[c.name_index].bytes:gsub("/",".")
-				local c = class[cn]
-				if not c then
-					local _ =
-					loadLuaClass("jvml_data/native/"..cd..".lua",cn)
-					or
-					loadJavaClass(cd..".class")
-					if not _ then
-						error("Cannot find class "..cn,0)
-					else
-						c = class[cn]
-					end
-				end
-				return c
 			end
 			
 			while true do
