@@ -703,7 +703,7 @@ function loadJavaClass(file)
 					--new
 					local cr = cp[u2()]
 					local obj = resolveClass(cr):new()
-					push({type="ObjectRef", data=obj})
+					push({type="objref", data=obj})
 				else
 					error("Unknown Opcode: "..string.format("%x",inst))
 				end
