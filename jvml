@@ -1,7 +1,7 @@
 jcd = fs.combine("", shell.getRunningProgram():sub(1, -1 - #(fs.getName(shell.getRunningProgram()))))
-jcp = fs.combine(jcd, "CCLib")..":"..shell.dir()
+jcp = "/" .. fs.combine(jcd, "CCLib/build/classes")..":."
 dofile(fs.combine(jcd, "jvml_data/vm/classpath.lua"))
 dofile(fs.combine(jcd, "jvml_data/vm/classloader.lua"))
-print(loadJavaClass(fs.combine(jcd, "MyFirstProgram.class")))
 
+jcp = jcp .. ":/" .. jcd -- So that loadJavaClass isn't needed here and so Yo and Test get loaded right
 findMethod(classByName("MyFirstProgram"),"main([Ljava/lang/String;)V")[1]()

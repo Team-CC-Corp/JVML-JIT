@@ -1,7 +1,7 @@
 --This will load class files and will register them--
 natives = {["java.lang.Object"]={
 	["registerNatives()V"] = function()
-		local path = fs.combine(jcd, "CCLib/java/lang/native")
+		local path = resolvePath("java/lang/native")
 		for i,v in ipairs(fs.list(path)) do
 			dofile(fs.combine(path, v))
 		end
@@ -100,7 +100,7 @@ function loadJavaClass(file)
 	local function u4()
 		return bit.blshift(u1(),24) + bit.blshift(u1(),16) + bit.blshift(u1(),8) + u1()
 	end
-	
+
 	local function parse_descriptor(desc,descriptor)
 		--parse descriptor
 		local i = 1
@@ -681,7 +681,8 @@ function loadJavaClass(file)
 				elseif inst == 0xBB then
 					--new
 					local cr = cp[u2()]
-					local obj = newInstance(resolveClass(cr))
+					local c = resolveClass(cr)
+					local obj = newInstance(c)
 					push(asObjRef(obj))
 				else
 					error("Unknown Opcode: "..string.format("%x",inst))
@@ -788,13 +789,13 @@ function loadJavaClass(file)
 			Class.attributes[i] = attribute()
 		end
 
-
 		-- invoke static{}
 		local staticmr = findMethod(Class, "<clinit>()V")
 		if staticmr then
 			staticmr[1]()
 		end
 	end)
+
 	fh.close()
 	if not s then error(e,0) end
 	return cn

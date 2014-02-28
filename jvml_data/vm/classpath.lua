@@ -21,21 +21,32 @@ function newInstance(class)
 	return obj
 end
 
-function classByName(cn)
-	local c = class[cn]
-	if not c then
-		local cd = cn:gsub("%.","/")
-		local _ =
-		loadJavaClass(fs.combine(jcd, cd..".class"))
-		or
-		loadJavaClass(fs.combine(fs.combine(jcd, "CCLib"), cd..".class"))
-		if not _ then
-			error("Cannot find class "..cn,0)
-		else
-			c = class[cn]
+function resolvePath(name)
+	for sPath in string.gmatch(jcp, "[^:]+") do
+		local fullPath = fs.combine(shell.resolve(sPath), name)
+		if fs.exists(fullPath) then
+			return fullPath
 		end
 	end
-	return c
+end
+
+function classByName(cn)
+	local c = class[cn]
+	if c then
+		return c
+	end
+	local cd = cn:gsub("%.","/")
+
+	local fullPath = resolvePath(cd..".class")
+	if not fullPath then
+		error("Cannot find class ".. cn, 0)
+	end
+	if not loadJavaClass(fullPath) then
+		error("Cannot load class " .. cn, 0)
+	else
+		c = class[cn]
+		return c
+	end
 end
 
 function createClass(super_name, cn)
