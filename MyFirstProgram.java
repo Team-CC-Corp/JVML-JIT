@@ -22,6 +22,8 @@ class Yo extends Test {
 }
 
 public class MyFirstProgram {
+	static int a = 6;
+
 	/** Print a hello message */ 
 	public static void main(String[] args) {
 		int a = getNumber();
@@ -41,7 +43,7 @@ public class MyFirstProgram {
 	
 	public static int getNumber()
 	{
-		return 6;
+		return a;
 	}
 
 	static {

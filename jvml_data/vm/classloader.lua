@@ -10,32 +10,58 @@ natives = {["java.lang.Object"]={
 os.loadAPI(fs.combine(jcd, "jvml_data/vm/bigInt"))
 
 function asInt(d)
-	return {type="int",data=d}
+	return {type="I",data=d}
 end
 function asFloat(d)
-	return {type="float",data=d}
+	return {type="F",data=d}
 end
 function asDouble(d)
-	return {type="double",data=d}
+	return {type="D",data=d}
 end
 function asLong(d)
-	return {type="long",data=d}
+	return {type="J",data=d}
 end
 function asBoolean(d)
-	return {type="boolean",data=d}
+	return {type="Z",data=d}
 end
 function asChar(d)
-	return {type="char",data=d}
+	return {type="C",data=d}
 end
 function asByte(d)
-	return {type="byte",data=d}
+	return {type="B",data=d}
 end
 function asShort(d)
-	return {type="short",data=d}
+	return {type="S",data=d}
 end
 function asObjRef(d, type)
 	return {type=type,data=d}
 end
+
+ARRAY_TYPES = {
+	Z=4,
+	C=5,
+	F=6,
+	D=7,
+	B=8,
+	S=9,
+	I=10,
+	J=11
+}
+
+do
+	local t = {}
+	for k,v in pairs(ARRAY_TYPES) do
+		t[v] = k
+	end
+	ARRAY_TYPES = t
+end
+
+TYPELOOKUP = {
+	Integer=10,
+	Float=6,
+	Long=11,
+	Double=7
+}
 
 CONSTANT = {
 	Class=7,
@@ -54,10 +80,10 @@ CONSTANT = {
 	InvokeDynamic=18
 }
 
-local nan = -(0/0)
-
 local CONSTANTLOOKUP = {}
 for i, v in pairs(CONSTANT) do CONSTANTLOOKUP[v] = i end
+
+local nan = -(0/0)
 
 METHOD_ACC = {
 	PUBLIC=0x0001,
@@ -105,40 +131,28 @@ function loadJavaClass(file)
 		--parse descriptor
 		local i = 1
 		local cur = {}
+		cur.array_depth = 0 -- not an array
 		while i <= #descriptor do
 			local c = descriptor:sub(i,i)
 			if c == "(" or c == ")" then
 				--arglst start
 			else
 				if c == "[" then
-					cur.array = true
+					cur.array_depth = cur.array_depth + 1 -- one deeper for each dimension
 				elseif c == "L" then
 					--im guessing ref or something
-					cur.type = "objref"
-					cur.class = ""
+					cur.type = "L"
 					i = i+1
 					c = descriptor:sub(i,i)
 					while c ~= ";" and c do
-						cur.class = cur.class..c
+						cur.type = cur.type..c
 						i = i+1
 						c = descriptor:sub(i,i)
 					end
 					table.insert(desc,cur)
 					cur = {}
-				elseif c == "V" then
-					cur.type = "void"
-					table.insert(desc,cur)
-					cur = {}
-				elseif c == "I" then
-					cur.type = "int"
-					table.insert(desc,cur)
-					cur = {}
-				elseif c == "D" then
-					cur.type = "double"
-					table.insert(desc,cur)
-					cur = {}
-				elseif c == "Z" then
-					cur.type = "boolean"
+				else
+					cur.type = c
 					table.insert(desc,cur)
 					cur = {}
 				end
@@ -242,7 +256,7 @@ function loadJavaClass(file)
 	local function cp_entry(ei)
 		local c = {}
 		c.tag = u1()
-		c.cl = CONSTANTLOOKUP[c.tag]
+		c.cl = ARRAY_TYPES[TYPELOOKUP[CONSTANTLOOKUP[c.tag]]] or CONSTANTLOOKUP[c.tag]
 		local ct = c.tag
 		if ct == CONSTANT.Class then
 			cp_class_info(c)
@@ -454,7 +468,7 @@ function loadJavaClass(file)
 					--push constant
 					local s = cp[u1()]
 					if s.bytes then
-						push({type=s.cl:lower(),data=s.bytes})
+						push({type=s.cl,data=s.bytes})
 					else
 						push(asObjRef(cp[s.string_index].bytes, "Ljava/java/lang/String;"))
 					end
@@ -488,9 +502,13 @@ function loadJavaClass(file)
 					--load_3
 					push(lvars[3])
 				elseif inst >= 0x2E and inst <= 0x35 then
-					--aload
-					local i,t = pop(),pop()
-					push(t[i])
+					--aaload
+					local i, arr = pop(), pop()
+					if i.data >= arr.data.length then
+						error("Index out of bounds", 0)
+					end
+					local value = arr.data[i.data]
+					push(asObjRef(value, arr.type:sub(2))) -- arr.type == "[typestuff", so remove the bracket
 				elseif inst >= 0x36 and inst <= 0x3A then
 					--stores
 					lvars[u1()] = pop()
@@ -502,15 +520,21 @@ function loadJavaClass(file)
 					lvars[2] = pop()
 				elseif inst == 0x3E or inst == 0x42 or inst == 0x46 or inst == 0x4A or inst == 0x4E then
 					lvars[3] = pop()
-				elseif inst >= 0x50 and inst <= 0x56 then
+				elseif inst >= 0x4f and inst <= 0x56 then
 					--aastore
 					local v,i,t = pop(),pop(),pop()
-					t[i] = v
+					if v.type ~= t.type:sub(2) then
+						error("Type mismatch in array assignment: " .. v.type .. " -> " .. t.type, 0)
+					end
+					if i.data >= t.data.length then
+						error("Index out of bounds", 0)
+					end
+					t.data[i.data] = v.data
 				elseif inst == 0x57 then
 					pop()
 				elseif inst == 0x58 then
 					local pv = pop()
-					if pv.type ~= "double" and pv.type ~= "long" then
+					if pv.type ~= "D" and pv.type ~= "J" then
 						pop()
 					end
 				elseif inst == 0x59 then
@@ -525,11 +549,11 @@ function loadJavaClass(file)
 				elseif inst == 0x5b then
 					local v = pop()
 					push(v)
-					table.insert(stack,sp-(pv.type == "double" or pv.type == "long" and 2 or 3),{type=v.type,data=v.data})
+					table.insert(stack,sp-(pv.type == "D" or pv.type == "J" and 2 or 3),{type=v.type,data=v.data})
 					sp = sp+1
 				elseif inst == 0x5c then
 					local a = pop()
-					if a.type ~= "double" and a.type ~= "long" then
+					if a.type ~= "D" and a.type ~= "J" then
 						local b = pop()
 						push(b)
 						push(a)
@@ -611,6 +635,7 @@ function loadJavaClass(file)
 					local cl = resolveClass(cp[fr.class_index])
 					local name = cp[cp[fr.name_and_type_index].name_index].bytes
 					local descriptor = cp[cp[fr.name_and_type_index].descriptor_index].bytes
+					--print(descriptor)
 					push(asObjRef(cl.fields[name].value), descriptor)
 				elseif inst == 0xB3 then
 					--putstatic
@@ -636,7 +661,7 @@ function loadJavaClass(file)
 						end
 					end
 					local ret = mt[1](unpack(args))
-					if mt.desc[#mt.desc].type ~= "void" then
+					if mt.desc[#mt.desc].type ~= "V" then
 						push(ret)
 					end
 				elseif inst == 0xB7 then
@@ -657,7 +682,7 @@ function loadJavaClass(file)
 						end
 					end
 					local ret = mt[1](unpack(args))
-					if mt.desc[#mt.desc].type ~= "void" then
+					if mt.desc[#mt.desc].type ~= "V" then
 						push(ret)
 					end
 				elseif inst == 0xB8 then
@@ -676,7 +701,7 @@ function loadJavaClass(file)
 						end
 					end
 					local ret = mt[1](unpack(args))
-					if mt.desc[#mt.desc].type ~= "void" then
+					if mt.desc[#mt.desc].type ~= "V" then
 						push(ret)
 					end
 				elseif inst == 0xBB then
@@ -685,7 +710,23 @@ function loadJavaClass(file)
 					local c = resolveClass(cr)
 					local obj = newInstance(c)
 					local type = "L"..c.name:gsub("%.", "/")..";"
-					push(asObjRef(obj), type)
+					push(asObjRef(obj, type))
+				elseif inst == 0xBC then
+					--newarray
+					local type = "[" .. ARRAY_TYPES[u1()]
+					local length = pop().data
+					push(asObjRef({length=length}, type))
+				elseif inst == 0xBD then
+					--anewarray
+					local cr = cp[u2()]
+					local c = resolveClass(cr)
+					local type = "[L" .. c.name:gsub("%.", "/")..";"
+					local length = pop().data
+					push(asObjRef({length, length}, type))
+				elseif inst == 0xBE then
+					--arraylength
+					local arr = pop()
+					push(asInt(arr.data.length))
 				else
 					error("Unknown Opcode: "..string.format("%x",inst))
 				end
@@ -717,7 +758,7 @@ function loadJavaClass(file)
 		local cplen = u2()
 		local prev
 		for i=1, cplen-1 do
-			if prev and (prev.cl == "Double" or prev.cl == "Long") then
+			if prev and (prev.cl == "D" or prev.cl == "J") then
 				prev = nil
 			else
 				cp[i] = cp_entry()
@@ -777,7 +818,7 @@ function loadJavaClass(file)
 				if not natives[cn] then natives[cn] = {} end
 				m[1] = function(...)
 					if not natives[cn][m.name] then
-						error("Native not implemented: " .. m.name)
+						error("Native not implemented: " .. m.name, 0)
 					end
 					return natives[cn][m.name](...)
 				end

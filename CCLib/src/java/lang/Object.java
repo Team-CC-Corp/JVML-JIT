@@ -6,5 +6,5 @@ public class Object {
         registerNatives();
     }
 
-    public native void toString();
+    public native String toString();
 }
