@@ -29,6 +29,14 @@ public class MyFirstProgram {
 		System.out.println(Computer.isTurtle());
 		System.out.println(a+a);
 		new Yo().v();
+
+
+		int[] arr = new int[4];
+		arr[0] = 3;
+
+		System.out.println(arr.length);
+		System.out.println(arr.toString());
+		System.out.println(arr[0]);
 	}
 	
 	public static int getNumber()

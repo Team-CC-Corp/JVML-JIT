@@ -5,4 +5,6 @@ public class Object {
     static {
         registerNatives();
     }
+
+    public native void toString();
 }
