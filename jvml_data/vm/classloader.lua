@@ -33,8 +33,8 @@ end
 function asShort(d)
 	return {type="short",data=d}
 end
-function asObjRef(d)
-	return {type="ref",data=d}
+function asObjRef(d, type)
+	return {type=type,data=d}
 end
 
 CONSTANT = {
@@ -456,7 +456,7 @@ function loadJavaClass(file)
 					if s.bytes then
 						push({type=s.cl:lower(),data=s.bytes})
 					else
-						push({type="String",data=cp[s.string_index].bytes}) --TODO: Change to ObjectRef
+						push(asObjRef(cp[s.string_index].bytes, "Ljava/java/lang/String;"))
 					end
 				elseif inst == 0x13 then
 					--ldc_w
@@ -465,7 +465,7 @@ function loadJavaClass(file)
 					if s.bytes then
 						push({type=s.cl:lower(),data=s.bytes})
 					else
-						push({type="String",data=cp[s.string_index].bytes})
+						push(asObjRef(cp[s.string_index].bytes, "Ljava/java/lang/String;"))
 					end
 				elseif inst == 0x14 then
 					--ldc2_w
@@ -610,7 +610,8 @@ function loadJavaClass(file)
 					local fr = cp[u2()]
 					local cl = resolveClass(cp[fr.class_index])
 					local name = cp[cp[fr.name_and_type_index].name_index].bytes
-					push(asObjRef(cl.fields[name].value))
+					local descriptor = cp[cp[fr.name_and_type_index].descriptor_index].bytes
+					push(asObjRef(cl.fields[name].value), descriptor)
 				elseif inst == 0xB3 then
 					--putstatic
 					local fr = cp[u2()]
@@ -683,7 +684,8 @@ function loadJavaClass(file)
 					local cr = cp[u2()]
 					local c = resolveClass(cr)
 					local obj = newInstance(c)
-					push(asObjRef(obj))
+					local type = "L"..c.name:gsub("%.", "/")..";"
+					push(asObjRef(obj), type)
 				else
 					error("Unknown Opcode: "..string.format("%x",inst))
 				end
