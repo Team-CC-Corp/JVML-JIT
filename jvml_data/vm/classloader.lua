@@ -655,6 +655,9 @@ function loadJavaClass(file)
 					end
 					args[1] = pop()
 					local obj = args[1].data
+					if type(obj) == "table" and obj.methods then -- if the object holds its own methods, use those so A a = new B(); a.c() calls B.c(), not A.c()
+						mt = findMethod(obj, name)
+					end
 					if bit.band(mt.acc,METHOD_ACC.NATIVE) == METHOD_ACC.NATIVE then
 						for i=1, #args do
 							args[i] = args[i].data

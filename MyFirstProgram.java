@@ -30,7 +30,10 @@ public class MyFirstProgram {
 		System.out.println("Hello, world!");
 		System.out.println(Computer.isTurtle());
 		System.out.println(a+a);
-		new Yo().v();
+		Yo y = new Yo();
+		y.v();
+		Test t = y;
+		t.m();
 
 
 		int[] arr = new int[4];
