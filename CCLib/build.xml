@@ -1,0 +1,21 @@
+<project name="CC_RT_JVML" default="main">
+	<target name="clean">
+		<delete dir="build"/>
+	</target>
+
+	<target name="compile">
+		<mkdir dir="build/classes"/>
+		<javac srcdir="src" destdir="build/classes"/>
+		<mkdir dir="build/classes/java/lang/native"/>
+		<copy todir="build/classes/java/lang/native">  
+			<fileset dir="src/java/lang/native"/>  
+		</copy>
+	</target>
+
+	<target name="jar" depends="compile">
+		<mkdir dir="build/jar"/>
+		<jar destfile="build/jar/cc_rt.jar" basedir="build/classes" />
+	</target>
+
+	<target name="main" depends="jar"></target>
+</project>
