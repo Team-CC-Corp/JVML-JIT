@@ -409,8 +409,10 @@ function loadJavaClass(file)
 	end
 
 
-	local function createCodeFunction(code)
+	local function createCodeFunction(code, name)
 		return function(...)
+			pushStackTrace(name)
+
 			local stack = {}
 			local lvars = {}
 			for i,v in ipairs({...}) do
@@ -798,8 +800,10 @@ function loadJavaClass(file)
 					end
 					pc(addr.data)
 				elseif inst >= 0xAC and inst <= 0xB0 then
+					popStackTrace()
 					return pop()
 				elseif inst == 0xB1 then
+					popStackTrace()
 					return
 				elseif inst == 0xB2 then
 					--getstatic
@@ -906,6 +910,7 @@ function loadJavaClass(file)
 					error("Unknown Opcode: "..string.format("%x",inst))
 				end
 			end
+			popStackTrace()
 		end
 	end
 	
@@ -987,15 +992,21 @@ function loadJavaClass(file)
 				--print(v.name)
 				if v.code then ca = v break end
 			end
+
+			local mt_name = Class.name.."."..m.name
+
 			if ca then
-				m[1] = createCodeFunction(ca.code)
+				m[1] = createCodeFunction(ca.code, mt_name)
 			elseif bit.band(m.acc,METHOD_ACC.NATIVE) == METHOD_ACC.NATIVE then
 				if not natives[cn] then natives[cn] = {} end
 				m[1] = function(...)
+					pushStackTrace(mt_name)
 					if not natives[cn][m.name] then
 						error("Native not implemented: " .. m.name, 0)
 					end
-					return natives[cn][m.name](...)
+					local ret = natives[cn][m.name](...)
+					popStackTrace()
+					return ret
 				end
 			else
 				print(m.name," doesn't have code")

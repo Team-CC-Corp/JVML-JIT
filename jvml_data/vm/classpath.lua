@@ -1,4 +1,5 @@
 local class = {}
+local stack_trace = {}
 
 function findMethod(c,name)
 	if not c then error("class expected, got nil",2) end
@@ -64,4 +65,20 @@ function createClass(super_name, cn)
 		end
 	end
 	return cls
+end
+
+function pushStackTrace(s)
+	table.insert(stack_trace, s)
+end
+
+function popStackTrace()
+	table.remove(stack_trace)
+end
+
+function printStackTrace(isError)
+	local reversedtable = {}
+	for i,v in ipairs(stack_trace) do
+		reversedtable[#stack_trace - i + 1] = v
+	end
+	((isError and printError) or print)(table.concat(reversedtable,"\n"))
 end
