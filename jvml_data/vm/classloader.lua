@@ -37,6 +37,19 @@ function asObjRef(d, type)
 	return {type=type,data=d}
 end
 
+local function u2ToSignedShort(i)
+	if i > 2^15 - 1 then
+		return -(2^16 - i)
+	end
+	return i
+end
+local function u1ToSignedByte(i)
+	if i > 2^7 - 1 then
+		return -(2^8 - i)
+	end
+	return i
+end
+
 ARRAY_TYPES = {
 	Z=4,
 	C=5,
@@ -367,7 +380,7 @@ function loadJavaClass(file)
 		elseif an == "SourceFile" then
 			attrib.source_file_index = u2()
 		else
-			print("Unhandled Attrib: "..an)
+			--print("Unhandled Attrib: "..an)
 			attrib.bytes = {}
 			for i=1, attrib.attribute_length do
 				attrib.bytes[i] = u1()
@@ -413,10 +426,14 @@ function loadJavaClass(file)
 				sp = sp-1
 				return stack[sp]
 			end
-			local pc = 0
+			local _pc = 0
 			local function u1()
-				pc = pc+1
-				return code[pc-1]
+				_pc = _pc+1
+				return code[_pc-1]
+			end
+			local function pc(i)
+				_pc = i or _pc
+				return _pc - 1
 			end
 			local function u2()
 				return bit.blshift(u1(),8) + u1()
@@ -623,8 +640,163 @@ function loadJavaClass(file)
 				elseif inst == 0x84 then
 					--iinc
 					local idx = u1()
-					local c = u1()-127
-					lvars[idx] = lvars[idx]+c
+					local c = u1ToSignedByte(u1())
+					lvars[idx].data = lvars[idx].data+c
+				elseif inst == 0x85 then
+					--i2l
+					push(asLong(bigInt.toBigInt(pop().data)))
+				elseif inst == 0x86 then
+					--i2f
+					push(asFloat(pop().data))
+				elseif inst == 0x87 then
+					--i2d
+					push(asDouble(pop().data))
+				elseif inst == 0x88 then
+					--l2i
+					push(asInt(bigInt.fromBigInt(pop().data)))
+				elseif inst == 0x89 then
+					--l2f
+					push(asFloat(bigInt.fromBigInt(pop().data)))
+				elseif inst == 0x8A then
+					--l2d
+					push(asDouble(bigInt.fromBigInt(pop().data)))
+				elseif inst == 0x8B then
+					--f2i
+					push(asInt(math.floor(pop().data)))
+				elseif inst == 0x8C then
+					--f2l
+					push(asLong(bigInt.toBigInt(math.floor(pop().data))))
+				elseif inst == 0x8D then
+					--f2d
+					push(asDouble(pop().data))
+				elseif inst == 0x8E then
+					--d2i
+					push(asInt(math.floor(pop().data)))
+				elseif inst == 0x8F then
+					--d2l
+					push(asLong(bigInt.toBigInt(math.floor(pop().data))))
+				elseif inst == 0x90 then
+					--d2f
+					push(asFloat(pop().data))
+				elseif inst == 0x91 then
+					--i2b
+					push(asByte(pop().data))
+				elseif inst == 0x92 then
+					--i2c
+					push(asChar(string.char(pop().data)))
+				elseif inst == 0x93 then
+					--i2s
+					push(asShort(pop().data))
+				elseif inst == 0x94 then
+					--lcmp
+					local a, b = pop().data, pop().data
+					if bigInt.cmp_eq(a, b) then
+						push(asInt(0))
+					elseif bigInt.cmp_lt(a, b) then
+						push(asInt(1))
+					else
+						push(asInt(-1))
+					end
+				elseif inst >= 0x95 and inst <= 0x98 then -- Not worrying about NaN just yet...
+					--fcmpl/g
+					local a, b = pop().data, pop().data
+					if a == b then
+						push(asInt(0))
+					elseif a < b then
+						push(asInt(1))
+					else
+						push(asInt(-1))
+					end
+				elseif inst == 0x99 then
+					--ifeq
+					local offset = u2ToSignedShort(u2())
+					if pop().data == 0 then
+						pc(pc() + offset - 2) -- minus 2 becuase u2()
+					end
+				elseif inst == 0x9A then
+					--ifne
+					local offset = u2ToSignedShort(u2())
+					if pop().data ~= 0 then
+						pc(pc() + offset - 2)
+					end
+				elseif inst == 0x9B then
+					--iflt
+					local offset = u2ToSignedShort(u2())
+					if pop().data < 0 then
+						pc(pc() + offset - 2)
+					end
+				elseif inst == 0x9C then
+					--ifge
+					local offset = u2ToSignedShort(u2())
+					if pop().data >= 0 then
+						pc(pc() + offset - 2)
+					end
+				elseif inst == 0x9D then
+					--ifgt
+					local offset = u2ToSignedShort(u2())
+					if pop().data > 0 then
+						pc(pc() + offset - 2)
+					end
+				elseif inst == 0x9E or inst == 0xA5 then -- same code for both...
+					--ifle
+					local offset = u2ToSignedShort(u2())
+					if pop().data <= 0 then
+						pc(pc() + offset - 2)
+					end
+				elseif inst == 0x9F or inst == 0xA6 then
+					--if_icmpeq
+					local offset = u2ToSignedShort(u2())
+					if pop().data == pop().data then
+						pc(pc() + offset - 2)
+					end
+				elseif inst == 0xA0 then
+					--if_icmpne
+					local offset = u2ToSignedShort(u2())
+					if pop().data ~= pop().data then
+						pc(pc() + offset - 2)
+					end
+				elseif inst == 0xA1 then
+					--if_icmplt
+					local offset = u2ToSignedShort(u2())
+					if pop().data > pop().data then
+						pc(pc() + offset - 2)
+					end
+				elseif inst == 0xA2 then
+					--if_icmpge
+					local offset = u2ToSignedShort(u2())
+					if pop().data <= pop().data then
+						pc(pc() + offset - 2)
+					end
+				elseif inst == 0xA3 then
+					--if_icmpgt
+					local offset = u2ToSignedShort(u2())
+					if pop().data < pop().data then
+						pc(pc() + offset - 2)
+					end
+				elseif inst == 0xA4 then
+					--if_icmple
+					local offset = u2ToSignedShort(u2())
+					if pop().data >= pop().data then
+						pc(pc() + offset - 2)
+					end
+				elseif inst == 0xA7 then
+					--goto
+					local offset = u2ToSignedShort(u2())
+					pc(pc() + offset - 2)
+				elseif inst == 0xA8 then
+					--jsr
+					local addr = pc() + 3
+					local offset = u2ToSignedShort(u2())
+					push({type="address", data=addr})
+					pc(pc() + offset - 2)
+				elseif inst == 0xA9 then
+					--ret
+					local index = u1()
+					local addr = lvars[index]
+					if addr.type ~= "address" then
+						error("Not an address", 0)
+					end
+					pc(addr.data)
 				elseif inst >= 0xAC and inst <= 0xB0 then
 					return pop()
 				elseif inst == 0xB1 then
@@ -725,7 +897,7 @@ function loadJavaClass(file)
 					local c = resolveClass(cr)
 					local type = "[L" .. c.name:gsub("%.", "/")..";"
 					local length = pop().data
-					push(asObjRef({length, length}, type))
+					push(asObjRef({length=length}, type))
 				elseif inst == 0xBE then
 					--arraylength
 					local arr = pop()

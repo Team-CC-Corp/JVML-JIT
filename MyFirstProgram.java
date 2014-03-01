@@ -39,9 +39,17 @@ public class MyFirstProgram {
 		int[] arr = new int[4];
 		arr[0] = 3;
 
-		System.out.println(arr.length);
-		System.out.println(arr.toString());
-		System.out.println(arr[0]);
+		if (arr[0] == 3) {
+			System.out.println(arr.length);
+			System.out.println(arr.toString());
+			System.out.println(arr[0]);
+		} else {
+			System.out.println("FAILURE");
+		}
+
+		for (int v : arr) {
+			System.out.println(v);
+		}
 	}
 	
 	public static int getNumber()

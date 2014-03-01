@@ -498,6 +498,10 @@ function toBigInt(n) -- can take either a string composed of numbers (like "1237
 	return n2
 end
 
+function fromBigInt(big)
+	return tonumber(table.concat(big))
+end
+
 -- Long names for the functions:
 cmp_equality = cmp_eq
 cmp_inequality = cmp_ieq
