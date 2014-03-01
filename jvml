@@ -1,7 +1,16 @@
-jcd = fs.combine("", shell.getRunningProgram():sub(1, -1 - #(fs.getName(shell.getRunningProgram()))))
-jcp = "/" .. fs.combine(jcd, "CCLib/build/classes")..":."
-dofile(fs.combine(jcd, "jvml_data/vm/classpath.lua"))
-dofile(fs.combine(jcd, "jvml_data/vm/classloader.lua"))
+local env = setmetatable({
+	jcd = fs.combine("", shell.getRunningProgram():sub(1, -1 - #(fs.getName(shell.getRunningProgram())))),
+	jcp = "/" .. fs.combine(jcd, "CCLib/build/classes")..":."
+}, {__index=getfenv()})
 
-jcp = jcp .. ":/" .. jcd -- So that loadJavaClass isn't needed here and so Yo and Test get loaded right
-findMethod(classByName("MyFirstProgram"),"main([Ljava/lang/String;)V")[1]()
+local function dofile(path, ...)
+	local f = assert(loadfile(path))
+	setfenv(f, env)
+	return f(...)
+end
+
+dofile(fs.combine(env.jcd, "jvml_data/vm/classpath.lua"))
+dofile(fs.combine(env.jcd, "jvml_data/vm/classloader.lua"))
+
+env.jcp = env.jcp .. ":/" .. env.jcd -- So that loadJavaClass isn't needed here and so Yo and Test get loaded right
+env.findMethod(env.classByName("MyFirstProgram"),"main([Ljava/lang/String;)V")[1]()
