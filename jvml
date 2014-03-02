@@ -1,5 +1,7 @@
+local jcd = fs.combine("", shell.getRunningProgram():sub(1, -1 - #(fs.getName(shell.getRunningProgram()))))
+
 local env = setmetatable({
-	jcd = fs.combine("", shell.getRunningProgram():sub(1, -1 - #(fs.getName(shell.getRunningProgram())))),
+	jcd = jcd,
 	jcp = "/" .. fs.combine(jcd, "CCLib/build/classes")..":."
 }, {__index=getfenv()})
 
