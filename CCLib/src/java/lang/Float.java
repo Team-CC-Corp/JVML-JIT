@@ -1,9 +1,9 @@
 package java.lang;
 
-public class Long extends Number {
-    private final long value;
+public class Float extends Number {
+    private final float value;
 
-    public Long(long value) {
+    public Float(float value) {
         this.value = value;
     }
 

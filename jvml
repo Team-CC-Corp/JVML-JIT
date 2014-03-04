@@ -1,3 +1,8 @@
+local args = {...}
+if not args[1] then
+    print("Usage: jvml <mainclass>")
+end
+
 local jcd = fs.combine("", shell.getRunningProgram():sub(1, -1 - #(fs.getName(shell.getRunningProgram()))))
 
 local env = setmetatable({
@@ -15,7 +20,7 @@ dofile(fs.combine(env.jcd, "jvml_data/vm/classpath.lua"))
 dofile(fs.combine(env.jcd, "jvml_data/vm/classloader.lua"))
 
 env.jcp = env.jcp .. ":/" .. env.jcd -- So that loadJavaClass isn't needed here and so Yo and Test get loaded right
-local ok, err = pcall(env.findMethod(env.classByName("MyFirstProgram"),"main([Ljava/lang/String;)V")[1])
+local ok, err = pcall(env.findMethod(env.classByName(args[1]),"main([Ljava/lang/String;)V")[1])
 if not ok then
 	printError(err)
 	env.printStackTrace(true)

@@ -1,21 +1,9 @@
 natives["java.io.PrintStream"] = natives["java.io.PrintStream"] or {}
 
-local function lprint(s)
-	if s ~= nil then
-		print(s)
-	else
-		print("(null)")
-	end
-end
-
-natives["java.io.PrintStream"]["println(Ljava/lang/String;)V"] = function(this, str)
-	lprint(str)
-end
-
-natives["java.io.PrintStream"]["println(Z)V"] = function(this, str)
-	lprint(str)
-end
-
-natives["java.io.PrintStream"]["println(I)V"] = function(this, str)
-	lprint(str)
+natives["java.io.PrintStream"]["println(Ljava/lang/Object;)V"] = function(this, obj)
+    if isPrimitive(obj) then
+        obj = wrapPrimitive(obj)
+    end
+    local str = findMethod(obj.data, "toString()Ljava/lang/String;")[1](obj)
+    print(toLString(str))
 end
