@@ -10,42 +10,42 @@ natives = {["java.lang.Object"]={
 os.loadAPI(fs.combine(jcd, "jvml_data/vm/bigInt"))
 
 function asInt(d)
-    return {type="I",data=d}
+    return {"I", d}
 end
 function asFloat(d)
-    return {type="F",data=d}
+    return {"F", d}
 end
 function asDouble(d)
-    return {type="D",data=d}
+    return {"D", d}
 end
 function asLong(d)
-    return {type="J",data=d}
+    return {"J", d}
 end
 function asBoolean(d)
-    return {type="Z",data=d}
+    return {"Z", d}
 end
 function asChar(d)
-    return {type="C",data=d}
+    return {"C", d}
 end
 function asByte(d)
-    return {type="B",data=d}
+    return {"B", d}
 end
 function asShort(d)
-    return {type="S",data=d}
+    return {"S", d}
 end
 function asObjRef(d, type)
-    return {type=type,data=d}
+    return {type, d}
 end
 
 function isPrimitive(value)
-    return PRIMITIVE_WRAPPERS[value.type] ~= nil
+    return PRIMITIVE_WRAPPERS[value[1]] ~= nil
 end
 
 function wrapPrimitive(value)
-    local wrapperName = PRIMITIVE_WRAPPERS[value.type]
+    local wrapperName = PRIMITIVE_WRAPPERS[value[1]]
     if wrapperName then
         local wrapper = classByName(wrapperName)
-        return findMethod(wrapper, "valueOf(" .. value.type .. ")L" .. (wrapper.name:gsub("%.", "/")) .. ";")[1](value)
+        return findMethod(wrapper, "valueOf(" .. value[1] .. ")L" .. (wrapper.name:gsub("%.", "/")) .. ";")[1](value)
     end
 end
 
@@ -63,10 +63,10 @@ end
 
 function toLString(str)
     local strArray = { }
-    local charArray = str.data.fields.value.value
+    local charArray = str[2].fields.value.value
 
     for i = 1, charArray.length do
-        strArray[i] = string.char(charArray[i - 1].data)
+        strArray[i] = string.char(charArray[i - 1][2])
     end
     return table.concat(strArray)
 end
@@ -241,11 +241,11 @@ function loadJavaClass(file)
                     cur.array_depth = cur.array_depth + 1 -- one deeper for each dimension
                 elseif c == "L" then
                     --im guessing ref or something
-                    cur.type = "L"
+                    cur[1] = "L"
                     i = i+1
                     c = descriptor:sub(i,i)
                     while c ~= ";" and c do
-                        cur.type = cur.type..c
+                        cur[1] = cur[1]..c
                         i = i+1
                         c = descriptor:sub(i,i)
                     end
@@ -253,7 +253,7 @@ function loadJavaClass(file)
                     cur = {}
                     cur.array_depth = 0
                 else
-                    cur.type = c
+                    cur[1] = c
                     table.insert(desc,cur)
                     cur = {}
                     cur.array_depth = 0
@@ -529,54 +529,54 @@ function loadJavaClass(file)
             local function u2()
                 return bit.blshift(u1(),8) + u1()
             end
-            
-            while true do
-                local inst = u1()
-                FROM = classByName(cn)
-                if inst == 0x0 then
-                elseif inst == 0x1 then
+
+            local inst
+            local mustRet = false
+
+            local oplookup = {
+                function()      -- 01
                     --null
                     push(nil)
-                elseif inst == 0x2 then
+                end, function() -- 02
                     push(asInt(-1))
-                elseif inst == 0x3 then
+                end, function() -- 03
                     push(asInt(0))
-                elseif inst == 0x4 then
+                end, function() -- 04
                     push(asInt(1))
-                elseif inst == 0x5 then
+                end, function() -- 05
                     push(asInt(2))
-                elseif inst == 0x6 then
+                end, function() -- 06
                     push(asInt(3))
-                elseif inst == 0x7 then
+                end, function() -- 07
                     push(asInt(4))
-                elseif inst == 0x8 then
+                end, function() -- 08
                     push(asInt(5))
-                elseif inst == 0x9 then
+                end, function() -- 09
                     push(asLong(bigInt.toBigInt(0)))
-                elseif inst == 0xA then
+                end, function() -- 0A
                     push(asLong(bigInt.toBigInt(1)))
-                elseif inst == 0xB then
+                end, function() -- 0B
                     push(asFloat(0))
-                elseif inst == 0xC then
+                end, function() -- 0C
                     push(asFloat(1))
-                elseif inst == 0xD then
+                end, function() -- 0D
                     push(asFloat(2))
-                elseif inst == 0xE then
+                end, function() -- 0E
                     push(asDouble(0))
-                elseif inst == 0xF then
+                end, function() -- 0F
                     push(asDouble(1))
-                elseif inst == 0x10 then
+                end, function() -- 10
                     --push imm byte
                     push(asInt(u1()))
-                elseif inst == 0x11 then
+                end, function() -- 11
                     --push imm short
                     push(asInt(u2()))
-                elseif inst == 0x12 then
+                end, function() -- 12
                     --ldc
                     --push constant
                     local s = cp[u1()]
                     if s.bytes then
-                        push({type=s.cl,data=s.bytes})
+                        push({s.cl, s.bytes})
                     else
                         local str = cp[s.string_index].bytes
                         local obj = newInstance(classByName("java.lang.String"))
@@ -589,12 +589,12 @@ function loadJavaClass(file)
                         findMethod(obj, "<init>([C)V")[1](ref, asObjRef(charArray, "[C"))
                         push(ref)
                     end
-                elseif inst == 0x13 then
+                end, function() -- 13
                     --ldc_w
                     --push constant
                     local s = cp[u2()]
                     if s.bytes then
-                        push({type=s.cl:lower(),data=s.bytes})
+                        push({s.cl:lower(), s.bytes})
                     else
                         local str = cp[s.string_index].bytes
                         local obj = newInstance(classByName("java.lang.String"))
@@ -607,200 +607,524 @@ function loadJavaClass(file)
                         findMethod(obj, "<init>([C)V")[1](ref, asObjRef(charArray, "[C"))
                         push(ref)
                     end
-                elseif inst == 0x14 then
+                end, function() -- 14
                     --ldc2_w
                     --push constant
                     local s = cp[u2()]
-                    push({type=s.cl:lower(),data=s.bytes})
-                elseif inst >= 0x15 and inst <= 0x19 then
+                    push({s.cl:lower(), s.bytes})
+                end, function() -- 15
                     --loads
                     push(lvars[u1()])
-                elseif inst == 0x1A or inst == 0x1E or inst == 0x22 or inst == 0x26 or inst == 0x2A then
+                end, function() -- 16
+                    --loads
+                    push(lvars[u1()])
+                end, function() -- 17
+                    --loads
+                    push(lvars[u1()])
+                end, function() -- 18
+                    --loads
+                    push(lvars[u1()])
+                end, function() -- 19
+                    --loads
+                    push(lvars[u1()])
+                end, function() -- 1A
                     --load_0
                     push(lvars[0])
-                elseif inst == 0x1B or inst == 0x1F or inst == 0x23 or inst == 0x27 or inst == 0x2B then
+                end, function() -- 1B
                     --load_1
                     push(lvars[1])
-                elseif inst == 0x1C or inst == 0x20 or inst == 0x24 or inst == 0x28 or inst == 0x2C then
+                end, function() -- 1C
                     --load_2
                     push(lvars[2])
-                elseif inst == 0x1D or inst == 0x21 or inst == 0x25 or inst == 0x29 or inst == 0x2D then
+                end, function() -- 1D
                     --load_3
                     push(lvars[3])
-                elseif inst >= 0x2E and inst <= 0x35 then
+                end, function() -- 1E
+                    --load_0
+                    push(lvars[0])
+                end, function() -- 1F
+                    --load_1
+                    push(lvars[1])
+                end, function() -- 20
+                    --load_2
+                    push(lvars[2])
+                end, function() -- 21
+                    --load_3
+                    push(lvars[3])
+                end, function() -- 22
+                    --load_0
+                    push(lvars[0])
+                end, function() -- 23
+                    --load_1
+                    push(lvars[1])
+                end, function() -- 24
+                    --load_2
+                    push(lvars[2])
+                end, function() -- 25
+                    --load_3
+                    push(lvars[3])
+                end, function() -- 26
+                    --load_0
+                    push(lvars[0])
+                end, function() -- 27
+                    --load_1
+                    push(lvars[1])
+                end, function() -- 28
+                    --load_2
+                    push(lvars[2])
+                end, function() -- 29
+                    --load_3
+                    push(lvars[3])
+                end, function() -- 2A
+                    --load_0
+                    push(lvars[0])
+                end, function() -- 2B
+                    --load_1
+                    push(lvars[1])
+                end, function() -- 2C
+                    --load_2
+                    push(lvars[2])
+                end, function() -- 2D
+                    --load_3
+                    push(lvars[3])
+                end, function() -- 2E
                     --aaload
                     local i, arr = pop(), pop()
-                    if i.data >= arr.data.length then
-                        print(i.data)
-                        print(arr.data.length)
+                    if i[2] >= arr[2].length then
                         error("Index out of bounds", 0)
                     end
-                    local value = arr.data[i.data]
+                    local value = arr[2][i[2]]
                     push(value)
-                elseif inst >= 0x36 and inst <= 0x3A then
+                end, function() -- 2F
+                    --aaload
+                    local i, arr = pop(), pop()
+                    if i[2] >= arr[2].length then
+                        error("Index out of bounds", 0)
+                    end
+                    local value = arr[2][i[2]]
+                    push(value)
+                end, function() -- 30
+                    --aaload
+                    local i, arr = pop(), pop()
+                    if i[2] >= arr[2].length then
+                        error("Index out of bounds", 0)
+                    end
+                    local value = arr[2][i[2]]
+                    push(value)
+                end, function() -- 31
+                    --aaload
+                    local i, arr = pop(), pop()
+                    if i[2] >= arr[2].length then
+                        error("Index out of bounds", 0)
+                    end
+                    local value = arr[2][i[2]]
+                    push(value)
+                end, function() -- 32
+                    --aaload
+                    local i, arr = pop(), pop()
+                    if i[2] >= arr[2].length then
+                        error("Index out of bounds", 0)
+                    end
+                    local value = arr[2][i[2]]
+                    push(value)
+                end, function() -- 33
+                    --aaload
+                    local i, arr = pop(), pop()
+                    if i[2] >= arr[2].length then
+                        error("Index out of bounds", 0)
+                    end
+                    local value = arr[2][i[2]]
+                    push(value)
+                end, function() -- 34
+                    --aaload
+                    local i, arr = pop(), pop()
+                    if i[2] >= arr[2].length then
+                        error("Index out of bounds", 0)
+                    end
+                    local value = arr[2][i[2]]
+                    push(value)
+                end, function() -- 35
+                    --aaload
+                    local i, arr = pop(), pop()
+                    if i[2] >= arr[2].length then
+                        error("Index out of bounds", 0)
+                    end
+                    local value = arr[2][i[2]]
+                    push(value)
+                end, function() -- 36
                     --stores
                     lvars[u1()] = pop()
-                elseif inst == 0x3B or inst == 0x3F or inst == 0x43 or inst == 0x47 or inst == 0x4B then
+                end, function() -- 37
+                    --stores
+                    lvars[u1()] = pop()
+                end, function() -- 38
+                    --stores
+                    lvars[u1()] = pop()
+                end, function() -- 39
+                    --stores
+                    lvars[u1()] = pop()
+                end, function() -- 3A
+                    --stores
+                    lvars[u1()] = pop()
+                end, function() -- 3B
                     lvars[0] = pop()
-                elseif inst == 0x3C or inst == 0x40 or inst == 0x44 or inst == 0x48 or inst == 0x4C then
+                end, function() -- 3C
                     lvars[1] = pop()
-                elseif inst == 0x3D or inst == 0x41 or inst == 0x45 or inst == 0x49 or inst == 0x4D then
+                end, function() -- 3D
                     lvars[2] = pop()
-                elseif inst == 0x3E or inst == 0x42 or inst == 0x46 or inst == 0x4A or inst == 0x4E then
+                end, function() -- 3E
                     lvars[3] = pop()
-                elseif inst >= 0x4f and inst <= 0x56 then
+                end, function() -- 3F
+                    lvars[0] = pop()
+                end, function() -- 40
+                    lvars[1] = pop()
+                end, function() -- 41
+                    lvars[2] = pop()
+                end, function() -- 42
+                    lvars[3] = pop()
+                end, function() -- 43
+                    lvars[0] = pop()
+                end, function() -- 44
+                    lvars[1] = pop()
+                end, function() -- 45
+                    lvars[2] = pop()
+                end, function() -- 46
+                    lvars[3] = pop()
+                end, function() -- 47
+                    lvars[0] = pop()
+                end, function() -- 48
+                    lvars[1] = pop()
+                end, function() -- 49
+                    lvars[2] = pop()
+                end, function() -- 4A
+                    lvars[3] = pop()
+                end, function() -- 4B
+                    lvars[0] = pop()
+                end, function() -- 4C
+                    lvars[1] = pop()
+                end, function() -- 4D
+                    lvars[2] = pop()
+                end, function() -- 4E
+                    lvars[3] = pop()
+                end, function() -- 4F
                     --aastore
                     local v,i,t = pop(),pop(),pop()
-                    if not isIndirectEqual(v.type, t.type:sub(2)) then
-                        error("Type mismatch in array assignment: " .. v.type .. " -> " .. t.type, 0)
+                    if not isIndirectEqual(v[1], t[1]:sub(2)) then
+                        error("Type mismatch in array assignment: " .. v[1] .. " -> " .. t[1], 0)
                     end
-                    if i.data >= t.data.length then
+                    if i[2] >= t[2].length then
                         error("Index out of bounds", 0)
                     end
-                    t.data[i.data] = v
-                elseif inst == 0x57 then
+                    t[2][i[2]] = v
+                end, function() -- 50
+                    --aastore
+                    local v,i,t = pop(),pop(),pop()
+                    if not isIndirectEqual(v[1], t[1]:sub(2)) then
+                        error("Type mismatch in array assignment: " .. v[1] .. " -> " .. t[1], 0)
+                    end
+                    if i[2] >= t[2].length then
+                        error("Index out of bounds", 0)
+                    end
+                    t[2][i[2]] = v
+                end, function() -- 51
+                    --aastore
+                    local v,i,t = pop(),pop(),pop()
+                    if not isIndirectEqual(v[1], t[1]:sub(2)) then
+                        error("Type mismatch in array assignment: " .. v[1] .. " -> " .. t[1], 0)
+                    end
+                    if i[2] >= t[2].length then
+                        error("Index out of bounds", 0)
+                    end
+                    t[2][i[2]] = v
+                end, function() -- 52
+                    --aastore
+                    local v,i,t = pop(),pop(),pop()
+                    if not isIndirectEqual(v[1], t[1]:sub(2)) then
+                        error("Type mismatch in array assignment: " .. v[1] .. " -> " .. t[1], 0)
+                    end
+                    if i[2] >= t[2].length then
+                        error("Index out of bounds", 0)
+                    end
+                    t[2][i[2]] = v
+                end, function() -- 53
+                    --aastore
+                    local v,i,t = pop(),pop(),pop()
+                    if not isIndirectEqual(v[1], t[1]:sub(2)) then
+                        error("Type mismatch in array assignment: " .. v[1] .. " -> " .. t[1], 0)
+                    end
+                    if i[2] >= t[2].length then
+                        error("Index out of bounds", 0)
+                    end
+                    t[2][i[2]] = v
+                end, function() -- 54
+                    --aastore
+                    local v,i,t = pop(),pop(),pop()
+                    if not isIndirectEqual(v[1], t[1]:sub(2)) then
+                        error("Type mismatch in array assignment: " .. v[1] .. " -> " .. t[1], 0)
+                    end
+                    if i[2] >= t[2].length then
+                        error("Index out of bounds", 0)
+                    end
+                    t[2][i[2]] = v
+                end, function() -- 55
+                    --aastore
+                    local v,i,t = pop(),pop(),pop()
+                    if not isIndirectEqual(v[1], t[1]:sub(2)) then
+                        error("Type mismatch in array assignment: " .. v[1] .. " -> " .. t[1], 0)
+                    end
+                    if i[2] >= t[2].length then
+                        error("Index out of bounds", 0)
+                    end
+                    t[2][i[2]] = v
+                end, function() -- 56
+                    --aastore
+                    local v,i,t = pop(),pop(),pop()
+                    if not isIndirectEqual(v[1], t[1]:sub(2)) then
+                        error("Type mismatch in array assignment: " .. v[1] .. " -> " .. t[1], 0)
+                    end
+                    if i[2] >= t[2].length then
+                        error("Index out of bounds", 0)
+                    end
+                    t[2][i[2]] = v
+                end, function() -- 57
                     pop()
-                elseif inst == 0x58 then
+                end, function() -- 58
                     local pv = pop()
-                    if pv.type ~= "D" and pv.type ~= "J" then
+                    if pv[1] ~= "D" and pv[1] ~= "J" then
                         pop()
                     end
-                elseif inst == 0x59 then
+                end, function() -- 59
                     local v = pop()
                     push(v)
-                    push({type=v.type,data=v.data})
-                elseif inst == 0x5a then
+                    push({v[1], v[2]})
+                end, function() -- 5A
                     local v = pop()
                     push(v)
-                    table.insert(stack,sp-2,{type=v.type,data=v.data})
+                    table.insert(stack,sp-2,{v[1], v[2]})
                     sp = sp+1
-                elseif inst == 0x5b then
+                end, function() -- 5B
                     local v = pop()
                     push(v)
-                    table.insert(stack,sp-(pv.type == "D" or pv.type == "J" and 2 or 3),{type=v.type,data=v.data})
+                    table.insert(stack,sp-(pv[1] == "D" or pv[1] == "J" and 2 or 3),{v[1], v[2]})
                     sp = sp+1
-                elseif inst == 0x5c then
+                end, function() -- 5C
                     local a = pop()
-                    if a.type ~= "D" and a.type ~= "J" then
+                    if a[1] ~= "D" and a[1] ~= "J" then
                         local b = pop()
                         push(b)
                         push(a)
-                        push({type=b.type,data=b.data})
-                        push({type=a.type,data=a.data})
+                        push({b[1], b[2]})
+                        push({a[1], a[2]})
                     else
                         push(a)
-                        push({type=a.type,data=a.data})
+                        push({a[1], a[2]})
                     end
-                elseif inst == 0x5d then
+                end, function() -- 5D
                     error("swap2_x1 is bullshit and you know it")
-                elseif inst == 0x5e then
+                end, function() -- 5E
                     error("swap2_x2 is bullshit and you know it")
-                elseif inst == 0x5f then
+                end, function() -- 5F
                     local a = pop()
                     local b = pop()
                     push(a)
                     push(b)
-                elseif inst >= 0x60 and inst <= 0x63 then
+                end, function() -- 60
                     --add
                     local b, a = pop(), pop()
-                    push({type=a.type,data=a.data+b.data})
-                elseif inst >= 0x64 and inst <= 0x67 then
+                    push({a[1], a[2]+b[2]})
+                end, function() -- 61
+                    --add
+                    local b, a = pop(), pop()
+                    push({a[1], a[2]+b[2]})
+                end, function() -- 62
+                    --add
+                    local b, a = pop(), pop()
+                    push({a[1], a[2]+b[2]})
+                end, function() -- 63
+                    --add
+                    local b, a = pop(), pop()
+                    push({a[1], a[2]+b[2]})
+                end, function() -- 64
                     --sub
                     local b, a = pop(), pop()
-                    push({type=a.type,data=a.data-b.data})
-                elseif inst >= 0x68 and inst <= 0x6b then
+                    push({a[1], a[2]-b[2]})
+                end, function() -- 65
+                    --sub
+                    local b, a = pop(), pop()
+                    push({a[1], a[2]-b[2]})
+                end, function() -- 66
+                    --sub
+                    local b, a = pop(), pop()
+                    push({a[1], a[2]-b[2]})
+                end, function() -- 67
+                    --sub
+                    local b, a = pop(), pop()
+                    push({a[1], a[2]-b[2]})
+                end, function() -- 68
                     --mul
                     local b, a = pop(), pop()
-                    push({type=a.type,data=a.data*b.data})
-                elseif inst >= 0x6c and inst <= 0x6f then
+                    push({a[1], a[2]*b[2]})
+                end, function() -- 69
+                    --mul
+                    local b, a = pop(), pop()
+                    push({a[1], a[2]*b[2]})
+                end, function() -- 6A
+                    --mul
+                    local b, a = pop(), pop()
+                    push({a[1], a[2]*b[2]})
+                end, function() -- 6B
+                    --mul
+                    local b, a = pop(), pop()
+                    push({a[1], a[2]*b[2]})
+                end, function() -- 6C
                     --div
                     local b, a = pop(), pop()
-                    push({type=a.type,data=a.data/b.data})
-                elseif inst >= 0x70 and inst <= 0x73 then
+                    push({a[1], a[2]/b[2]})
+                end, function() -- 6D
+                    --div
+                    local b, a = pop(), pop()
+                    push({a[1], a[2]/b[2]})
+                end, function() -- 6E
+                    --div
+                    local b, a = pop(), pop()
+                    push({a[1], a[2]/b[2]})
+                end, function() -- 6F
+                    --div
+                    local b, a = pop(), pop()
+                    push({a[1], a[2]/b[2]})
+                end, function() -- 70
                     --rem
                     local b, a = pop(), pop()
-                    push({type=a.type,data=a.data%b.data})
-                elseif inst >= 0x74 and inst <= 0x77 then
+                    push({a[1], a[2]%b[2]})
+                end, function() -- 71
+                    --rem
+                    local b, a = pop(), pop()
+                    push({a[1], a[2]%b[2]})
+                end, function() -- 72
+                    --rem
+                    local b, a = pop(), pop()
+                    push({a[1], a[2]%b[2]})
+                end, function() -- 73
+                    --rem
+                    local b, a = pop(), pop()
+                    push({a[1], a[2]%b[2]})
+                end, function() -- 74
                     --neg
                     local a = pop(), pop()
-                    push({type=a.type,data=-a.data})
-                elseif inst >= 0x78 and inst <= 0x79 then
+                    push({a[1], -a[2]})
+                end, function() -- 75
+                    --neg
+                    local a = pop(), pop()
+                    push({a[1], -a[2]})
+                end, function() -- 76
+                    --neg
+                    local a = pop(), pop()
+                    push({a[1], -a[2]})
+                end, function() -- 77
+                    --neg
+                    local a = pop(), pop()
+                    push({a[1], -a[2]})
+                end, function() -- 78
                     --shl
                     local b, a = pop(), pop()
-                    push({type=b.type,data=bit.blshift(b.data,a.data)})
-                elseif inst >= 0x7a and inst <= 0x7b then
+                    push({b[1], bit.blshift(b[2],a[2])})
+                end, function() -- 79
+                    --shl
+                    local b, a = pop(), pop()
+                    push({b[1], bit.blshift(b[2],a[2])})
+                end, function() -- 7A
                     --shr
                     local b, a = pop(), pop()
-                    push({type=b.type,data=bit.brshift(b.data,a.data)})
-                elseif inst >= 0x7c and inst <= 0x7d then
+                    push({b[1], bit.brshift(b[2],a[2])})
+                end, function() -- 7B
+                    --shr
+                    local b, a = pop(), pop()
+                    push({b[1], bit.brshift(b[2],a[2])})
+                end, function() -- 7C
                     --shlr
                     local b, a = pop(), pop()
-                    push({type=b.type,data=bit.blogic_rshift(b.data,a.data)})
-                elseif inst >= 0x7e and inst <= 0x7f then
+                    push({b[1], bit.blogic_rshift(b[2],a[2])})
+                end, function() -- 7D
+                    --shlr
+                    local b, a = pop(), pop()
+                    push({b[1], bit.blogic_rshift(b[2],a[2])})
+                end, function() -- 7E
                     --and
                     local b, a = pop(), pop()
-                    push({type=a.type,data=bit.band(a.data,b.data)})
-                elseif inst >= 0x80 and inst <= 0x81 then
+                    push({a[1], bit.band(a[2],b[2])})
+                end, function() -- 7F
+                    --and
+                    local b, a = pop(), pop()
+                    push({a[1], bit.band(a[2],b[2])})
+                end, function() -- 80
                     --or
                     local b, a = pop(), pop()
-                    push({type=a.type,data=bit.bor(a.data,b.data)})
-                elseif inst >= 0x82 and inst <= 0x83 then
+                    push({a[1], bit.bor(a[2],b[2])})
+                end, function() -- 81
+                    --or
+                    local b, a = pop(), pop()
+                    push({a[1], bit.bor(a[2],b[2])})
+                end, function() -- 82
                     --xor
                     local b, a = pop(), pop()
-                    push({type=a.type,data=bit.bxor(a.data,b.data)})
-                elseif inst == 0x84 then
+                    push({a[1], bit.bxor(a[2],b[2])})
+                end, function() -- 83
+                    --xor
+                    local b, a = pop(), pop()
+                    push({a[1], bit.bxor(a[2],b[2])})
+                end, function() -- 84
                     --iinc
                     local idx = u1()
                     local c = u1ToSignedByte(u1())
-                    lvars[idx].data = lvars[idx].data+c
-                elseif inst == 0x85 then
+                    lvars[idx][2] = lvars[idx][2]+c
+                end, function() -- 85
                     --i2l
-                    push(asLong(bigInt.toBigInt(pop().data)))
-                elseif inst == 0x86 then
+                    push(asLong(bigInt.toBigInt(pop()[2])))
+                end, function() -- 86
                     --i2f
-                    push(asFloat(pop().data))
-                elseif inst == 0x87 then
+                    push(asFloat(pop()[2]))
+                end, function() -- 87
                     --i2d
-                    push(asDouble(pop().data))
-                elseif inst == 0x88 then
+                    push(asDouble(pop()[2]))
+                end, function() -- 88
                     --l2i
-                    push(asInt(bigInt.fromBigInt(pop().data)))
-                elseif inst == 0x89 then
+                    push(asInt(bigInt.fromBigInt(pop()[2])))
+                end, function() -- 89
                     --l2f
-                    push(asFloat(bigInt.fromBigInt(pop().data)))
-                elseif inst == 0x8A then
+                    push(asFloat(bigInt.fromBigInt(pop()[2])))
+                end, function() -- 8A
                     --l2d
-                    push(asDouble(bigInt.fromBigInt(pop().data)))
-                elseif inst == 0x8B then
+                    push(asDouble(bigInt.fromBigInt(pop()[2])))
+                end, function() -- 8B
                     --f2i
-                    push(asInt(math.floor(pop().data)))
-                elseif inst == 0x8C then
+                    push(asInt(math.floor(pop()[2])))
+                end, function() -- 8C
                     --f2l
-                    push(asLong(bigInt.toBigInt(math.floor(pop().data))))
-                elseif inst == 0x8D then
+                    push(asLong(bigInt.toBigInt(math.floor(pop()[2]))))
+                end, function() -- 8D
                     --f2d
-                    push(asDouble(pop().data))
-                elseif inst == 0x8E then
+                    push(asDouble(pop()[2]))
+                end, function() -- 8E
                     --d2i
-                    push(asInt(math.floor(pop().data)))
-                elseif inst == 0x8F then
+                    push(asInt(math.floor(pop()[2])))
+                end, function() -- 8F
                     --d2l
-                    push(asLong(bigInt.toBigInt(math.floor(pop().data))))
-                elseif inst == 0x90 then
+                    push(asLong(bigInt.toBigInt(math.floor(pop()[2]))))
+                end, function() -- 90
                     --d2f
-                    push(asFloat(pop().data))
-                elseif inst == 0x91 then
+                    push(asFloat(pop()[2]))
+                end, function() -- 91
                     --i2b
-                    push(asByte(pop().data))
-                elseif inst == 0x92 then
+                    push(asByte(pop()[2]))
+                end, function() -- 92
                     --i2c
-                    push(asChar(string.char(pop().data)))
-                elseif inst == 0x93 then
+                    push(asChar(string.char(pop()[2])))
+                end, function() -- 93
                     --i2s
-                    push(asShort(pop().data))
-                elseif inst == 0x94 then
+                    push(asShort(pop()[2]))
+                end, function() -- 94
                     --lcmp
-                    local a, b = pop().data, pop().data
+                    local a, b = pop()[2], pop()[2]
                     if bigInt.cmp_eq(a, b) then
                         push(asInt(0))
                     elseif bigInt.cmp_lt(a, b) then
@@ -808,9 +1132,9 @@ function loadJavaClass(file)
                     else
                         push(asInt(-1))
                     end
-                elseif inst >= 0x95 and inst <= 0x98 then -- Not worrying about NaN just yet...
+                end, function() -- 95
                     --fcmpl/g
-                    local a, b = pop().data, pop().data
+                    local a, b = pop()[2], pop()[2]
                     if a == b then
                         push(asInt(0))
                     elseif a < b then
@@ -818,103 +1142,165 @@ function loadJavaClass(file)
                     else
                         push(asInt(-1))
                     end
-                elseif inst == 0x99 then
+                end, function() -- 96
+                    --fcmpl/g
+                    local a, b = pop()[2], pop()[2]
+                    if a == b then
+                        push(asInt(0))
+                    elseif a < b then
+                        push(asInt(1))
+                    else
+                        push(asInt(-1))
+                    end
+                end, function() -- 97
+                    --fcmpl/g
+                    local a, b = pop()[2], pop()[2]
+                    if a == b then
+                        push(asInt(0))
+                    elseif a < b then
+                        push(asInt(1))
+                    else
+                        push(asInt(-1))
+                    end
+                end, function() -- 98
+                    --fcmpl/g
+                    local a, b = pop()[2], pop()[2]
+                    if a == b then
+                        push(asInt(0))
+                    elseif a < b then
+                        push(asInt(1))
+                    else
+                        push(asInt(-1))
+                    end
+                end, function() -- 99
                     --ifeq
                     local offset = u2ToSignedShort(u2())
-                    if pop().data == 0 then
+                    if pop()[2] == 0 then
                         pc(pc() + offset - 2) -- minus 2 becuase u2()
                     end
-                elseif inst == 0x9A then
+                end, function() -- 9A
                     --ifne
                     local offset = u2ToSignedShort(u2())
-                    if pop().data ~= 0 then
+                    if pop()[2] ~= 0 then
                         pc(pc() + offset - 2)
                     end
-                elseif inst == 0x9B then
+                end, function() -- 9B
                     --iflt
                     local offset = u2ToSignedShort(u2())
-                    if pop().data < 0 then
+                    if pop()[2] < 0 then
                         pc(pc() + offset - 2)
                     end
-                elseif inst == 0x9C then
+                end, function() -- 9C
                     --ifge
                     local offset = u2ToSignedShort(u2())
-                    if pop().data >= 0 then
+                    if pop()[2] >= 0 then
                         pc(pc() + offset - 2)
                     end
-                elseif inst == 0x9D then
+                end, function() -- 9D
                     --ifgt
                     local offset = u2ToSignedShort(u2())
-                    if pop().data > 0 then
+                    if pop()[2] > 0 then
                         pc(pc() + offset - 2)
                     end
-                elseif inst == 0x9E or inst == 0xA5 then -- same code for both...
+                end, function() -- 9E
                     --ifle
                     local offset = u2ToSignedShort(u2())
-                    if pop().data <= 0 then
+                    if pop()[2] <= 0 then
                         pc(pc() + offset - 2)
                     end
-                elseif inst == 0x9F or inst == 0xA6 then
+                end, function() -- 9F
                     --if_icmpeq
                     local offset = u2ToSignedShort(u2())
-                    if pop().data == pop().data then
+                    if pop()[2] == pop()[2] then
                         pc(pc() + offset - 2)
                     end
-                elseif inst == 0xA0 then
+                end, function() -- A0
                     --if_icmpne
                     local offset = u2ToSignedShort(u2())
-                    if pop().data ~= pop().data then
+                    if pop()[2] ~= pop()[2] then
                         pc(pc() + offset - 2)
                     end
-                elseif inst == 0xA1 then
+                end, function() -- A1
                     --if_icmplt
                     local offset = u2ToSignedShort(u2())
-                    if pop().data > pop().data then
+                    if pop()[2] > pop()[2] then
                         pc(pc() + offset - 2)
                     end
-                elseif inst == 0xA2 then
+                end, function() -- A2
                     --if_icmpge
                     local offset = u2ToSignedShort(u2())
-                    if pop().data <= pop().data then
+                    if pop()[2] <= pop()[2] then
                         pc(pc() + offset - 2)
                     end
-                elseif inst == 0xA3 then
+                end, function() -- A3
                     --if_icmpgt
                     local offset = u2ToSignedShort(u2())
-                    if pop().data < pop().data then
+                    if pop()[2] < pop()[2] then
                         pc(pc() + offset - 2)
                     end
-                elseif inst == 0xA4 then
+                end, function() -- A4
                     --if_icmple
                     local offset = u2ToSignedShort(u2())
-                    if pop().data >= pop().data then
+                    if pop()[2] >= pop()[2] then
                         pc(pc() + offset - 2)
                     end
-                elseif inst == 0xA7 then
+                end, function() -- A5
+                    --ifle
+                    local offset = u2ToSignedShort(u2())
+                    if pop()[2] <= 0 then
+                        pc(pc() + offset - 2)
+                    end
+                end, function() -- A6
+                    --if_icmpeq
+                    local offset = u2ToSignedShort(u2())
+                    if pop()[2] == pop()[2] then
+                        pc(pc() + offset - 2)
+                    end
+                end, function() -- A7
                     --goto
                     local offset = u2ToSignedShort(u2())
                     pc(pc() + offset - 2)
-                elseif inst == 0xA8 then
+                end, function() -- A8
                     --jsr
                     local addr = pc() + 3
                     local offset = u2ToSignedShort(u2())
-                    push({type="address", data=addr})
+                    push({"address", addr})
                     pc(pc() + offset - 2)
-                elseif inst == 0xA9 then
+                end, function() -- A9
                     --ret
                     local index = u1()
                     local addr = lvars[index]
-                    if addr.type ~= "address" then
+                    if addr[1] ~= "address" then
                         error("Not an address", 0)
                     end
-                    pc(addr.data)
-                elseif inst >= 0xAC and inst <= 0xB0 then
+                    pc(addr[2])
+                end, function() -- AA
+                end, function() -- AB
+                end, function() -- AC
+                    mustRet = true
                     popStackTrace()
                     return pop()
-                elseif inst == 0xB1 then
+                end, function() -- AD
+                    mustRet = true
                     popStackTrace()
-                    return
-                elseif inst == 0xB2 then
+                    return pop()
+                end, function() -- AE
+                    mustRet = true
+                    popStackTrace()
+                    return pop()
+                end, function() -- AF
+                    mustRet = true
+                    popStackTrace()
+                    return pop()
+                end, function() -- B0
+                    mustRet = true
+                    popStackTrace()
+                    return pop()
+                end, function() -- B1
+                    mustRet = true
+                    popStackTrace()
+                    return pop()
+                end, function() -- B2
                     --getstatic
                     local fr = cp[u2()]
                     local cl = resolveClass(cp[fr.class_index])
@@ -922,27 +1308,27 @@ function loadJavaClass(file)
                     local descriptor = cp[cp[fr.name_and_type_index].descriptor_index].bytes
                     --print(descriptor)
                     push(asObjRef(cl.fields[name].value, descriptor))
-                elseif inst == 0xB3 then
+                end, function() -- B3
                     --putstatic
                     local fr = cp[u2()]
                     local cl = resolveClass(cp[fr.class_index])
                     local name = cp[cp[fr.name_and_type_index].name_index].bytes
-                    cl.fields[name].value = pop().data
-                elseif inst == 0xB4 then
+                    cl.fields[name].value = pop()[2]
+                end, function() -- B4
                     --getfield
                     local fr = cp[u2()]
                     local name = cp[cp[fr.name_and_type_index].name_index].bytes
                     local descriptor = cp[cp[fr.name_and_type_index].descriptor_index].bytes
-                    local obj = pop().data
+                    local obj = pop()[2]
                     push(asObjRef(obj.fields[name].value, descriptor))
-                elseif inst == 0xB5 then
+                end, function() -- B5
                     --putfield
                     local fr = cp[u2()]
-                    local value = pop().data
-                    local obj = pop().data
+                    local value = pop()[2]
+                    local obj = pop()[2]
                     local name = cp[cp[fr.name_and_type_index].name_index].bytes
                     obj.fields[name].value = value
-                elseif inst == 0xB6 then
+                end, function() -- B6
                     --invokevirtual
                     local mr = cp[u2()]
                     local cl = resolveClass(cp[mr.class_index])
@@ -953,20 +1339,20 @@ function loadJavaClass(file)
                         args[i+1] = pop()
                     end
                     args[1] = pop()
-                    local obj = args[1].data
+                    local obj = args[1][2]
                     if type(obj) == "table" and obj.methods then -- if the object holds its own methods, use those so A a = new B(); a.c() calls B.c(), not A.c()
                         mt = findMethod(obj, name)
                     end
                     --[[if bit.band(mt.acc,METHOD_ACC.NATIVE) == METHOD_ACC.NATIVE then
                         for i=1, #args do
-                            args[i] = args[i].data
+                            args[i] = args[i][2]
                         end
                     end]]
                     local ret = mt[1](unpack(args))
-                    if mt.desc[#mt.desc].type ~= "V" then
+                    if mt.desc[#mt.desc][1] ~= "V" then
                         push(ret)
                     end
-                elseif inst == 0xB7 then
+                end, function() -- B7
                     --invokespecial
                     local mr = cp[u2()]
                     local cl = resolveClass(cp[mr.class_index])
@@ -977,17 +1363,17 @@ function loadJavaClass(file)
                         args[i+1] = pop()
                     end
                     args[1] = pop()
-                    local obj = args[1].data
+                    local obj = args[1][2]
                     --[[if bit.band(mt.acc,METHOD_ACC.NATIVE) == METHOD_ACC.NATIVE then
                         for i=1, #args do
-                            args[i] = args[i].data
+                            args[i] = args[i][2]
                         end
                     end]]
                     local ret = mt[1](unpack(args))
-                    if mt.desc[#mt.desc].type ~= "V" then
+                    if mt.desc[#mt.desc][1] ~= "V" then
                         push(ret)
                     end
-                elseif inst == 0xB8 then
+                end, function() -- B8
                     --invokestatic
                     local mr = cp[u2()]
                     local cl = resolveClass(cp[mr.class_index])
@@ -999,38 +1385,111 @@ function loadJavaClass(file)
                     end
                     --[[if bit.band(mt.acc,METHOD_ACC.NATIVE) == METHOD_ACC.NATIVE then
                         for i=1, #args do
-                            args[i] = args[i].data
+                            args[i] = args[i][2]
                         end
                     end]]
                     local ret = mt[1](unpack(args))
-                    if mt.desc[#mt.desc].type ~= "V" then
+                    if mt.desc[#mt.desc][1] ~= "V" then
                         push(ret)
                     end
-                elseif inst == 0xBB then
+                end, function() -- B9
+                end, function() -- BA
+                end, function() -- BB
                     --new
                     local cr = cp[u2()]
                     local c = resolveClass(cr)
                     local obj = newInstance(c)
                     local type = "L"..c.name:gsub("%.", "/")..";"
                     push(asObjRef(obj, type))
-                elseif inst == 0xBC then
+                end, function() -- BC
                     --newarray
                     local type = "[" .. ARRAY_TYPES[u1()]
-                    local length = pop().data
+                    local length = pop()[2]
                     push(asObjRef({length=length}, type))
-                elseif inst == 0xBD then
+                end, function() -- BD
                     --anewarray
                     local cr = cp[u2()]
                     local c = resolveClass(cr)
                     local type = "[L" .. c.name:gsub("%.", "/")..";"
-                    local length = pop().data
+                    local length = pop()[2]
                     push(asObjRef({length=length}, type))
-                elseif inst == 0xBE then
+                end, function() -- BE
                     --arraylength
                     local arr = pop()
-                    push(asInt(arr.data.length))
-                else
-                    error("Unknown Opcode: "..string.format("%x",inst))
+                    push(asInt(arr[2].length))
+                end, function() -- BF
+                end, function() -- C0
+                end, function() -- C1
+                end, function() -- C2
+                end, function() -- C3
+                end, function() -- C4
+                end, function() -- C5
+                end, function() -- C6
+                end, function() -- C7
+                end, function() -- C8
+                end, function() -- C9
+                end, function() -- CA
+                end, function() -- CB
+                end, function() -- CC
+                end, function() -- CD
+                end, function() -- CE
+                end, function() -- CF
+                end, function() -- D0
+                end, function() -- D1
+                end, function() -- D2
+                end, function() -- D3
+                end, function() -- D4
+                end, function() -- D5
+                end, function() -- D6
+                end, function() -- D7
+                end, function() -- D8
+                end, function() -- D9
+                end, function() -- DA
+                end, function() -- DB
+                end, function() -- DC
+                end, function() -- DD
+                end, function() -- DE
+                end, function() -- DF
+                end, function() -- E0
+                end, function() -- E1
+                end, function() -- E2
+                end, function() -- E3
+                end, function() -- E4
+                end, function() -- E5
+                end, function() -- E6
+                end, function() -- E7
+                end, function() -- E8
+                end, function() -- E9
+                end, function() -- EA
+                end, function() -- EB
+                end, function() -- EC
+                end, function() -- ED
+                end, function() -- EE
+                end, function() -- EF
+                end, function() -- F0
+                end, function() -- F1
+                end, function() -- F2
+                end, function() -- F3
+                end, function() -- F4
+                end, function() -- F5
+                end, function() -- F6
+                end, function() -- F7
+                end, function() -- F8
+                end, function() -- F9
+                end, function() -- FA
+                end, function() -- FB
+                end, function() -- FC
+                end, function() -- FD
+                end, function() -- FE
+                end, function() -- FF
+                end
+            }
+            
+            while true do
+                inst = u1()
+                local ret = oplookup[inst]()
+                if mustRet then
+                    return ret
                 end
             end
             popStackTrace()

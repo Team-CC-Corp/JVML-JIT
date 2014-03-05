@@ -4,6 +4,6 @@ natives["java.io.PrintStream"]["println(Ljava/lang/Object;)V"] = function(this, 
     if isPrimitive(obj) then
         obj = wrapPrimitive(obj)
     end
-    local str = findMethod(obj.data, "toString()Ljava/lang/String;")[1](obj)
+    local str = findMethod(obj[2], "toString()Ljava/lang/String;")[1](obj)
     print(toLString(str))
 end
