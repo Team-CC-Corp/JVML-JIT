@@ -1,7 +1,7 @@
 JVML
 ====
 
-ds84182's bullshit JVM
+ds84182's really nice and polite JVM
 
 
 Requirements
