@@ -4,6 +4,9 @@ local stack_trace = {}
 function findMethod(c,name)
     if not c then error("class expected, got nil",2) end
     for i=1, #c.methods do
+        if c == "java.lang.String" then
+            print(c.methods[i].name)
+        end
         if c.methods[i].name == name then
             return c.methods[i]
         end
@@ -50,20 +53,28 @@ function classByName(cn)
     end
 end
 
+-- TODO: Index numerically only
+-- cls = { name, fields, methods, super }
 function createClass(super_name, cn)
     local cls = {}
     class[cn] = cls
     cls.name = cn
+    cls[1] = cn
     cls.fields = {}
+    cls[2] = cls.fields
     cls.methods = {}
+    cls[3] = cls.methods
     if super_name then -- we have a custom Object class file which won't have a super
         local super = classByName(super_name)
         cls.super = super
+        cls[4] = super
         for i,v in pairs(super.fields) do
             cls.fields[i] = v
+            cls[2][i] = v
         end
         for i,v in pairs(super.methods) do
             cls.methods[i] = v
+            cls[3][i] = v
         end
     end
     return cls

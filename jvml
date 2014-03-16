@@ -1,27 +1,50 @@
 local args = {...}
 if not args[1] then
     print("Usage: jvml <mainclass>")
+    return
 end
 
 local jcd = fs.combine("", shell.getRunningProgram():sub(1, -1 - #(fs.getName(shell.getRunningProgram()))))
 
 local env = setmetatable({
-	jcd = jcd,
-	jcp = "/" .. fs.combine(jcd, "CCLib/build/classes")..":."
+    jcd = jcd,
+    jcp = "/" .. fs.combine(jcd, "CCLib/build/classes")..":."
 }, {__index=getfenv()})
 
+local nloadfile = loadfile
 local function dofile(path, ...)
-	local f = assert(loadfile(path))
-	setfenv(f, env)
-	return f(...)
+    local f = assert(nloadfile(path))
+    setfenv(f, env)
+    return f(...)
 end
 
+function env.loadfile(path)
+    local h = fs.open(path, "r")
+    local f, err = loadstring(h.readAll(), fs.getName(path))
+    h.close()
+    setfenv(f, env)
+    return f, err
+end
+
+dofile("/lasm/LAT.lua")
 dofile(fs.combine(env.jcd, "jvml_data/vm/classpath.lua"))
 dofile(fs.combine(env.jcd, "jvml_data/vm/classloader.lua"))
 
 env.jcp = env.jcp .. ":/" .. env.jcd -- So that loadJavaClass isn't needed here and so Yo and Test get loaded right
-local ok, err = pcall(env.findMethod(env.classByName(args[1]),"main([Ljava/lang/String;)V")[1])
+--print(env.findMethod(env.classByName(args[1]),"main([Ljava/lang/String;)V")[1])
+local m = env.findMethod(env.classByName(args[1]), "main([Ljava/lang/String;)V")[1]
+for i = 1, #env.staticMethods do
+    local m = env.staticMethods[i]
+    local ok, err = pcall(m)
+    if not ok then
+        printError(err)
+        env.printStackTrace(true)
+        return
+    end
+end
+print("Running main...")
+local ok, err = pcall(m)
 if not ok then
-	printError(err)
-	env.printStackTrace(true)
+    printError(err)
+    env.printStackTrace(true)
 end

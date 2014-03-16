@@ -2,13 +2,13 @@ package java.lang;
 
 public class String {
     /** The value is used for character storage. */
-    private final char value[];
+    private char value[];
 
     /** The offset is the first index of the storage that is used. */
-    private final int offset;
+    private int offset;
 
     /** The count is the number of characters in the String. */
-    private final int count;
+    private int count;
 
     public String() {
         this.offset = 0;

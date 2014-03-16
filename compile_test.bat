@@ -1,0 +1,1 @@
+javac -bootclasspath CCLib/build/jar/cc_rt.jar Test.java

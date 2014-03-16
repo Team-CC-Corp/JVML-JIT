@@ -9,66 +9,48 @@ natives = {["java.lang.Object"]={
 }}
 os.loadAPI(fs.combine(jcd, "jvml_data/vm/bigInt"))
 
-function asInt(d)
-    return {"I", d}
-end
-function asFloat(d)
-    return {"F", d}
-end
-function asDouble(d)
-    return {"D", d}
-end
-function asLong(d)
-    return {"J", d}
-end
-function asBoolean(d)
-    return {"Z", d}
-end
-function asChar(d)
-    return {"C", d}
-end
-function asByte(d)
-    return {"B", d}
-end
-function asShort(d)
-    return {"S", d}
-end
-function asObjRef(d, type)
-    return {type, d}
-end
+staticMethods = { }
 
 function isPrimitive(value)
     return PRIMITIVE_WRAPPERS[value[1]] ~= nil
 end
 
-function wrapPrimitive(value)
-    local wrapperName = PRIMITIVE_WRAPPERS[value[1]]
-    if wrapperName then
-        local wrapper = classByName(wrapperName)
-        return findMethod(wrapper, "valueOf(" .. value[1] .. ")L" .. (wrapper.name:gsub("%.", "/")) .. ";")[1](value)
-    end
+function wrapPrimitive(value, type)
+    local wrapperName = PRIMITIVE_WRAPPERS[type]
+    local wrapper = classByName(wrapperName)
+    return findMethod(wrapper, "valueOf(" .. type .. ")L" .. (wrapper.name:gsub("%.", "/")) .. ";")[1](value)
 end
 
 function toJString(str)
-    local obj = newInstance(classByName("java.lang.String"))
-    local charArray = { }
-    charArray.length = #str
-    for i = 0, #str - 1 do
-        charArray[i] = asChar(str:sub(i + 1, i + 1):byte())
+    local stringClass = classByName("java.lang.String")
+    local obj = { stringClass, { #str, "C", { } } }
+    local charArray = obj[2][3]
+    for i = 1, #str do
+        charArray[i] = str:sub(i, i):byte()
     end
-    local ref = asObjRef(obj, "Ljava/lang/String;")
-    findMethod(obj, "<init>([C)V")[1](ref, asObjRef(charArray, "[C"))
-    return ref
+    findMethod(stringClass, "<init>([C)V")[1](obj, charArray)
+    return obj
 end
 
 function toLString(str)
+    local stringClass = classByName("java.lang.String")
     local strArray = { }
-    local charArray = str[2].fields.value.value
+    local charArrayRef = str[2][stringClass.fieldIndexByName["value"]]
+    local len = charArrayRef[1]
+    local charArray = charArrayRef[3]
 
-    for i = 1, charArray.length do
-        strArray[i] = string.char(charArray[i - 1][2])
+    for i = 1, len do
+        strArray[i] = string.char(charArray[i])
     end
     return table.concat(strArray)
+end
+
+function fieldByName(class, name)
+    for i = 1, #class.fields do
+        if class.fields[i].name == name then
+            return i
+        end
+    end
 end
 
 local function u2ToSignedShort(i)
@@ -169,6 +151,8 @@ CLASS_ACC = {
     ENUM=0x4000,
 }
 
+local debugH = fs.open("/jvml/debug", "w")
+
 function loadJavaClass(file)
     if not fs.exists(file) then return false end
     local fh = fs.open(file,"rb")
@@ -266,30 +250,30 @@ function loadJavaClass(file)
     local function cp_class_info(c)
         c.name_index = u2() --name index
     end
-    
+
     local function cp_ref_info(c)
         c.class_index = u2()
         c.name_and_type_index = u2()
     end
-    
+
     local function cp_string_info(c)
         c.string_index= u2()
     end
-    
+
     local function cp_intfloat_info(c)
         c.bytes = u4()
     end
-    
+
     local function cp_longdouble_info(c)
         c.high_bytes = u4()
         c.low_bytes = u4()
     end
-    
+
     local function cp_nameandtype_info(c)
         c.name_index = u2()
         c.descriptor_index = u2()
     end
-    
+
     local function cp_utf8_info(c)
         c.length = u2()
         c.bytes = ""
@@ -297,21 +281,21 @@ function loadJavaClass(file)
             c.bytes = c.bytes..string.char(u1()) --UTF8? Fuck that!
         end
     end
-    
+
     local function cp_methodhandle_info(c)
         c.reference_kind = u1()
         c.reference_index = u2()
     end
-    
+
     local function cp_methodtype_info(c)
         c.descriptor_index = u2()
     end
-    
+
     local function cp_invokedynamic_info(c)
         c.bootstrap_method_attr_index = u2()
         c.name_and_type_index = u2()
     end
-    
+
     local function parse_float(bits)
         if bits == 0x7f800000 then
             return math.huge
@@ -328,18 +312,18 @@ function loadJavaClass(file)
             return s*m*(2^(e-150))
         end
     end
-    
+
     local function parse_long(high_bytes,low_bytes)
         return bigInt.add(bigInt.brshift(high_bytes,32),low_bytes)
     end
-    
+
     local function parse_double(high_bytes,low_bytes)
         local x = ""
         x = x..string.char(bit.band(low_bytes,0xFF))
         x = x..string.char(bit.band(bit.brshift(low_bytes,8),0xFF))
         x = x..string.char(bit.band(bit.brshift(low_bytes,16),0xFF))
         x = x..string.char(bit.band(bit.brshift(low_bytes,24),0xFF))
-        
+
         x = x..string.char(bit.band(high_bytes,0xFF))
         x = x..string.char(bit.band(bit.brshift(high_bytes,8),0xFF))
         x = x..string.char(bit.band(bit.brshift(high_bytes,16),0xFF))
@@ -354,7 +338,7 @@ function loadJavaClass(file)
         mantissa = (math.ldexp(mantissa, -52) + 1) * sign
         return math.ldexp(mantissa, exponent - 1023)
     end
-    
+
     local function cp_entry(ei)
         local c = {}
         c.tag = u1()
@@ -389,11 +373,11 @@ function loadJavaClass(file)
         elseif ct == CONSTANT.InvokeDynamic then
             cp_invokedynamic_info(c)
         else
-            print("Mindfuck in ConstantPool: "..ct)
+            error("Mindfuck in ConstantPool: "..ct)
         end
         return c
     end
-    
+
     local function attribute()
         local attrib = {}
         attrib.attribute_name_index = u2()
@@ -461,7 +445,17 @@ function loadJavaClass(file)
                 }
             end
         elseif an == "LocalVariableTable" then
-            error("LVT is so mainstream",0)
+            attrib.local_variable_table_length = u2()
+            attrib.local_variable_table = {}
+            for i=0, attrib.local_variable_table_length-1 do
+                attrib.local_variable_table[i] = {
+                    start_pc = u2(),
+                    length = u2(),
+                    name_index = u2(),
+                    descriptor_index = u2(),
+                    index = u2()
+                }
+            end
         elseif an == "LocalVariableTypeTable" then
             error("LVTT is so mainstream",0)
         elseif an == "Deprecated" then
@@ -477,7 +471,7 @@ function loadJavaClass(file)
         end
         return attrib
     end
-    
+
     local function field_info()
         local field = {
             access_flags = u2(),
@@ -491,1009 +485,1351 @@ function loadJavaClass(file)
         end
         return field
     end
-    
+
     local function resolveClass(c)
         local cn = cp[c.name_index].bytes:gsub("/",".")
         return classByName(cn)
     end
 
+    local function createCodeFunction(class, method, codeAttr, name)
+        local code = codeAttr.code
+        local asm = { }
 
-    local function createCodeFunction(code, name)
+        local asmPC = 1
+        local function emit(str, ...)
+            local _, err = pcall(function(...)
+                asmPC = asmPC + 1
+                asm[#asm + 1] = string.format(str, ...) .. "\n"
+            end, ...)
+            if err then
+                error("asd", 3)
+            end
+        end
+
+        local reg = codeAttr.max_locals
+        local function alloc(n)
+            if not n then n = 1 end
+            local ret = { }
+            for i = 1, n do
+                reg = reg + 1
+                ret[i] = reg
+            end
+            return unpack(ret)
+        end
+
+        local function free(n)
+            if not n then n = 1 end
+            local ret = { }
+            for i = n, 1, -1 do
+                ret[i] = reg
+                reg = reg - 1
+            end
+            return unpack(ret)
+        end
+
+        local function peek(n)
+            return reg - n
+        end
+
+        local rti = { }
+        local reverseRTI = { }
+        local function info(obj)
+            local i = reverseRTI[obj]
+            if i then
+                return i
+            end
+            local p = #rti + 1
+            rti[p] = obj
+            reverseRTI[obj] = p
+            return p
+        end
+
+        local _pc = 0
+        local function u1()
+            _pc = _pc+1
+            return code[_pc-1]
+        end
+        local function pc(i)
+            _pc = i or _pc
+            return _pc - 1
+        end
+
+        local pcMapLJ = { }
+        local pcMapJL = { }
+
+        local function u2()
+            return bit.blshift(u1(),8) + u1()
+        end
+
+        local function asmGetRTInfo(r, i)
+            emit("gettable %i 0 k(%i) ", r, i)
+        end
+
+        local function asmNewInstance(robj, class)
+            local rclass, rfields = alloc(2)
+            asmGetRTInfo(rclass, info(class))
+            emit("newtable %i 2 0", robj)
+            emit("newtable %i %i 0", rfields, #class.fields)
+            emit("settable %i k(1) %i", robj, rclass)
+            emit("settable %i k(2) %i", robj, rfields)
+            free(2)
+        end
+
+        local function asmPrintReg(r)
+            local rprint, rparam = alloc(2)
+            emit("getglobal %i 'print'", rprint)
+            emit("move %i %i", rparam, r)
+            emit("call %i 2 1", rprint)
+            free(2)
+        end
+
+        local function asmPrintString(str)
+            local rprint, rparam = alloc(2)
+            emit("getglobal %i 'print'", rprint)
+            emit("loadk %i '%s'", rparam, str)
+            emit("call %i 2 1", rprint)
+            free(2)
+        end
+
+        -- Expects method at register rmt followed by args.
+        -- Result is stored in rmt + 1.
+        local function asmInvokeMethod(rmt, argslen, results)
+            emit("gettable %i %i k(1)", rmt, rmt)
+            emit("call %i %i %i", rmt, argslen + 1, results + 1)
+        end
+
+        local inst
+
+        local oplookup = {
+            function()      -- 01
+                --null
+                local r = alloc()
+                emit("loadnil %i %i", r, r)
+            end, function() -- 02
+                local r = alloc()
+                emit("loadk %i k(-1)", r)
+            end, function() -- 03
+                local r = alloc()
+                emit("loadk %i k(0)", r)
+            end, function() -- 04
+                local r = alloc()
+                emit("loadk %i k(1)", r)
+            end, function() -- 05
+                local r = alloc()
+                emit("loadk %i k(2)", r)
+            end, function() -- 06
+                local r = alloc()
+                emit("loadk %i k(3)", r)
+            end, function() -- 07
+                local r = alloc()
+                emit("loadk %i k(4)", r)
+            end, function() -- 08
+                local r = alloc()
+                emit("loadk %i k(5)", r)
+            end, function() -- 09
+                local r = alloc()
+                emit("loadk %i k(0)", r)
+            end, function() -- 0A
+                local r = alloc()
+                emit("loadk %i k(1)", r)
+            end, function() -- 0B
+                local r = alloc()
+                emit("loadk %i k(0)", r)
+            end, function() -- 0C
+                local r = alloc()
+                emit("loadk %i k(1)", r)
+            end, function() -- 0D
+                local r = alloc()
+                emit("loadk %i k(2)", r)
+            end, function() -- 0E
+                local r = alloc()
+                emit("loadk %i k(0)", r)
+            end, function() -- 0F
+                local r = alloc()
+                emit("loadk %i k(1)", r)
+            end, function() -- 10
+                --push imm byte
+                emit("loadk %i k(%i)", alloc(), u1())
+            end, function() -- 11
+                --push imm short
+                emit("loadk %i k(%i)", alloc(), u2())
+            end, function() -- 12
+                local s = cp[u1()]
+                if s.bytes then
+                    emit("loadk %i k(%s)", alloc(), s.bytes)
+                else
+                    local stringClass = classByName("java.lang.String")
+                    local str = cp[s.string_index].bytes
+                    local rmt, robj, rcharref, rchars = alloc(4)
+                    asmGetRTInfo(rmt, info(findMethod(stringClass, "<init>([C)V")))
+                    asmNewInstance(robj, stringClass)
+
+                    -- Create the char array ref. Holds array length, primitive type, and the actual array.
+                    emit("newtable %i 3 0", rcharref)
+                    emit("settable %i k(1) k(%i)", rcharref, #str)
+                    emit("settable %i k(2) '%s'", rcharref, "C")
+
+                    -- Create the array and save it in the ref.
+                    emit("newtable %i 0 0", rchars)
+                    emit("settable %i k(3) %i", rcharref, rchars)
+
+                    -- TODO: Don't use an unrolled loop for very large strings.
+                    -- Fill the char array.
+                    for i = 1, #str do
+                        emit("settable %i k(%i) k(%i) ; ldc", rchars, i, str:sub(i, i):byte())
+                    end
+
+                    -- Invoke java.lang.String constructor.
+                    -- Current stack: rmt, robj, rcharref
+                    asmInvokeMethod(rmt, 2, 0)
+
+                    -- Need to move the object back in place. Overwrite rmt.
+                    emit("move %i %i", rmt, robj)
+
+                    free(3)
+                end
+            end, function() -- 13
+                --ldc_w
+                --push constant
+                local s = cp[u2()]
+                local robj = alloc()
+                if s.bytes then
+                    emit("loadk %i k(%s)", robj, s.bytes)
+                else
+                    local stringClass = classByName("java.lang.String")
+                    local str = cp[s.string_index].bytes
+                    local rchars = alloc()
+
+                    asmNewInstance(robj, stringClass)
+                    emit("gettable %i %i k(2)", rchars, robj)
+                    emit("gettable %i %i k(%i)", rchars, rchars, stringClass.fieldIndexByName["value"])
+
+                    -- TODO: Don't use an unrolled loop for very large strings.
+                    for i = 1, #str do
+                        emit("settable %i k(%i) k(%i)", rchars, i, str:sub(i, i):byte())
+                    end
+
+                    free()
+                end
+            end, function() -- 14
+                --ldc2_w
+                --push constant
+                local s = cp[u2()]
+                local robj = alloc()
+                emit("loadk %i k(%s)", robj, s.bytes)
+            end, function() -- 15
+                --loads
+                local l = u1()
+                local r = alloc()
+                emit("move %i %i", r, l + 1)
+            end, function() -- 16
+                --loads
+                local l = u1()
+                local r = alloc()
+                emit("move %i %i", r, l + 1)
+            end, function() -- 17
+                --loads
+                local l = u1()
+                local r = alloc()
+                emit("move %i %i", r, l + 1)
+            end, function() -- 18
+                --loads
+                local l = u1()
+                local r = alloc()
+                emit("move %i %i", r, l + 1)
+            end, function() -- 19
+                --loads
+                local l = u1()
+                local r = alloc()
+                emit("move %i %i", r, l + 1)
+            end, function() -- 1A
+                --load_0
+                local r = alloc()
+                emit("move %i 1", r)
+            end, function() -- 1B
+                --load_1
+                local r = alloc()
+                emit("move %i 2", r)
+            end, function() -- 1C
+                --load_2
+                local r = alloc()
+                emit("move %i 3", r)
+            end, function() -- 1D
+                --load_3
+                local r = alloc()
+                emit("move %i 4", r)
+            end, function() -- 1E
+                --load_0
+                local r = alloc()
+                emit("move %i 1", r)
+            end, function() -- 1F
+                --load_1
+                local r = alloc()
+                emit("move %i 2", r)
+            end, function() -- 20
+                --load_2
+                local r = alloc()
+                emit("move %i 3", r)
+            end, function() -- 21
+                --load_3
+                local r = alloc()
+                emit("move %i 4", r)
+            end, function() -- 22
+                --load_0
+                local r = alloc()
+                emit("move %i 1", r)
+            end, function() -- 23
+                --load_1
+                local r = alloc()
+                emit("move %i 2", r)
+            end, function() -- 24
+                --load_2
+                local r = alloc()
+                emit("move %i 3", r)
+            end, function() -- 25
+                --load_3
+                local r = alloc()
+                emit("move %i 4", r)
+            end, function() -- 26
+                --load_0
+                local r = alloc()
+                emit("move %i 1", r)
+            end, function() -- 27
+                --load_1
+                local r = alloc()
+                emit("move %i 2", r)
+            end, function() -- 28
+                --load_2
+                local r = alloc()
+                emit("move %i 3", r)
+            end, function() -- 29
+                --load_3
+                local r = alloc()
+                emit("move %i 4", r)
+            end, function() -- 2A
+                --load_0
+                local r = alloc()
+                emit("move %i 1", r)
+            end, function() -- 2B
+                --load_1
+                local r = alloc()
+                emit("move %i 2", r)
+            end, function() -- 2C
+                --load_2
+                local r = alloc()
+                emit("move %i 3", r)
+            end, function() -- 2D
+                --load_3
+                local r = alloc()
+                emit("move %i 4", r)
+            end, function() -- 2E
+                --aaload
+                local rarr = peek(1)
+                local ri = peek(0)
+                emit("add %i %i k(1)", ri, ri)
+                emit("gettable %i %i k(3)", rarr, rarr)
+                emit("gettable %i %i %i", rarr, rarr, ri)
+                free()
+            end, function() -- 2F
+                --aaload
+                local rarr = peek(1)
+                local ri = peek(0)
+                emit("add %i %i k(1)", ri, ri)
+                emit("gettable %i %i k(3)", rarr, rarr)
+                emit("gettable %i %i %i", rarr, rarr, ri)
+                free()
+            end, function() -- 30
+                --aaload
+                local rarr = peek(1)
+                local ri = peek(0)
+                emit("add %i %i k(1)", ri, ri)
+                emit("gettable %i %i k(3)", rarr, rarr)
+                emit("gettable %i %i %i", rarr, rarr, ri)
+                free()
+            end, function() -- 31
+                --aaload
+                local rarr = peek(1)
+                local ri = peek(0)
+                emit("add %i %i k(1)", ri, ri)
+                emit("gettable %i %i k(3)", rarr, rarr)
+                emit("gettable %i %i %i", rarr, rarr, ri)
+                free()
+            end, function() -- 32
+                --aaload
+                local rarr = peek(1)
+                local ri = peek(0)
+                emit("add %i %i k(1)", ri, ri)
+                emit("gettable %i %i k(3)", rarr, rarr)
+                emit("gettable %i %i %i", rarr, rarr, ri)
+                free()
+            end, function() -- 33
+                --aaload
+                local rarr = peek(1)
+                local ri = peek(0)
+                emit("add %i %i k(1)", ri, ri)
+                emit("gettable %i %i k(3)", rarr, rarr)
+                emit("gettable %i %i %i", rarr, rarr, ri)
+                free()
+            end, function() -- 34
+                --aaload
+                -- TODO: Throw IndexOutOfBoundsException if index is >= len.
+                local rarr = peek(1)
+                local ri = peek(0)
+                emit("add %i %i k(1)", ri, ri)
+                emit("gettable %i %i k(3)", rarr, rarr)
+                emit("gettable %i %i %i", rarr, rarr, ri)
+                free()
+            end, function() -- 35
+                --aaload
+                local rarr = peek(1)
+                local ri = peek(0)
+                emit("add %i %i k(1)", ri, ri)
+                emit("gettable %i %i k(3)", rarr, rarr)
+                emit("gettable %i %i %i", rarr, rarr, ri)
+                free()
+            end, function() -- 36
+                --stores
+                --lvars[u1()] = pop()
+                local l = u1()
+                local r = free()
+                emit("move %i %i", l + 1, r)
+            end, function() -- 37
+                --stores
+                local l = u1()
+                local r = free()
+                emit("move %i %i", l + 1, r)
+            end, function() -- 38
+                --stores
+                local l = u1()
+                local r = free()
+                emit("move %i %i", l + 1, r)
+            end, function() -- 39
+                --stores
+                local l = u1()
+                local r = free()
+                emit("move %i %i", l + 1, r)
+            end, function() -- 3A
+                --stores
+                local l = u1()
+                local r = free()
+                emit("move %i %i", l + 1, r)
+            end, function() -- 3B
+                local r = free()
+                emit("move 1 %i", r)
+            end, function() -- 3C
+                local r = free()
+                emit("move 2 %i", r)
+            end, function() -- 3D
+                local r = free()
+                emit("move 3 %i", r)
+            end, function() -- 3E
+                local r = free()
+                emit("move 4 %i", r)
+            end, function() -- 3F
+                local r = free()
+                emit("move 1 %i", r)
+            end, function() -- 40
+                local r = free()
+                emit("move 2 %i", r)
+            end, function() -- 41
+                local r = free()
+                emit("move 3 %i", r)
+            end, function() -- 42
+                local r = free()
+                emit("move 4 %i", r)
+            end, function() -- 43
+                local r = free()
+                emit("move 1 %i", r)
+            end, function() -- 44
+                local r = free()
+                emit("move 2 %i", r)
+            end, function() -- 45
+                local r = free()
+                emit("move 3 %i", r)
+            end, function() -- 46
+                local r = free()
+                emit("move 4 %i", r)
+            end, function() -- 47
+                local r = free()
+                emit("move 1 %i", r)
+            end, function() -- 48
+                local r = free()
+                emit("move 2 %i", r)
+            end, function() -- 49
+                local r = free()
+                emit("move 3 %i", r)
+            end, function() -- 4A
+                local r = free()
+                emit("move 4 %i", r)
+            end, function() -- 4B
+                local r = free()
+                emit("move 1 %i", r)
+            end, function() -- 4C
+                local r = free()
+                emit("move 2 %i", r)
+            end, function() -- 4D
+                local r = free()
+                emit("move 3 %i", r)
+            end, function() -- 4E
+                local r = free()
+                emit("move 4 %i", r)
+            end, function() -- 4F
+                --aastore
+                local rarr, ri, rval = free(3)
+                emit("add %i %i k(1)", ri, ri)
+                emit("gettable %i %i k(3)", rarr, rarr)
+                emit("settable %i %i %i", rarr, ri, rval)
+            end, function() -- 50
+                --aastore
+                local rarr, ri, rval = free(3)
+                emit("add %i %i k(1)", ri, ri)
+                emit("gettable %i %i k(3)", rarr, rarr)
+                emit("settable %i %i %i", rarr, ri, rval)
+            end, function() -- 51
+                --aastore
+                local rarr, ri, rval = free(3)
+                emit("add %i %i k(1)", ri, ri)
+                emit("gettable %i %i k(3)", rarr, rarr)
+                emit("settable %i %i %i", rarr, ri, rval)
+            end, function() -- 52
+                --aastore
+                local rarr, ri, rval = free(3)
+                emit("add %i %i k(1)", ri, ri)
+                emit("gettable %i %i k(3)", rarr, rarr)
+                emit("settable %i %i %i", rarr, ri, rval)
+            end, function() -- 53
+                --aastore
+                local rarr, ri, rval = free(3)
+                --asmPrintReg(rarr - 1)
+                --asmPrintReg(ri - 1)
+                --asmPrintReg(rval - 1)
+                emit("add %i %i k(1)", ri, ri)
+                emit("gettable %i %i k(3)", rarr, rarr)
+                emit("settable %i %i %i", rarr, ri, rval)
+            end, function() -- 54
+                --aastore
+                local rarr, ri, rval = free(3)
+                emit("add %i %i k(1)", ri, ri)
+                emit("gettable %i %i k(3)", rarr, rarr)
+                emit("settable %i %i %i", rarr, ri, rval)
+            end, function() -- 55
+                --aastore
+                local rarr, ri, rval = free(3)
+                emit("add %i %i k(1)", ri, ri)
+                emit("gettable %i %i k(3)", rarr, rarr)
+                emit("settable %i %i %i", rarr, ri, rval)
+            end, function() -- 56
+                --aastore
+                local rarr, ri, rval = free(3)
+                emit("add %i %i k(1)", ri, ri)
+                emit("gettable %i %i k(3)", rarr, rarr)
+                emit("settable %i %i %i", rarr, ri, rval)
+            end, function() -- 57
+                free()
+            end, function() -- 58
+                local pv = pop()
+                if pv[1] ~= "D" and pv[1] ~= "J" then
+                    pop()
+                end
+            end, function() -- 59
+                local r = peek(0)
+                local rd = alloc(1)
+                emit("move %i %i", rd, r)
+            end, function() -- 5A
+                local v = pop()
+                push(v)
+                table.insert(stack,sp-2,{v[1], v[2]})
+                sp = sp+1
+            end, function() -- 5B
+                local v = pop()
+                push(v)
+                table.insert(stack,sp-(pv[1] == "D" or pv[1] == "J" and 2 or 3),{v[1], v[2]})
+                sp = sp+1
+            end, function() -- 5C
+                local a = pop()
+                if a[1] ~= "D" and a[1] ~= "J" then
+                    local b = pop()
+                    push(b)
+                    push(a)
+                    push({b[1], b[2]})
+                    push({a[1], a[2]})
+                else
+                    push(a)
+                    push({a[1], a[2]})
+                end
+            end, function() -- 5D
+                error("swap2_x1 is bullshit and you know it")
+            end, function() -- 5E
+                error("swap2_x2 is bullshit and you know it")
+            end, function() -- 5F
+                local a = pop()
+                local b = pop()
+                push(a)
+                push(b)
+            end, function() -- 60
+                --add
+                local r1 = peek(1)
+                local r2 = peek(0)
+                emit("add %i %i %i", r1, r1, r2)
+                free(1)
+            end, function() -- 61
+                --add
+                local r1 = peek(1)
+                local r2 = peek(0)
+                emit("add %i %i %i", r1, r1, r2)
+                free(1)
+            end, function() -- 62
+                --add
+                local r1 = peek(1)
+                local r2 = peek(0)
+                emit("add %i %i %i", r1, r1, r2)
+                free(1)
+            end, function() -- 63
+                --add
+                local r1 = peek(1)
+                local r2 = peek(0)
+                emit("add %i %i %i", r1, r1, r2)
+                free(1)
+            end, function() -- 64
+                --sub
+                local r1 = peek(1)
+                local r2 = peek(0)
+                emit("sub %i %i %i", r1, r1, r2)
+                free(1)
+            end, function() -- 65
+                --sub
+                local r1 = peek(1)
+                local r2 = peek(0)
+                emit("sub %i %i %i", r1, r1, r2)
+                free(1)
+            end, function() -- 66
+                --sub
+                local r1 = peek(1)
+                local r2 = peek(0)
+                emit("sub %i %i %i", r1, r1, r2)
+                free(1)
+            end, function() -- 67
+                --sub
+                local r1 = peek(1)
+                local r2 = peek(0)
+                emit("sub %i %i %i", r1, r1, r2)
+                free(1)
+            end, function() -- 68
+                --mul
+                local r1 = peek(1)
+                local r2 = peek(0)
+                emit("mul %i %i %i", r1, r1, r2)
+                free(1)
+            end, function() -- 69
+                --mul
+                local r1 = peek(1)
+                local r2 = peek(0)
+                emit("mul %i %i %i", r1, r1, r2)
+                free(1)
+            end, function() -- 6A
+                --mul
+                local r1 = peek(1)
+                local r2 = peek(0)
+                emit("mul %i %i %i", r1, r1, r2)
+                free(1)
+            end, function() -- 6B
+                --mul
+                local r1 = peek(1)
+                local r2 = peek(0)
+                emit("mul %i %i %i", r1, r1, r2)
+                free(1)
+            end, function() -- 6C
+                --div
+                local r1 = peek(1)
+                local r2 = peek(0)
+                emit("div %i %i %i", r1, r1, r2)
+                free(1)
+            end, function() -- 6D
+                --div
+                local r1 = peek(1)
+                local r2 = peek(0)
+                emit("div %i %i %i", r1, r1, r2)
+                free(1)
+            end, function() -- 6E
+                --div
+                local r1 = peek(1)
+                local r2 = peek(0)
+                emit("div %i %i %i", r1, r1, r2)
+                free(1)
+            end, function() -- 6F
+                --div
+                local r1 = peek(1)
+                local r2 = peek(0)
+                emit("div %i %i %i", r1, r1, r2)
+                free(1)
+            end, function() -- 70
+                --rem
+                local r1 = peek(1)
+                local r2 = peek(0)
+                emit("mod %i %i %i", r1, r1, r2)
+                free(1)
+            end, function() -- 71
+                --rem
+                local r1 = peek(1)
+                local r2 = peek(0)
+                emit("mod %i %i %i", r1, r1, r2)
+                free(1)
+            end, function() -- 72
+                --rem
+                local r1 = peek(1)
+                local r2 = peek(0)
+                emit("mod %i %i %i", r1, r1, r2)
+                free(1)
+            end, function() -- 73
+                --rem
+                local r1 = peek(1)
+                local r2 = peek(0)
+                emit("mod %i %i %i", r1, r1, r2)
+                free(1)
+            end, function() -- 74
+                --neg
+                local r1 = peek(0)
+                emit("mul %i %i k(-1)", r1, r1)
+            end, function() -- 75
+                --neg
+                local r1 = peek(0)
+                emit("mul %i %i k(-1)", r1, r1)
+            end, function() -- 76
+                --neg
+                local r1 = peek(0)
+                emit("mul %i %i k(-1)", r1, r1)
+            end, function() -- 77
+                --neg
+                local r1 = peek(0)
+                emit("mul %i %i k(-1)", r1, r1)
+            end, function() -- 78
+                --shl
+                local r1 = peek(1)
+                local r2 = peek(0)
+                local r3 = alloc()
+                emit("move %i %i", r3, r1)
+                asmGetRTInfo(r1, info(bit.blshift))
+                emit("call %i 3 2", r1)
+                emit("move %i %i", r1, r2)
+                free(2)
+            end, function() -- 79
+                --shl
+                local r1 = peek(1)
+                local r2 = peek(0)
+                local r3 = alloc()
+                emit("move %i %i", r3, r1)
+                asmGetRTInfo(r1, info(bit.blshift))
+                emit("call %i 3 2", r1)
+                emit("move %i %i", r1, r2)
+                free(2)
+            end, function() -- 7A
+                --shr
+                local r1 = peek(1)
+                local r2 = peek(0)
+                local r3 = alloc()
+                emit("move %i %i", r3, r1)
+                asmGetRTInfo(r1, info(bit.brshift))
+                emit("call %i 3 2", r1)
+                emit("move %i %i", r1, r2)
+                free(2)
+            end, function() -- 7B
+                --shr
+                local r1 = peek(1)
+                local r2 = peek(0)
+                local r3 = alloc()
+                emit("move %i %i", r3, r1)
+                asmGetRTInfo(r1, info(bit.brshift))
+                emit("call %i 3 2", r1)
+                emit("move %i %i", r1, r2)
+                free(2)
+            end, function() -- 7C
+                --shlr
+                local r1 = peek(1)
+                local r2 = peek(0)
+                local r3 = alloc()
+                emit("move %i %i", r3, r1)
+                asmGetRTInfo(r1, info(bit.blogic_rshift))
+                emit("call %i 3 2", r1)
+                emit("move %i %i", r1, r2)
+                free(2)
+            end, function() -- 7D
+                --shlr
+                local r1 = peek(1)
+                local r2 = peek(0)
+                local r3 = alloc()
+                emit("move %i %i", r3, r1)
+                asmGetRTInfo(r1, info(bit.blogic_rshift))
+                emit("call %i 3 2", r1)
+                emit("move %i %i", r1, r2)
+                free(2)
+            end, function() -- 7E
+                --and
+                local r1 = peek(1)
+                local r2 = peek(0)
+                local r3 = alloc()
+                emit("move %i %i", r3, r1)
+                asmGetRTInfo(r1, info(bit.band))
+                emit("call %i 3 2", r1)
+                emit("move %i %i", r1, r2)
+                free(2)
+            end, function() -- 7F
+                --and
+                local r1 = peek(1)
+                local r2 = peek(0)
+                local r3 = alloc()
+                emit("move %i %i", r3, r1)
+                asmGetRTInfo(r1, info(bit.band))
+                emit("call %i 3 2", r1)
+                emit("move %i %i", r1, r2)
+                free(2)
+            end, function() -- 80
+                --or
+                local r1 = peek(1)
+                local r2 = peek(0)
+                local r3 = alloc()
+                emit("move %i %i", r3, r1)
+                asmGetRTInfo(r1, info(bit.bor))
+                emit("call %i 3 2", r1)
+                emit("move %i %i", r1, r2)
+                free(2)
+            end, function() -- 81
+                --or
+                local r1 = peek(1)
+                local r2 = peek(0)
+                local r3 = alloc()
+                emit("move %i %i", r3, r1)
+                asmGetRTInfo(r1, info(bit.bor))
+                emit("call %i 3 2", r1)
+                emit("move %i %i", r1, r2)
+                free(2)
+            end, function() -- 82
+                --xor
+                local r1 = peek(1)
+                local r2 = peek(0)
+                local r3 = alloc()
+                emit("move %i %i", r3, r1)
+                asmGetRTInfo(r1, info(bit.bxor))
+                emit("call %i 3 2", r1)
+                emit("move %i %i", r1, r2)
+                free(2)
+            end, function() -- 83
+                --xor
+                local r1 = peek(1)
+                local r2 = peek(0)
+                local r3 = alloc()
+                emit("move %i %i", r3, r1)
+                asmGetRTInfo(r1, info(bit.bxor))
+                emit("call %i 3 2", r1)
+                emit("move %i %i", r1, r2)
+                free(2)
+            end, function() -- 84
+                --iinc
+                local idx = u1() + 1
+                local c = u1ToSignedByte(u1())
+                emit("add %i %i k(%i)", idx, idx, c)
+            end, function() -- 85
+                --i2l
+                --push(asLong(bigInt.toBigInt(pop()[2])))
+            end, function() -- 86
+                --i2f
+                --push(asFloat(pop()[2]))
+            end, function() -- 87
+                --i2d
+                --push(asDouble(pop()[2]))
+            end, function() -- 88
+                --l2i
+                --push(asInt(bigInt.fromBigInt(pop()[2])))
+            end, function() -- 89
+                --l2f
+                --push(asFloat(bigInt.fromBigInt(pop()[2])))
+            end, function() -- 8A
+                --l2d
+                --push(asDouble(bigInt.fromBigInt(pop()[2])))
+            end, function() -- 8B
+                --f2i
+                --push(asInt(math.floor(pop()[2])))
+            end, function() -- 8C
+                --f2l
+                --push(asLong(bigInt.toBigInt(math.floor(pop()[2]))))
+            end, function() -- 8D
+                --f2d
+                --push(asDouble(pop()[2]))
+            end, function() -- 8E
+                --d2i
+                --push(asInt(math.floor(pop()[2])))
+            end, function() -- 8F
+                --d2l
+                --push(asLong(bigInt.toBigInt(math.floor(pop()[2]))))
+            end, function() -- 90
+                --d2f
+                --push(asFloat(pop()[2]))
+            end, function() -- 91
+                --i2b
+                --push(asByte(pop()[2]))
+            end, function() -- 92
+                --i2c
+                --push(asChar(string.char(pop()[2])))
+            end, function() -- 93
+                --i2s
+                --push(asShort(pop()[2]))
+            end, function() -- 94
+                --lcmp
+                local a, b = pop()[2], pop()[2]
+                if bigInt.cmp_eq(a, b) then
+                    push(asInt(0))
+                elseif bigInt.cmp_lt(a, b) then
+                    push(asInt(1))
+                else
+                    push(asInt(-1))
+                end
+            end, function() -- 95
+                --fcmpl/g
+                local a, b = pop()[2], pop()[2]
+                if a == b then
+                    push(asInt(0))
+                elseif a < b then
+                    push(asInt(1))
+                else
+                    push(asInt(-1))
+                end
+            end, function() -- 96
+                --fcmpl/g
+                local a, b = pop()[2], pop()[2]
+                if a == b then
+                    push(asInt(0))
+                elseif a < b then
+                    push(asInt(1))
+                else
+                    push(asInt(-1))
+                end
+            end, function() -- 97
+                --fcmpl/g
+                local a, b = pop()[2], pop()[2]
+                if a == b then
+                    push(asInt(0))
+                elseif a < b then
+                    push(asInt(1))
+                else
+                    push(asInt(-1))
+                end
+            end, function() -- 98
+                --fcmpl/g
+                local a, b = pop()[2], pop()[2]
+                if a == b then
+                    push(asInt(0))
+                elseif a < b then
+                    push(asInt(1))
+                else
+                    push(asInt(-1))
+                end
+            end, function() -- 99
+                --ifeq
+                local joffset = u2ToSignedShort(u2())
+                emit("eq 1 %i k(0)", free())
+                emit("#jmp %i %i", joffset, 1)
+            end, function() -- 9A
+                --ifne
+                local joffset = u2ToSignedShort(u2())
+                emit("eq 0 %i k(0)", free())
+                emit("#jmp %i %i", joffset, 1)
+            end, function() -- 9B
+                --iflt
+                local joffset = u2ToSignedShort(u2())
+                emit("lt 1 %i k(0)", free())
+                emit("#jmp %i %i", joffset, 1)
+            end, function() -- 9C
+                --ifge
+                local joffset = u2ToSignedShort(u2())
+                emit("lt 0 %i k(0)", free())
+                emit("#jmp %i %i", joffset, 1)
+            end, function() -- 9D
+                --ifgt
+                local joffset = u2ToSignedShort(u2())
+                emit("le 0 %i k(0)", free())
+                emit("#jmp %i %i", joffset, 1)
+            end, function() -- 9E
+                --ifle
+                local joffset = u2ToSignedShort(u2())
+                emit("le 1 %i k(0)", free())
+                emit("#jmp %i %i", joffset, 1)
+            end, function() -- 9F
+                --if_icmpeq
+                local joffset = u2ToSignedShort(u2())
+                emit("eq 1 %i %i", free(2))
+                emit("#jmp %i %i", joffset, 1)
+            end, function() -- A0
+                --if_icmpne
+                local joffset = u2ToSignedShort(u2())
+                emit("eq 0 %i %i", free(2))
+                emit("#jmp %i %i", joffset, 1)
+            end, function() -- A1
+                --if_icmplt
+                local joffset = u2ToSignedShort(u2())
+                emit("lt 1 %i %i", free(2))
+                emit("#jmp %i %i", joffset, 1)
+            end, function() -- A2
+                --if_icmpge
+                local joffset = u2ToSignedShort(u2())
+                emit("lt 0 %i %i", free(2))
+                emit("#jmp %i %i", joffset, 1)
+            end, function() -- A3
+                --if_icmpgt
+                local joffset = u2ToSignedShort(u2())
+                emit("le 0 %i %i", free(2))
+                emit("#jmp %i %i", joffset, 1)
+            end, function() -- A4
+                --if_icmple
+                local joffset = u2ToSignedShort(u2())
+                emit("le 1 %i %i", free(2))
+                emit("#jmp %i %i", joffset, 1)
+            end, function() -- A5
+                --ifle
+                local joffset = u2ToSignedShort(u2())
+                emit("le 1 %i k(0)", free())
+                emit("#jmp %i %i", joffset, 1)
+            end, function() -- A6
+                --if_icmpeq
+                local joffset = u2ToSignedShort(u2())
+                emit("eq 1 %i %i", free(2))
+                emit("#jmp %i %i", joffset, 1)
+            end, function() -- A7
+                --goto
+                local joffset = u2ToSignedShort(u2())
+                emit("#jmp %i %i", joffset, 0)
+            end, function() -- A8
+                --jsr
+                error()
+                local addr = pc() + 3
+                local offset = u2ToSignedShort(u2())
+                push({"address", addr})
+                pc(pc() + offset - 2)
+            end, function() -- A9
+                --ret
+                error()
+                local index = u1()
+                local addr = lvars[index]
+                if addr[1] ~= "address" then
+                    error("Not an address", 0)
+                end
+                pc(addr[2])
+            end, function() -- AA
+            end, function() -- AB
+            end, function() -- AC
+                emit("return %i 2", free())
+            end, function() -- AD
+                emit("return %i 2", free())
+            end, function() -- AE
+                emit("return %i 2", free())
+            end, function() -- AF
+                emit("return %i 2", free())
+            end, function() -- B0
+                emit("return %i 2", free())
+            end, function() -- B1
+                emit("return 0 1")
+            end, function() -- B2
+                --getstatic
+                local fr = cp[u2()]
+                local cl = resolveClass(cp[fr.class_index])
+                local name = cp[cp[fr.name_and_type_index].name_index].bytes
+                local fi = cl.fieldIndexByName[name]
+                local r = alloc()
+                asmGetRTInfo(r, info(cl.fields))
+                emit("gettable %i %i k(%i)", r, r, fi)
+            end, function() -- B3
+                --putstatic
+                local fr = cp[u2()]
+                local cl = resolveClass(cp[fr.class_index])
+                local name = cp[cp[fr.name_and_type_index].name_index].bytes
+                local fi = class.fieldIndexByName[name]
+                local value = peek(0)
+                local r = alloc()
+                asmGetRTInfo(r, info(cl.fields))
+                emit("settable %i k(%i) %i", r, fi, value)
+                free(2)
+            end, function() -- B4
+                --getfield
+                local fr = cp[u2()]
+                local name = cp[cp[fr.name_and_type_index].name_index].bytes
+                local fi = class.fieldIndexByName[name]
+                local r = peek(0)
+                local rfields = alloc()
+                emit("gettable %i %i k(2)", rfields, r)
+                emit("gettable %i %i k(%i)", r, r, fi)
+            end, function() -- B5
+                --putfield
+                local fr = cp[u2()]
+                local name = cp[cp[fr.name_and_type_index].name_index].bytes
+                local fi = class.fieldIndexByName[name]
+                local robj = peek(1)
+                local rval = peek(0)
+                local rfields = alloc()
+                emit("gettable %i %i k(2)", rfields, robj)
+                emit("settable %i k(%i) %i", rfields, fi, rval)
+                free(3)
+            end, function() -- B6
+                --invokevirtual
+                local mr = cp[u2()]
+                local cl = resolveClass(cp[mr.class_index])
+                local name = cp[cp[mr.name_and_type_index].name_index].bytes .. cp[cp[mr.name_and_type_index].descriptor_index].bytes
+                local mt = findMethod(cl, name)
+                local argslen = #mt.desc
+
+                -- Need 1 extra register for last argument.
+                alloc()
+
+                -- Move the arguments up.
+                for i = 1, argslen do
+                    emit("move %i %i", peek(i - 1), peek(i))
+                end
+
+                -- Inject the method under the parameters.
+                local rmt = peek(argslen)
+                asmGetRTInfo(rmt, info(mt))
+
+                -- Invoke the method. Result is right after the method.
+                emit("gettable %i %i k(1)", rmt, rmt)
+                emit("call %i %i 2", rmt, argslen + 1)
+
+                -- Overwrite the method with the return value.
+                emit("move %i %i", rmt, rmt + 1)
+
+                free(argslen)
+            end, function() -- B7
+                --invokespecial
+                local mr = cp[u2()]
+                local cl = resolveClass(cp[mr.class_index])
+                local name = cp[cp[mr.name_and_type_index].name_index].bytes .. cp[cp[mr.name_and_type_index].descriptor_index].bytes
+                local mt = findMethod(cl, name)
+                local argslen = #mt.desc
+
+                -- Need 1 extra register for last argument. 
+                alloc()
+
+                -- Move the arguments up.
+                for i = 1, argslen do
+                    emit("move %i %i", peek(i - 1), peek(i))
+                end
+
+                -- Inject the method under the parameters.
+                local rmt = peek(argslen)
+                asmGetRTInfo(rmt, info(mt))
+
+                -- Invoke the method. Result is right after the method.
+                emit("gettable %i %i k(1)", rmt, rmt)
+                emit("call %i %i 2", rmt, argslen + 1)
+
+                -- Overwrite the method with the return value.
+                emit("move %i %i", rmt, rmt + 1)
+
+                free(argslen)
+            end, function() -- B8
+                --invokestatic
+                local mr = cp[u2()]
+                local cl = resolveClass(cp[mr.class_index])
+                local name = cp[cp[mr.name_and_type_index].name_index].bytes .. cp[cp[mr.name_and_type_index].descriptor_index].bytes
+                local mt = findMethod(cl, name)
+                local argslen = #mt.desc - 1
+
+                -- Need 1 extra register for last argument. 
+                alloc()
+
+                -- Move the arguments up.
+                for i = 1, argslen do
+                    emit("move %i %i", peek(i - 1), peek(i))
+                end
+
+                -- Inject the method under the parameters.
+                local rmt = peek(argslen)
+                asmGetRTInfo(rmt, info(mt))
+
+                -- Invoke the method. Result is right after the method.
+                emit("gettable %i %i k(1)", rmt, rmt)
+                emit("call %i %i 2", rmt, argslen + 1)
+
+                -- Overwrite the method with the return value.
+                emit("move %i %i", rmt, rmt + 1)
+
+                free(argslen)
+            end, function() -- B9
+            end, function() -- BA
+            end, function() -- BB
+                --new
+                local cr = cp[u2()]
+                local c = resolveClass(cr)
+                local robj = alloc()
+                asmNewInstance(robj, c)
+            end, function() -- BC
+                --newarray
+                local type = u1()
+                local r = peek(0)
+                local rlen = alloc()
+
+                -- Length is occupying the space we need to put the new array, so copy it to a new register.
+                emit("move %i %i", rlen, r)
+
+                -- Create the array ref. Holds array length, primitive type, and the actual array.
+                emit("newtable %i 0 0", r)
+                emit("settable %i k(1) %i", r, rlen)
+                emit("settable %i k(2) k(%i)", r, type)
+
+                -- Overwrite len with array to save a register and set the array.
+                emit("newtable %i 0 0", rlen)
+                emit("settable %i k(3) %i", r, rlen)
+
+                free()
+            end, function() -- BD
+                --anewarray
+                local c = resolveClass(cp[u2()])
+                local r = peek(0)
+                local rn = alloc()
+
+                -- Length is occupying the space we need to put the new array, so copy it to a new register.
+                emit("move %i %i", rn, r)
+
+                -- Create the array ref. Holds array length, primitive type, and the actual array.
+                emit("newtable %i 0 0", r)
+                emit("settable %i k(1) %i", r, rn)
+                asmGetRTInfo(rn, info(c))
+                emit("settable %i k(2) %i", r, rn)
+
+                -- Create the array.
+                emit("newtable %i 0 0", rn)
+                emit("settable %i k(3) %i", r, rn)
+
+                free()
+            end, function() -- BE
+                --arraylength
+                local r = peek(0)
+                emit("gettable %i %i k(1)", r, r)
+            end, function() -- BF
+            end, function() -- C0
+            end, function() -- C1
+            end, function() -- C2
+            end, function() -- C3
+            end, function() -- C4
+            end, function() -- C5
+            end, function() -- C6
+            end, function() -- C7
+            end, function() -- C8
+            end, function() -- C9
+            end, function() -- CA
+            end, function() -- CB
+            end, function() -- CC
+            end, function() -- CD
+            end, function() -- CE
+            end, function() -- CF
+            end, function() -- D0
+            end, function() -- D1
+            end, function() -- D2
+            end, function() -- D3
+            end, function() -- D4
+            end, function() -- D5
+            end, function() -- D6
+            end, function() -- D7
+            end, function() -- D8
+            end, function() -- D9
+            end, function() -- DA
+            end, function() -- DB
+            end, function() -- DC
+            end, function() -- DD
+            end, function() -- DE
+            end, function() -- DF
+            end, function() -- E0
+            end, function() -- E1
+            end, function() -- E2
+            end, function() -- E3
+            end, function() -- E4
+            end, function() -- E5
+            end, function() -- E6
+            end, function() -- E7
+            end, function() -- E8
+            end, function() -- E9
+            end, function() -- EA
+            end, function() -- EB
+            end, function() -- EC
+            end, function() -- ED
+            end, function() -- EE
+            end, function() -- EF
+            end, function() -- F0
+            end, function() -- F1
+            end, function() -- F2
+            end, function() -- F3
+            end, function() -- F4
+            end, function() -- F5
+            end, function() -- F6
+            end, function() -- F7
+            end, function() -- F8
+            end, function() -- F9
+            end, function() -- FA
+            end, function() -- FB
+            end, function() -- FC
+            end, function() -- FD
+            end, function() -- FE
+            end, function() -- FF
+            end
+        }
+        
+        print("Loading: " .. name)
+        print("Length: " .. #code)
+        print("max_locals: " .. codeAttr.max_locals)
+
+        inst = u1()
+        while inst do
+            print(string.format("%X", inst))
+            pcMapLJ[asmPC] = pc()
+            pcMapJL[pc()] = asmPC
+            oplookup[inst]()
+            inst = u1()
+        end
+
+        for i = 1, #asm do
+            local inst = asm[i]
+            if inst:sub(1, 4) == "#jmp" then
+                -- Java offset
+                local i1 = inst:find("%s") + 1
+                local i2 = inst:find("%s", i1) + 1
+                local joffset = tonumber(inst:sub(i1, i2 - 2))
+                local jmpLOffset = tonumber(inst:sub(i2, -2))
+                -- Java instruction to jump to
+                local jpc = pcMapLJ[i - jmpLOffset] + joffset
+                -- Lua instruction to jump to
+                local lpc = pcMapJL[jpc] -- + jmpLOffset
+                -- Lua offset
+                local loffset = lpc - i - 1
+                --if loffset < 0 then loffset = loffset - 1 end
+                --if loffset > 0 then loffset = loffset - 1 end
+                asm[i] = "jmp " .. loffset .. "\n"
+            end
+        end
+
+        debugH.write(name .. "\n")
+        debugH.write("Length: " .. (asmPC - 1) .. "\n")
+        debugH.write("Locals: " .. codeAttr.max_locals .. "\n")
+        for i = 1, #asm do
+            if pcMapLJ[i] then
+                debugH.write(string.format("%X:\n", code[pcMapLJ[i]]))
+            end
+            debugH.write(string.format("[%i] %s", i, asm[i]))
+        end
+        debugH.write("\n")
+        debugH.flush()
+        --print(table.concat(asm))
+
+        print("Loading and verifying bytecode for " .. name)
+        local p = LAT.Lua51.Parser:new()
+        local file = p:Parse(".options 0 " .. (codeAttr.max_locals + 1) .. table.concat(asm), "bytecode")
+        --file:StripDebugInfo()
+        local bc = file:Compile()
+        local f = loadstring(bc)
+        --print(table.concat(asm))
+
         return function(...)
             pushStackTrace(name)
-
-            local stack = {}
-            local lvars = {}
-            for i,v in ipairs({...}) do
-                lvars[i - 1] = v
-            end
-            local sp = 1
-            local function push(i)
-                --print(i)
-                stack[sp] = i
-                sp = sp+1
-            end
-            local function pop()
-                sp = sp-1
-                return stack[sp]
-            end
-            local _pc = 0
-            local function u1()
-                _pc = _pc+1
-                return code[_pc-1]
-            end
-            local function pc(i)
-                _pc = i or _pc
-                return _pc - 1
-            end
-            local function u2()
-                return bit.blshift(u1(),8) + u1()
-            end
-
-            local inst
-            local mustRet = false
-
-            local oplookup = {
-                function()      -- 01
-                    --null
-                    push(nil)
-                end, function() -- 02
-                    push(asInt(-1))
-                end, function() -- 03
-                    push(asInt(0))
-                end, function() -- 04
-                    push(asInt(1))
-                end, function() -- 05
-                    push(asInt(2))
-                end, function() -- 06
-                    push(asInt(3))
-                end, function() -- 07
-                    push(asInt(4))
-                end, function() -- 08
-                    push(asInt(5))
-                end, function() -- 09
-                    push(asLong(bigInt.toBigInt(0)))
-                end, function() -- 0A
-                    push(asLong(bigInt.toBigInt(1)))
-                end, function() -- 0B
-                    push(asFloat(0))
-                end, function() -- 0C
-                    push(asFloat(1))
-                end, function() -- 0D
-                    push(asFloat(2))
-                end, function() -- 0E
-                    push(asDouble(0))
-                end, function() -- 0F
-                    push(asDouble(1))
-                end, function() -- 10
-                    --push imm byte
-                    push(asInt(u1()))
-                end, function() -- 11
-                    --push imm short
-                    push(asInt(u2()))
-                end, function() -- 12
-                    --ldc
-                    --push constant
-                    local s = cp[u1()]
-                    if s.bytes then
-                        push({s.cl, s.bytes})
-                    else
-                        local str = cp[s.string_index].bytes
-                        local obj = newInstance(classByName("java.lang.String"))
-                        local charArray = { }
-                        charArray.length = #str
-                        for i = 0, #str - 1 do
-                            charArray[i] = asChar(str:sub(i + 1, i + 1):byte())
-                        end
-                        local ref = asObjRef(obj, "Ljava/lang/String;")
-                        findMethod(obj, "<init>([C)V")[1](ref, asObjRef(charArray, "[C"))
-                        push(ref)
-                    end
-                end, function() -- 13
-                    --ldc_w
-                    --push constant
-                    local s = cp[u2()]
-                    if s.bytes then
-                        push({s.cl:lower(), s.bytes})
-                    else
-                        local str = cp[s.string_index].bytes
-                        local obj = newInstance(classByName("java.lang.String"))
-                        local charArray = { }
-                        charArray.length = #str
-                        for i = 0, #str - 1 do
-                            charArray[i] = asChar(str:sub(i + 1, i + 1):byte())
-                        end
-                        local ref = asObjRef(obj, "Ljava/lang/String;")
-                        findMethod(obj, "<init>([C)V")[1](ref, asObjRef(charArray, "[C"))
-                        push(ref)
-                    end
-                end, function() -- 14
-                    --ldc2_w
-                    --push constant
-                    local s = cp[u2()]
-                    push({s.cl:lower(), s.bytes})
-                end, function() -- 15
-                    --loads
-                    push(lvars[u1()])
-                end, function() -- 16
-                    --loads
-                    push(lvars[u1()])
-                end, function() -- 17
-                    --loads
-                    push(lvars[u1()])
-                end, function() -- 18
-                    --loads
-                    push(lvars[u1()])
-                end, function() -- 19
-                    --loads
-                    push(lvars[u1()])
-                end, function() -- 1A
-                    --load_0
-                    push(lvars[0])
-                end, function() -- 1B
-                    --load_1
-                    push(lvars[1])
-                end, function() -- 1C
-                    --load_2
-                    push(lvars[2])
-                end, function() -- 1D
-                    --load_3
-                    push(lvars[3])
-                end, function() -- 1E
-                    --load_0
-                    push(lvars[0])
-                end, function() -- 1F
-                    --load_1
-                    push(lvars[1])
-                end, function() -- 20
-                    --load_2
-                    push(lvars[2])
-                end, function() -- 21
-                    --load_3
-                    push(lvars[3])
-                end, function() -- 22
-                    --load_0
-                    push(lvars[0])
-                end, function() -- 23
-                    --load_1
-                    push(lvars[1])
-                end, function() -- 24
-                    --load_2
-                    push(lvars[2])
-                end, function() -- 25
-                    --load_3
-                    push(lvars[3])
-                end, function() -- 26
-                    --load_0
-                    push(lvars[0])
-                end, function() -- 27
-                    --load_1
-                    push(lvars[1])
-                end, function() -- 28
-                    --load_2
-                    push(lvars[2])
-                end, function() -- 29
-                    --load_3
-                    push(lvars[3])
-                end, function() -- 2A
-                    --load_0
-                    push(lvars[0])
-                end, function() -- 2B
-                    --load_1
-                    push(lvars[1])
-                end, function() -- 2C
-                    --load_2
-                    push(lvars[2])
-                end, function() -- 2D
-                    --load_3
-                    push(lvars[3])
-                end, function() -- 2E
-                    --aaload
-                    local i, arr = pop(), pop()
-                    if i[2] >= arr[2].length then
-                        error("Index out of bounds", 0)
-                    end
-                    local value = arr[2][i[2]]
-                    push(value)
-                end, function() -- 2F
-                    --aaload
-                    local i, arr = pop(), pop()
-                    if i[2] >= arr[2].length then
-                        error("Index out of bounds", 0)
-                    end
-                    local value = arr[2][i[2]]
-                    push(value)
-                end, function() -- 30
-                    --aaload
-                    local i, arr = pop(), pop()
-                    if i[2] >= arr[2].length then
-                        error("Index out of bounds", 0)
-                    end
-                    local value = arr[2][i[2]]
-                    push(value)
-                end, function() -- 31
-                    --aaload
-                    local i, arr = pop(), pop()
-                    if i[2] >= arr[2].length then
-                        error("Index out of bounds", 0)
-                    end
-                    local value = arr[2][i[2]]
-                    push(value)
-                end, function() -- 32
-                    --aaload
-                    local i, arr = pop(), pop()
-                    if i[2] >= arr[2].length then
-                        error("Index out of bounds", 0)
-                    end
-                    local value = arr[2][i[2]]
-                    push(value)
-                end, function() -- 33
-                    --aaload
-                    local i, arr = pop(), pop()
-                    if i[2] >= arr[2].length then
-                        error("Index out of bounds", 0)
-                    end
-                    local value = arr[2][i[2]]
-                    push(value)
-                end, function() -- 34
-                    --aaload
-                    local i, arr = pop(), pop()
-                    if i[2] >= arr[2].length then
-                        error("Index out of bounds", 0)
-                    end
-                    local value = arr[2][i[2]]
-                    push(value)
-                end, function() -- 35
-                    --aaload
-                    local i, arr = pop(), pop()
-                    if i[2] >= arr[2].length then
-                        error("Index out of bounds", 0)
-                    end
-                    local value = arr[2][i[2]]
-                    push(value)
-                end, function() -- 36
-                    --stores
-                    lvars[u1()] = pop()
-                end, function() -- 37
-                    --stores
-                    lvars[u1()] = pop()
-                end, function() -- 38
-                    --stores
-                    lvars[u1()] = pop()
-                end, function() -- 39
-                    --stores
-                    lvars[u1()] = pop()
-                end, function() -- 3A
-                    --stores
-                    lvars[u1()] = pop()
-                end, function() -- 3B
-                    lvars[0] = pop()
-                end, function() -- 3C
-                    lvars[1] = pop()
-                end, function() -- 3D
-                    lvars[2] = pop()
-                end, function() -- 3E
-                    lvars[3] = pop()
-                end, function() -- 3F
-                    lvars[0] = pop()
-                end, function() -- 40
-                    lvars[1] = pop()
-                end, function() -- 41
-                    lvars[2] = pop()
-                end, function() -- 42
-                    lvars[3] = pop()
-                end, function() -- 43
-                    lvars[0] = pop()
-                end, function() -- 44
-                    lvars[1] = pop()
-                end, function() -- 45
-                    lvars[2] = pop()
-                end, function() -- 46
-                    lvars[3] = pop()
-                end, function() -- 47
-                    lvars[0] = pop()
-                end, function() -- 48
-                    lvars[1] = pop()
-                end, function() -- 49
-                    lvars[2] = pop()
-                end, function() -- 4A
-                    lvars[3] = pop()
-                end, function() -- 4B
-                    lvars[0] = pop()
-                end, function() -- 4C
-                    lvars[1] = pop()
-                end, function() -- 4D
-                    lvars[2] = pop()
-                end, function() -- 4E
-                    lvars[3] = pop()
-                end, function() -- 4F
-                    --aastore
-                    local v,i,t = pop(),pop(),pop()
-                    if not isIndirectEqual(v[1], t[1]:sub(2)) then
-                        error("Type mismatch in array assignment: " .. v[1] .. " -> " .. t[1], 0)
-                    end
-                    if i[2] >= t[2].length then
-                        error("Index out of bounds", 0)
-                    end
-                    t[2][i[2]] = v
-                end, function() -- 50
-                    --aastore
-                    local v,i,t = pop(),pop(),pop()
-                    if not isIndirectEqual(v[1], t[1]:sub(2)) then
-                        error("Type mismatch in array assignment: " .. v[1] .. " -> " .. t[1], 0)
-                    end
-                    if i[2] >= t[2].length then
-                        error("Index out of bounds", 0)
-                    end
-                    t[2][i[2]] = v
-                end, function() -- 51
-                    --aastore
-                    local v,i,t = pop(),pop(),pop()
-                    if not isIndirectEqual(v[1], t[1]:sub(2)) then
-                        error("Type mismatch in array assignment: " .. v[1] .. " -> " .. t[1], 0)
-                    end
-                    if i[2] >= t[2].length then
-                        error("Index out of bounds", 0)
-                    end
-                    t[2][i[2]] = v
-                end, function() -- 52
-                    --aastore
-                    local v,i,t = pop(),pop(),pop()
-                    if not isIndirectEqual(v[1], t[1]:sub(2)) then
-                        error("Type mismatch in array assignment: " .. v[1] .. " -> " .. t[1], 0)
-                    end
-                    if i[2] >= t[2].length then
-                        error("Index out of bounds", 0)
-                    end
-                    t[2][i[2]] = v
-                end, function() -- 53
-                    --aastore
-                    local v,i,t = pop(),pop(),pop()
-                    if not isIndirectEqual(v[1], t[1]:sub(2)) then
-                        error("Type mismatch in array assignment: " .. v[1] .. " -> " .. t[1], 0)
-                    end
-                    if i[2] >= t[2].length then
-                        error("Index out of bounds", 0)
-                    end
-                    t[2][i[2]] = v
-                end, function() -- 54
-                    --aastore
-                    local v,i,t = pop(),pop(),pop()
-                    if not isIndirectEqual(v[1], t[1]:sub(2)) then
-                        error("Type mismatch in array assignment: " .. v[1] .. " -> " .. t[1], 0)
-                    end
-                    if i[2] >= t[2].length then
-                        error("Index out of bounds", 0)
-                    end
-                    t[2][i[2]] = v
-                end, function() -- 55
-                    --aastore
-                    local v,i,t = pop(),pop(),pop()
-                    if not isIndirectEqual(v[1], t[1]:sub(2)) then
-                        error("Type mismatch in array assignment: " .. v[1] .. " -> " .. t[1], 0)
-                    end
-                    if i[2] >= t[2].length then
-                        error("Index out of bounds", 0)
-                    end
-                    t[2][i[2]] = v
-                end, function() -- 56
-                    --aastore
-                    local v,i,t = pop(),pop(),pop()
-                    if not isIndirectEqual(v[1], t[1]:sub(2)) then
-                        error("Type mismatch in array assignment: " .. v[1] .. " -> " .. t[1], 0)
-                    end
-                    if i[2] >= t[2].length then
-                        error("Index out of bounds", 0)
-                    end
-                    t[2][i[2]] = v
-                end, function() -- 57
-                    pop()
-                end, function() -- 58
-                    local pv = pop()
-                    if pv[1] ~= "D" and pv[1] ~= "J" then
-                        pop()
-                    end
-                end, function() -- 59
-                    local v = pop()
-                    push(v)
-                    push({v[1], v[2]})
-                end, function() -- 5A
-                    local v = pop()
-                    push(v)
-                    table.insert(stack,sp-2,{v[1], v[2]})
-                    sp = sp+1
-                end, function() -- 5B
-                    local v = pop()
-                    push(v)
-                    table.insert(stack,sp-(pv[1] == "D" or pv[1] == "J" and 2 or 3),{v[1], v[2]})
-                    sp = sp+1
-                end, function() -- 5C
-                    local a = pop()
-                    if a[1] ~= "D" and a[1] ~= "J" then
-                        local b = pop()
-                        push(b)
-                        push(a)
-                        push({b[1], b[2]})
-                        push({a[1], a[2]})
-                    else
-                        push(a)
-                        push({a[1], a[2]})
-                    end
-                end, function() -- 5D
-                    error("swap2_x1 is bullshit and you know it")
-                end, function() -- 5E
-                    error("swap2_x2 is bullshit and you know it")
-                end, function() -- 5F
-                    local a = pop()
-                    local b = pop()
-                    push(a)
-                    push(b)
-                end, function() -- 60
-                    --add
-                    local b, a = pop(), pop()
-                    push({a[1], a[2]+b[2]})
-                end, function() -- 61
-                    --add
-                    local b, a = pop(), pop()
-                    push({a[1], a[2]+b[2]})
-                end, function() -- 62
-                    --add
-                    local b, a = pop(), pop()
-                    push({a[1], a[2]+b[2]})
-                end, function() -- 63
-                    --add
-                    local b, a = pop(), pop()
-                    push({a[1], a[2]+b[2]})
-                end, function() -- 64
-                    --sub
-                    local b, a = pop(), pop()
-                    push({a[1], a[2]-b[2]})
-                end, function() -- 65
-                    --sub
-                    local b, a = pop(), pop()
-                    push({a[1], a[2]-b[2]})
-                end, function() -- 66
-                    --sub
-                    local b, a = pop(), pop()
-                    push({a[1], a[2]-b[2]})
-                end, function() -- 67
-                    --sub
-                    local b, a = pop(), pop()
-                    push({a[1], a[2]-b[2]})
-                end, function() -- 68
-                    --mul
-                    local b, a = pop(), pop()
-                    push({a[1], a[2]*b[2]})
-                end, function() -- 69
-                    --mul
-                    local b, a = pop(), pop()
-                    push({a[1], a[2]*b[2]})
-                end, function() -- 6A
-                    --mul
-                    local b, a = pop(), pop()
-                    push({a[1], a[2]*b[2]})
-                end, function() -- 6B
-                    --mul
-                    local b, a = pop(), pop()
-                    push({a[1], a[2]*b[2]})
-                end, function() -- 6C
-                    --div
-                    local b, a = pop(), pop()
-                    push({a[1], a[2]/b[2]})
-                end, function() -- 6D
-                    --div
-                    local b, a = pop(), pop()
-                    push({a[1], a[2]/b[2]})
-                end, function() -- 6E
-                    --div
-                    local b, a = pop(), pop()
-                    push({a[1], a[2]/b[2]})
-                end, function() -- 6F
-                    --div
-                    local b, a = pop(), pop()
-                    push({a[1], a[2]/b[2]})
-                end, function() -- 70
-                    --rem
-                    local b, a = pop(), pop()
-                    push({a[1], a[2]%b[2]})
-                end, function() -- 71
-                    --rem
-                    local b, a = pop(), pop()
-                    push({a[1], a[2]%b[2]})
-                end, function() -- 72
-                    --rem
-                    local b, a = pop(), pop()
-                    push({a[1], a[2]%b[2]})
-                end, function() -- 73
-                    --rem
-                    local b, a = pop(), pop()
-                    push({a[1], a[2]%b[2]})
-                end, function() -- 74
-                    --neg
-                    local a = pop(), pop()
-                    push({a[1], -a[2]})
-                end, function() -- 75
-                    --neg
-                    local a = pop(), pop()
-                    push({a[1], -a[2]})
-                end, function() -- 76
-                    --neg
-                    local a = pop(), pop()
-                    push({a[1], -a[2]})
-                end, function() -- 77
-                    --neg
-                    local a = pop(), pop()
-                    push({a[1], -a[2]})
-                end, function() -- 78
-                    --shl
-                    local b, a = pop(), pop()
-                    push({b[1], bit.blshift(b[2],a[2])})
-                end, function() -- 79
-                    --shl
-                    local b, a = pop(), pop()
-                    push({b[1], bit.blshift(b[2],a[2])})
-                end, function() -- 7A
-                    --shr
-                    local b, a = pop(), pop()
-                    push({b[1], bit.brshift(b[2],a[2])})
-                end, function() -- 7B
-                    --shr
-                    local b, a = pop(), pop()
-                    push({b[1], bit.brshift(b[2],a[2])})
-                end, function() -- 7C
-                    --shlr
-                    local b, a = pop(), pop()
-                    push({b[1], bit.blogic_rshift(b[2],a[2])})
-                end, function() -- 7D
-                    --shlr
-                    local b, a = pop(), pop()
-                    push({b[1], bit.blogic_rshift(b[2],a[2])})
-                end, function() -- 7E
-                    --and
-                    local b, a = pop(), pop()
-                    push({a[1], bit.band(a[2],b[2])})
-                end, function() -- 7F
-                    --and
-                    local b, a = pop(), pop()
-                    push({a[1], bit.band(a[2],b[2])})
-                end, function() -- 80
-                    --or
-                    local b, a = pop(), pop()
-                    push({a[1], bit.bor(a[2],b[2])})
-                end, function() -- 81
-                    --or
-                    local b, a = pop(), pop()
-                    push({a[1], bit.bor(a[2],b[2])})
-                end, function() -- 82
-                    --xor
-                    local b, a = pop(), pop()
-                    push({a[1], bit.bxor(a[2],b[2])})
-                end, function() -- 83
-                    --xor
-                    local b, a = pop(), pop()
-                    push({a[1], bit.bxor(a[2],b[2])})
-                end, function() -- 84
-                    --iinc
-                    local idx = u1()
-                    local c = u1ToSignedByte(u1())
-                    lvars[idx][2] = lvars[idx][2]+c
-                end, function() -- 85
-                    --i2l
-                    push(asLong(bigInt.toBigInt(pop()[2])))
-                end, function() -- 86
-                    --i2f
-                    push(asFloat(pop()[2]))
-                end, function() -- 87
-                    --i2d
-                    push(asDouble(pop()[2]))
-                end, function() -- 88
-                    --l2i
-                    push(asInt(bigInt.fromBigInt(pop()[2])))
-                end, function() -- 89
-                    --l2f
-                    push(asFloat(bigInt.fromBigInt(pop()[2])))
-                end, function() -- 8A
-                    --l2d
-                    push(asDouble(bigInt.fromBigInt(pop()[2])))
-                end, function() -- 8B
-                    --f2i
-                    push(asInt(math.floor(pop()[2])))
-                end, function() -- 8C
-                    --f2l
-                    push(asLong(bigInt.toBigInt(math.floor(pop()[2]))))
-                end, function() -- 8D
-                    --f2d
-                    push(asDouble(pop()[2]))
-                end, function() -- 8E
-                    --d2i
-                    push(asInt(math.floor(pop()[2])))
-                end, function() -- 8F
-                    --d2l
-                    push(asLong(bigInt.toBigInt(math.floor(pop()[2]))))
-                end, function() -- 90
-                    --d2f
-                    push(asFloat(pop()[2]))
-                end, function() -- 91
-                    --i2b
-                    push(asByte(pop()[2]))
-                end, function() -- 92
-                    --i2c
-                    push(asChar(string.char(pop()[2])))
-                end, function() -- 93
-                    --i2s
-                    push(asShort(pop()[2]))
-                end, function() -- 94
-                    --lcmp
-                    local a, b = pop()[2], pop()[2]
-                    if bigInt.cmp_eq(a, b) then
-                        push(asInt(0))
-                    elseif bigInt.cmp_lt(a, b) then
-                        push(asInt(1))
-                    else
-                        push(asInt(-1))
-                    end
-                end, function() -- 95
-                    --fcmpl/g
-                    local a, b = pop()[2], pop()[2]
-                    if a == b then
-                        push(asInt(0))
-                    elseif a < b then
-                        push(asInt(1))
-                    else
-                        push(asInt(-1))
-                    end
-                end, function() -- 96
-                    --fcmpl/g
-                    local a, b = pop()[2], pop()[2]
-                    if a == b then
-                        push(asInt(0))
-                    elseif a < b then
-                        push(asInt(1))
-                    else
-                        push(asInt(-1))
-                    end
-                end, function() -- 97
-                    --fcmpl/g
-                    local a, b = pop()[2], pop()[2]
-                    if a == b then
-                        push(asInt(0))
-                    elseif a < b then
-                        push(asInt(1))
-                    else
-                        push(asInt(-1))
-                    end
-                end, function() -- 98
-                    --fcmpl/g
-                    local a, b = pop()[2], pop()[2]
-                    if a == b then
-                        push(asInt(0))
-                    elseif a < b then
-                        push(asInt(1))
-                    else
-                        push(asInt(-1))
-                    end
-                end, function() -- 99
-                    --ifeq
-                    local offset = u2ToSignedShort(u2())
-                    if pop()[2] == 0 then
-                        pc(pc() + offset - 2) -- minus 2 becuase u2()
-                    end
-                end, function() -- 9A
-                    --ifne
-                    local offset = u2ToSignedShort(u2())
-                    if pop()[2] ~= 0 then
-                        pc(pc() + offset - 2)
-                    end
-                end, function() -- 9B
-                    --iflt
-                    local offset = u2ToSignedShort(u2())
-                    if pop()[2] < 0 then
-                        pc(pc() + offset - 2)
-                    end
-                end, function() -- 9C
-                    --ifge
-                    local offset = u2ToSignedShort(u2())
-                    if pop()[2] >= 0 then
-                        pc(pc() + offset - 2)
-                    end
-                end, function() -- 9D
-                    --ifgt
-                    local offset = u2ToSignedShort(u2())
-                    if pop()[2] > 0 then
-                        pc(pc() + offset - 2)
-                    end
-                end, function() -- 9E
-                    --ifle
-                    local offset = u2ToSignedShort(u2())
-                    if pop()[2] <= 0 then
-                        pc(pc() + offset - 2)
-                    end
-                end, function() -- 9F
-                    --if_icmpeq
-                    local offset = u2ToSignedShort(u2())
-                    if pop()[2] == pop()[2] then
-                        pc(pc() + offset - 2)
-                    end
-                end, function() -- A0
-                    --if_icmpne
-                    local offset = u2ToSignedShort(u2())
-                    if pop()[2] ~= pop()[2] then
-                        pc(pc() + offset - 2)
-                    end
-                end, function() -- A1
-                    --if_icmplt
-                    local offset = u2ToSignedShort(u2())
-                    if pop()[2] > pop()[2] then
-                        pc(pc() + offset - 2)
-                    end
-                end, function() -- A2
-                    --if_icmpge
-                    local offset = u2ToSignedShort(u2())
-                    if pop()[2] <= pop()[2] then
-                        pc(pc() + offset - 2)
-                    end
-                end, function() -- A3
-                    --if_icmpgt
-                    local offset = u2ToSignedShort(u2())
-                    if pop()[2] < pop()[2] then
-                        pc(pc() + offset - 2)
-                    end
-                end, function() -- A4
-                    --if_icmple
-                    local offset = u2ToSignedShort(u2())
-                    if pop()[2] >= pop()[2] then
-                        pc(pc() + offset - 2)
-                    end
-                end, function() -- A5
-                    --ifle
-                    local offset = u2ToSignedShort(u2())
-                    if pop()[2] <= 0 then
-                        pc(pc() + offset - 2)
-                    end
-                end, function() -- A6
-                    --if_icmpeq
-                    local offset = u2ToSignedShort(u2())
-                    if pop()[2] == pop()[2] then
-                        pc(pc() + offset - 2)
-                    end
-                end, function() -- A7
-                    --goto
-                    local offset = u2ToSignedShort(u2())
-                    pc(pc() + offset - 2)
-                end, function() -- A8
-                    --jsr
-                    local addr = pc() + 3
-                    local offset = u2ToSignedShort(u2())
-                    push({"address", addr})
-                    pc(pc() + offset - 2)
-                end, function() -- A9
-                    --ret
-                    local index = u1()
-                    local addr = lvars[index]
-                    if addr[1] ~= "address" then
-                        error("Not an address", 0)
-                    end
-                    pc(addr[2])
-                end, function() -- AA
-                end, function() -- AB
-                end, function() -- AC
-                    mustRet = true
-                    popStackTrace()
-                    return pop()
-                end, function() -- AD
-                    mustRet = true
-                    popStackTrace()
-                    return pop()
-                end, function() -- AE
-                    mustRet = true
-                    popStackTrace()
-                    return pop()
-                end, function() -- AF
-                    mustRet = true
-                    popStackTrace()
-                    return pop()
-                end, function() -- B0
-                    mustRet = true
-                    popStackTrace()
-                    return pop()
-                end, function() -- B1
-                    mustRet = true
-                    popStackTrace()
-                    return pop()
-                end, function() -- B2
-                    --getstatic
-                    local fr = cp[u2()]
-                    local cl = resolveClass(cp[fr.class_index])
-                    local name = cp[cp[fr.name_and_type_index].name_index].bytes
-                    local descriptor = cp[cp[fr.name_and_type_index].descriptor_index].bytes
-                    --print(descriptor)
-                    push(asObjRef(cl.fields[name].value, descriptor))
-                end, function() -- B3
-                    --putstatic
-                    local fr = cp[u2()]
-                    local cl = resolveClass(cp[fr.class_index])
-                    local name = cp[cp[fr.name_and_type_index].name_index].bytes
-                    cl.fields[name].value = pop()[2]
-                end, function() -- B4
-                    --getfield
-                    local fr = cp[u2()]
-                    local name = cp[cp[fr.name_and_type_index].name_index].bytes
-                    local descriptor = cp[cp[fr.name_and_type_index].descriptor_index].bytes
-                    local obj = pop()[2]
-                    push(asObjRef(obj.fields[name].value, descriptor))
-                end, function() -- B5
-                    --putfield
-                    local fr = cp[u2()]
-                    local value = pop()[2]
-                    local obj = pop()[2]
-                    local name = cp[cp[fr.name_and_type_index].name_index].bytes
-                    obj.fields[name].value = value
-                end, function() -- B6
-                    --invokevirtual
-                    local mr = cp[u2()]
-                    local cl = resolveClass(cp[mr.class_index])
-                    local name = cp[cp[mr.name_and_type_index].name_index].bytes..cp[cp[mr.name_and_type_index].descriptor_index].bytes
-                    local mt = findMethod(cl,name)
-                    local args = {}
-                    for i=#mt.desc-1,1,-1 do
-                        args[i+1] = pop()
-                    end
-                    args[1] = pop()
-                    local obj = args[1][2]
-                    if type(obj) == "table" and obj.methods then -- if the object holds its own methods, use those so A a = new B(); a.c() calls B.c(), not A.c()
-                        mt = findMethod(obj, name)
-                    end
-                    --[[if bit.band(mt.acc,METHOD_ACC.NATIVE) == METHOD_ACC.NATIVE then
-                        for i=1, #args do
-                            args[i] = args[i][2]
-                        end
-                    end]]
-                    local ret = mt[1](unpack(args))
-                    if mt.desc[#mt.desc][1] ~= "V" then
-                        push(ret)
-                    end
-                end, function() -- B7
-                    --invokespecial
-                    local mr = cp[u2()]
-                    local cl = resolveClass(cp[mr.class_index])
-                    local name = cp[cp[mr.name_and_type_index].name_index].bytes..cp[cp[mr.name_and_type_index].descriptor_index].bytes
-                    local mt = findMethod(cl,name)
-                    local args = {}
-                    for i=#mt.desc-1,1,-1 do
-                        args[i+1] = pop()
-                    end
-                    args[1] = pop()
-                    local obj = args[1][2]
-                    --[[if bit.band(mt.acc,METHOD_ACC.NATIVE) == METHOD_ACC.NATIVE then
-                        for i=1, #args do
-                            args[i] = args[i][2]
-                        end
-                    end]]
-                    local ret = mt[1](unpack(args))
-                    if mt.desc[#mt.desc][1] ~= "V" then
-                        push(ret)
-                    end
-                end, function() -- B8
-                    --invokestatic
-                    local mr = cp[u2()]
-                    local cl = resolveClass(cp[mr.class_index])
-                    local name = cp[cp[mr.name_and_type_index].name_index].bytes..cp[cp[mr.name_and_type_index].descriptor_index].bytes
-                    local mt = findMethod(cl,name)
-                    local args = {}
-                    for i=#mt.desc-1,1,-1 do
-                        args[i] = pop()
-                    end
-                    --[[if bit.band(mt.acc,METHOD_ACC.NATIVE) == METHOD_ACC.NATIVE then
-                        for i=1, #args do
-                            args[i] = args[i][2]
-                        end
-                    end]]
-                    local ret = mt[1](unpack(args))
-                    if mt.desc[#mt.desc][1] ~= "V" then
-                        push(ret)
-                    end
-                end, function() -- B9
-                end, function() -- BA
-                end, function() -- BB
-                    --new
-                    local cr = cp[u2()]
-                    local c = resolveClass(cr)
-                    local obj = newInstance(c)
-                    local type = "L"..c.name:gsub("%.", "/")..";"
-                    push(asObjRef(obj, type))
-                end, function() -- BC
-                    --newarray
-                    local type = "[" .. ARRAY_TYPES[u1()]
-                    local length = pop()[2]
-                    push(asObjRef({length=length}, type))
-                end, function() -- BD
-                    --anewarray
-                    local cr = cp[u2()]
-                    local c = resolveClass(cr)
-                    local type = "[L" .. c.name:gsub("%.", "/")..";"
-                    local length = pop()[2]
-                    push(asObjRef({length=length}, type))
-                end, function() -- BE
-                    --arraylength
-                    local arr = pop()
-                    push(asInt(arr[2].length))
-                end, function() -- BF
-                end, function() -- C0
-                end, function() -- C1
-                end, function() -- C2
-                end, function() -- C3
-                end, function() -- C4
-                end, function() -- C5
-                end, function() -- C6
-                end, function() -- C7
-                end, function() -- C8
-                end, function() -- C9
-                end, function() -- CA
-                end, function() -- CB
-                end, function() -- CC
-                end, function() -- CD
-                end, function() -- CE
-                end, function() -- CF
-                end, function() -- D0
-                end, function() -- D1
-                end, function() -- D2
-                end, function() -- D3
-                end, function() -- D4
-                end, function() -- D5
-                end, function() -- D6
-                end, function() -- D7
-                end, function() -- D8
-                end, function() -- D9
-                end, function() -- DA
-                end, function() -- DB
-                end, function() -- DC
-                end, function() -- DD
-                end, function() -- DE
-                end, function() -- DF
-                end, function() -- E0
-                end, function() -- E1
-                end, function() -- E2
-                end, function() -- E3
-                end, function() -- E4
-                end, function() -- E5
-                end, function() -- E6
-                end, function() -- E7
-                end, function() -- E8
-                end, function() -- E9
-                end, function() -- EA
-                end, function() -- EB
-                end, function() -- EC
-                end, function() -- ED
-                end, function() -- EE
-                end, function() -- EF
-                end, function() -- F0
-                end, function() -- F1
-                end, function() -- F2
-                end, function() -- F3
-                end, function() -- F4
-                end, function() -- F5
-                end, function() -- F6
-                end, function() -- F7
-                end, function() -- F8
-                end, function() -- F9
-                end, function() -- FA
-                end, function() -- FB
-                end, function() -- FC
-                end, function() -- FD
-                end, function() -- FE
-                end, function() -- FF
-                end
-            }
-            
-            while true do
-                inst = u1()
-                local ret = oplookup[inst]()
-                if mustRet then
-                    return ret
-                end
-            end
+            local ret = f(rti, ...)
             popStackTrace()
+            return ret
         end
+        --popStackTrace()
     end
     
     local function method_info()
@@ -1505,15 +1841,17 @@ function loadJavaClass(file)
             attributes_count = u2(),
             attributes = {}
         }
+        method.attrByName = { }
         for i=0, method.attributes_count-1 do
             method.attributes[i] = attribute()
+            method.attrByName[method.attributes[i].name] = method.attributes[i]
         end
         method.desc = {}
         parse_descriptor(method.desc,method.descriptor)
         method.name = method.name..method.descriptor
         return method
     end
-    
+
     local s, e = pcall(function()
         assert(u1() == 0xCA and u1() == 0xFE and u1() == 0xBA and u1() == 0xBE,"invalid magic header")
         u2()u2()
@@ -1537,24 +1875,30 @@ function loadJavaClass(file)
             super = cp[cp[super_class].name_index].bytes:gsub("/",".")
         end
         local Class = createClass(super, cn)
-        
+        if not Class then
+            return false
+        end
+        Class.constantPool = cp
+
         --start processing the data
         Class.name = cn
         Class.acc = access_flags
+        Class.fieldIndexByName = { }
 
         local interfaces_count = u2()
         Class.interfaces = {}
         for i=0, interfaces_count-1 do
-            interfaces[i] = u2()
+            Class.interfaces[i] = u2()
         end
         local fields_count = u2()
         for i=0, fields_count-1 do
             Class.fields[i] = field_info()
-            Class.fields[Class.fields[i].name] = Class.fields[i]
+            Class.fieldIndexByName[Class.fields[i].name] = i
         end
         local methods_count = u2()
         local initialCount = #Class.methods
         local subtractor = 0
+        local doAfter = { }
         for index=1, methods_count do
             local i = index + initialCount - subtractor
 
@@ -1572,39 +1916,43 @@ function loadJavaClass(file)
             local ca
             for _, v in pairs(m.attributes) do
                 --print(v.name)
-                if v.code then ca = v break end
+                if v.code then ca = v end
             end
 
             local mt_name = Class.name.."."..m.name
 
-            if ca then
-                m[1] = createCodeFunction(ca.code, mt_name)
-            elseif bit.band(m.acc,METHOD_ACC.NATIVE) == METHOD_ACC.NATIVE then
-                if not natives[cn] then natives[cn] = {} end
-                m[1] = function(...)
-                    pushStackTrace(mt_name)
-                    if not natives[cn][m.name] then
-                        error("Native not implemented: " .. m.name, 0)
+            table.insert(doAfter, function()
+                if ca then
+                    m[1] = createCodeFunction(Class, m, ca, mt_name)
+                elseif bit.band(m.acc,METHOD_ACC.NATIVE) == METHOD_ACC.NATIVE then
+                    if not natives[cn] then natives[cn] = {} end
+                    m[1] = function(...)
+                        pushStackTrace(mt_name, function() error('',0) end)
+                        if not natives[cn][m.name] then
+                            error("Native not implemented: " .. Class.name .. "." .. m.name, 0)
+                        end
+                        local ret = natives[cn][m.name](...)
+                        popStackTrace()
+                        return ret
                     end
-                    local ret = natives[cn][m.name](...)
-                    popStackTrace()
-                    return ret
+                else
+                    --print(m.name," doesn't have code")
                 end
-            else
-                print(m.name," doesn't have code")
-            end
+            end)
         end
+
+        for i, v in pairs(doAfter) do
+            v()
+        end
+
         local attrib_count = u2()
         Class.attributes = {}
         for i=0, attrib_count-1 do
             Class.attributes[i] = attribute()
         end
 
-        -- invoke static{}
-        local staticmr = findMethod(Class, "<clinit>()V")
-        if staticmr then
-            staticmr[1]()
-        end
+        local staticmr = findMethod(Class, "<clinit>()V")[1]
+        staticMethods[#staticMethods + 1] = staticmr
     end)
 
     fh.close()

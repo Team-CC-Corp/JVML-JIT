@@ -6,7 +6,5 @@ public class Object {
         registerNatives();
     }
 
-    public String toString() {
-        return "OBJECT";
-    }
+    public native String toString();
 }
