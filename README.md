@@ -1,8 +1,7 @@
 JVML
 ====
 
-ds84182's really nice and polite JVM
-(JIT by Yevano)
+A continuation of JVML which JITs Java bytecode to Lua bytecode rather than interpreting. Original codebase by ds84182.
 
 
 Requirements
