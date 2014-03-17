@@ -7,7 +7,6 @@ natives = {["java.lang.Object"]={
         end
     end
 }}
-os.loadAPI(fs.combine(jcd, "jvml_data/vm/bigInt"))
 
 staticMethods = { }
 
@@ -314,7 +313,7 @@ function loadJavaClass(file)
     end
 
     local function parse_long(high_bytes,low_bytes)
-        return bigInt.add(bigInt.brshift(high_bytes,32),low_bytes)
+        return { high_bytes, low_bytes }
     end
 
     local function parse_double(high_bytes,low_bytes)
@@ -502,7 +501,7 @@ function loadJavaClass(file)
                 asm[#asm + 1] = string.format(str, ...) .. "\n"
             end, ...)
             if err then
-                error("asd", 3)
+                error("asd", 2)
             end
         end
 
@@ -676,7 +675,7 @@ function loadJavaClass(file)
                     -- TODO: Don't use an unrolled loop for very large strings.
                     -- Fill the char array.
                     for i = 1, #str do
-                        emit("settable %i k(%i) k(%i) ; ldc", rchars, i, str:sub(i, i):byte())
+                        emit("settable %i k(%i) k(%i)", rchars, i, str:sub(i, i):byte())
                     end
 
                     -- Invoke java.lang.String constructor.
@@ -692,31 +691,51 @@ function loadJavaClass(file)
                 --ldc_w
                 --push constant
                 local s = cp[u2()]
-                local robj = alloc()
                 if s.bytes then
-                    emit("loadk %i k(%s)", robj, s.bytes)
+                    emit("loadk %i k(%s)", alloc(), s.bytes)
                 else
                     local stringClass = classByName("java.lang.String")
                     local str = cp[s.string_index].bytes
-                    local rchars = alloc()
-
+                    local rmt, robj, rcharref, rchars = alloc(4)
+                    asmGetRTInfo(rmt, info(findMethod(stringClass, "<init>([C)V")))
                     asmNewInstance(robj, stringClass)
-                    emit("gettable %i %i k(2)", rchars, robj)
-                    emit("gettable %i %i k(%i)", rchars, rchars, stringClass.fieldIndexByName["value"])
+
+                    -- Create the char array ref. Holds array length, primitive type, and the actual array.
+                    emit("newtable %i 3 0", rcharref)
+                    emit("settable %i k(1) k(%i)", rcharref, #str)
+                    emit("settable %i k(2) '%s'", rcharref, "C")
+
+                    -- Create the array and save it in the ref.
+                    emit("newtable %i 0 0", rchars)
+                    emit("settable %i k(3) %i", rcharref, rchars)
 
                     -- TODO: Don't use an unrolled loop for very large strings.
+                    -- Fill the char array.
                     for i = 1, #str do
                         emit("settable %i k(%i) k(%i)", rchars, i, str:sub(i, i):byte())
                     end
 
-                    free()
+                    -- Invoke java.lang.String constructor.
+                    -- Current stack: rmt, robj, rcharref
+                    asmInvokeMethod(rmt, 2, 0)
+
+                    -- Need to move the object back in place. Overwrite rmt.
+                    emit("move %i %i", rmt, robj)
+
+                    free(3)
                 end
             end, function() -- 14
                 --ldc2_w
                 --push constant
                 local s = cp[u2()]
-                local robj = alloc()
-                emit("loadk %i k(%s)", robj, s.bytes)
+                if s.cl == "D" then
+                    emit("loadk %i k(%f)", alloc(), s.bytes)
+                elseif s.cl == "J" then
+                    print(s.bytes)
+                    asmGetRTInfo(alloc(), info(s.bytes))
+                else
+                    error("Unknown wide constant type.")
+                end
             end, function() -- 15
                 --loads
                 local l = u1()
@@ -1073,10 +1092,12 @@ function loadJavaClass(file)
                 emit("add %i %i %i", r1, r1, r2)
                 free(1)
             end, function() -- 61
-                --add
+                --ladd
+                -- TODO
                 local r1 = peek(1)
                 local r2 = peek(0)
-                emit("add %i %i %i", r1, r1, r2)
+                --local ra = alloc()
+                --emit()
                 free(1)
             end, function() -- 62
                 --add
@@ -1552,8 +1573,7 @@ function loadJavaClass(file)
                 local name = cp[cp[fr.name_and_type_index].name_index].bytes
                 local fi = class.fieldIndexByName[name]
                 local r = peek(0)
-                local rfields = alloc()
-                emit("gettable %i %i k(2)", rfields, r)
+                emit("gettable %i %i k(2)", r, r)
                 emit("gettable %i %i k(%i)", r, r, fi)
             end, function() -- B5
                 --putfield

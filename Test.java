@@ -1,8 +1,12 @@
 public class Test {
     public static void main(String[] args) {
-        String[] strings = new String[] { "Hello", "everyone! ", "What's", "up?" };
-        for(String string : strings) {
-            System.out.println(string);
-        }
+        long l = 62494967296l;
+        long x = l + 1;
+    }
+
+    private int x;
+
+    public Test() {
+        this.x = 0;
     }
 }
