@@ -1634,9 +1634,6 @@ function loadJavaClass(file)
                 emit("gettable %i %i k(1)", rmt, rmt)
                 emit("call %i %i 2", rmt, argslen + 1)
 
-                -- Overwrite the method with the return value.
-                emit("move %i %i", rmt, rmt + 1)
-
                 free(argslen)
             end, function() -- B7
                 --invokespecial
@@ -1662,9 +1659,6 @@ function loadJavaClass(file)
                 emit("gettable %i %i k(1)", rmt, rmt)
                 emit("call %i %i 2", rmt, argslen + 1)
 
-                -- Overwrite the method with the return value.
-                emit("move %i %i", rmt, rmt + 1)
-
                 free(argslen)
             end, function() -- B8
                 --invokestatic
@@ -1689,9 +1683,6 @@ function loadJavaClass(file)
                 -- Invoke the method. Result is right after the method.
                 emit("gettable %i %i k(1)", rmt, rmt)
                 emit("call %i %i 2", rmt, argslen + 1)
-
-                -- Overwrite the method with the return value.
-                emit("move %i %i", rmt, rmt + 1)
 
                 free(argslen)
             end, function() -- B9
@@ -1747,6 +1738,8 @@ function loadJavaClass(file)
                 emit("gettable %i %i k(1)", r, r)
             end, function() -- BF
             end, function() -- C0
+                local cl = "L"..cp[cp[u2()].name_index].bytes..";"
+                -- TODO: Check the cast.
             end, function() -- C1
             end, function() -- C2
             end, function() -- C3

@@ -3,17 +3,15 @@ public class Test {
         //Integer intt = new Integer(0xBEEFBABE);
         //Object[] ints = new Object[4];
         //ints[0] = "swag";
-        //Test test = new Test();
-        System.out.println(new Object());
+        Test test = new Test();
     }
 
-    Object obj;
-
     public Test() {
-        this.obj = test();
+        String string = (String) test();
+        System.out.println(string);
     }
 
     public Object test() {
-        return new Object();
+        return "hello";
     }
 }
