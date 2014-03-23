@@ -1,12 +1,19 @@
 public class Test {
     public static void main(String[] args) {
-        long l = 62494967296l;
-        long x = l + 1;
+        //Integer intt = new Integer(0xBEEFBABE);
+        //Object[] ints = new Object[4];
+        //ints[0] = "swag";
+        //Test test = new Test();
+        System.out.println(new Object());
     }
 
-    private int x;
+    Object obj;
 
     public Test() {
-        this.x = 0;
+        this.obj = test();
+    }
+
+    public Object test() {
+        return new Object();
     }
 }

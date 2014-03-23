@@ -627,10 +627,14 @@ function loadJavaClass(file)
                 emit("loadk %i k(5)", r)
             end, function() -- 09
                 local r = alloc()
-                emit("loadk %i k(0)", r)
+                emit("newtable %i 2 0", r)          -- r = { nil, nil }
+                emit("settable %i k(1) k(0)", r)    -- r[1] = 0
+                emit("settable %i k(2) k(0)", r)    -- r[2] = 0
             end, function() -- 0A
                 local r = alloc()
-                emit("loadk %i k(1)", r)
+                emit("newtable %i 2 0", r)          -- r = { nil, nil }
+                emit("settable %i k(1) k(0)", r)    -- r[1] = 0
+                emit("settable %i k(2) k(1)", r)    -- r[2] = 1
             end, function() -- 0B
                 local r = alloc()
                 emit("loadk %i k(0)", r)
@@ -1093,12 +1097,32 @@ function loadJavaClass(file)
                 free(1)
             end, function() -- 61
                 --ladd
-                -- TODO
+
+                -- {high, low} + {high, low}
                 local r1 = peek(1)
                 local r2 = peek(0)
-                --local ra = alloc()
-                --emit()
-                free(1)
+                local r1h, r1l, r2h, r2l = alloc(4)
+
+                emit("gettable %i %i k(1)", r1h, r1)        -- r1h = r1[1]
+                emit("gettable %i %i k(2)", r1l, r1)        -- r1l = r1[2]
+                emit("gettable %i %i k(1)", r2h, r2)        -- r2h = r2[1]
+                emit("gettable %i %i k(2)", r2l, r2)        -- r2l = r2[2]
+
+                emit("add %i %i %i", r1l, r1l, r2l)         -- r1l = r1l + r2l
+                emit("lt 0 %i k(2147483648)", r1l)          -- if r1l >= 2^31 then jmp 2
+                emit("jmp 2")
+
+                emit("add %i %i %i", r1h, r1h, r2h)         -- r1h = r1h + r2h
+                emit("jmp 2")
+
+                -- overflow
+                emit("add %i %i k(1)", r1h, r1h)            -- r1h = r1h + 1
+                emit("sub %i %i k(2147483648)", r1l, r1l)   -- r1l = r1l - 2^31
+
+                free(5)
+
+                emit("settable %i k(1) %i", r1, r1h)        -- r1[1] = r1h
+                emit("settable %i k(2) %i", r1, r1l)        -- r1[2] = r1l
             end, function() -- 62
                 --add
                 local r1 = peek(1)
