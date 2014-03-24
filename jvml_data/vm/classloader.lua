@@ -224,11 +224,11 @@ function loadJavaClass(file)
                     cur.array_depth = cur.array_depth + 1 -- one deeper for each dimension
                 elseif c == "L" then
                     --im guessing ref or something
-                    cur[1] = "L"
+                    cur.type = "L"
                     i = i+1
                     c = descriptor:sub(i,i)
                     while c ~= ";" and c do
-                        cur[1] = cur[1]..c
+                        cur.type = cur.type..c
                         i = i+1
                         c = descriptor:sub(i,i)
                     end
@@ -236,7 +236,7 @@ function loadJavaClass(file)
                     cur = {}
                     cur.array_depth = 0
                 else
-                    cur[1] = c
+                    cur.type = c
                     table.insert(desc,cur)
                     cur = {}
                     cur.array_depth = 0
@@ -595,6 +595,13 @@ function loadJavaClass(file)
         local function asmInvokeMethod(rmt, argslen, results)
             emit("gettable %i %i k(1)", rmt, rmt)
             emit("call %i %i %i", rmt, argslen + 1, results + 1)
+        end
+
+        local function asmRun(func)
+            local rfunc = alloc()
+            asmGetRTInfo(rfunc, info(func))
+            emit("call %i %i %i", rfunc, 1, 1)
+            free()
         end
 
         local inst
@@ -1634,7 +1641,11 @@ function loadJavaClass(file)
                 emit("gettable %i %i k(1)", rmt, rmt)
                 emit("call %i %i 2", rmt, argslen + 1)
 
-                free(argslen)
+                if mt.desc[#mt.desc].type ~= "V" then
+                    free(argslen)
+                else
+                    free(argslen + 1)
+                end
             end, function() -- B7
                 --invokespecial
                 local mr = cp[u2()]
@@ -1659,13 +1670,18 @@ function loadJavaClass(file)
                 emit("gettable %i %i k(1)", rmt, rmt)
                 emit("call %i %i 2", rmt, argslen + 1)
 
-                free(argslen)
+                if mt.desc[#mt.desc].type ~= "V" then
+                    free(argslen)
+                else
+                    free(argslen + 1)
+                end
             end, function() -- B8
                 --invokestatic
                 local mr = cp[u2()]
                 local cl = resolveClass(cp[mr.class_index])
                 local name = cp[cp[mr.name_and_type_index].name_index].bytes .. cp[cp[mr.name_and_type_index].descriptor_index].bytes
                 local mt = findMethod(cl, name)
+                print(name)
                 local argslen = #mt.desc - 1
 
                 -- Need 1 extra register for last argument. 
@@ -1684,7 +1700,11 @@ function loadJavaClass(file)
                 emit("gettable %i %i k(1)", rmt, rmt)
                 emit("call %i %i 2", rmt, argslen + 1)
 
-                free(argslen)
+                if mt.desc[#mt.desc].type ~= "V" then
+                    free(argslen)
+                else
+                    free(argslen + 1)
+                end
             end, function() -- B9
             end, function() -- BA
             end, function() -- BB

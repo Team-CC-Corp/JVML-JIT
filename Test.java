@@ -1,17 +1,18 @@
 public class Test {
     public static void main(String[] args) {
-        //Integer intt = new Integer(0xBEEFBABE);
-        //Object[] ints = new Object[4];
-        //ints[0] = "swag";
-        Test test = new Test();
+        //Test test = new Test();
+        //System.out.println(test.obj);
+        Integer i = new Integer(40);
+        System.out.println(i);
     }
+
+    Object obj;
 
     public Test() {
-        String string = (String) test();
-        System.out.println(string);
+        test();
     }
 
-    public Object test() {
-        return "hello";
+    public void test() {
+        obj = "hello";
     }
 }
