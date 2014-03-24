@@ -1,3 +1,5 @@
 CCLib/build
 *.class
 debug
+Debug.java
+compile_debug.bat

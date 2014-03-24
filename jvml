@@ -1,7 +1,23 @@
 local args = {...}
-if not args[1] then
-    print("Usage: jvml <mainclass>")
-    return
+
+local usage = "Usage: jvml [-d] <mainclass>"
+local mainClass
+local debugMode = false
+for i = 1, #args do
+    local arg = args[i]
+    if arg == "-d" then
+        debugMode = true
+    elseif arg:sub(1, 1) == "-" then
+        print(usage)
+    elseif not mainClass then
+        mainClass = arg
+    else
+        print(usage)
+    end
+end
+
+if not mainClass then
+    print(usage)
 end
 
 local jcd = fs.combine("", shell.getRunningProgram():sub(1, -1 - #(fs.getName(shell.getRunningProgram()))))
@@ -41,9 +57,8 @@ end
 dofile(fs.combine(env.jcd, "jvml_data/vm/classpath.lua"))
 dofile(fs.combine(env.jcd, "jvml_data/vm/classloader.lua"))
 
-env.jcp = env.jcp .. ":/" .. env.jcd -- So that loadJavaClass isn't needed here and so Yo and Test get loaded right
---print(env.findMethod(env.classByName(args[1]),"main([Ljava/lang/String;)V")[1])
-local m = env.findMethod(env.classByName(args[1]), "main([Ljava/lang/String;)V")[1]
+env.jcp = env.jcp .. ":/" .. env.jcd -- So that loadJavaClass isn't needed here
+local m = env.findMethod(env.classByName(mainClass), "main([Ljava/lang/String;)V")[1]
 for i = 1, #env.staticMethods do
     local m = env.staticMethods[i]
     local ok, err = pcall(m)
@@ -53,7 +68,7 @@ for i = 1, #env.staticMethods do
         return
     end
 end
-print("Running main...")
+
 local ok, err = pcall(m)
 if not ok then
     printError(err)

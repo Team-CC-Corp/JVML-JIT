@@ -150,7 +150,7 @@ CLASS_ACC = {
     ENUM=0x4000,
 }
 
-local debugMode = false
+local debugMode = debugMode
 local _pr = print
 local function print(...)
     if debugMode then
@@ -1128,7 +1128,7 @@ function loadJavaClass(file)
                 --ladd
 
                 -- {high, low} + {high, low}
-                local r1 = peek(1)
+                --[[local r1 = peek(1)
                 local r2 = peek(0)
                 local r1h, r1l, r2h, r2l = alloc(4)
 
@@ -1151,7 +1151,12 @@ function loadJavaClass(file)
                 free(5)
 
                 emit("settable %i k(1) %i", r1, r1h)        -- r1[1] = r1h
-                emit("settable %i k(2) %i", r1, r1l)        -- r1[2] = r1l
+                emit("settable %i k(2) %i", r1, r1l)        -- r1[2] = r1l]]
+
+                local r1 = peek(1)
+                local r2 = peek(0)
+                emit("add %i %i %i", r1, r1, r2)
+                free(1)
             end, function() -- 62
                 --add
                 local r1 = peek(1)
