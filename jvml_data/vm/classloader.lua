@@ -22,12 +22,13 @@ end
 
 function toJString(str)
     local stringClass = classByName("java.lang.String")
-    local obj = { stringClass, { #str, "C", { } } }
-    local charArray = obj[2][3]
+    local obj = { stringClass, { } }
+    local charArrayRef = { #str, "C", { } }
+    local charArray = charArrayRef[3]
     for i = 1, #str do
         charArray[i] = str:sub(i, i):byte()
     end
-    findMethod(stringClass, "<init>([C)V")[1](obj, charArray)
+    findMethod(stringClass, "<init>([C)V")[1](obj, charArrayRef)
     return obj
 end
 
@@ -151,6 +152,7 @@ CLASS_ACC = {
 }
 
 local debugMode = debugMode
+print(tostring(debugMode))
 local _pr = print
 local function print(...)
     if debugMode then
@@ -335,7 +337,7 @@ function loadJavaClass(file)
     end
 
     local function parse_long(high_bytes,low_bytes)
-        return { high_bytes, low_bytes }
+        return high_bytes * 4294967296 + low_bytes
     end
 
     local function parse_double(high_bytes,low_bytes)

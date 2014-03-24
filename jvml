@@ -27,6 +27,8 @@ local env = setmetatable({
     jcp = "/" .. fs.combine(jcd, "CCLib/build/classes")..":."
 }, {__index=getfenv()})
 
+env.debugMode = debugMode
+
 local nloadfile = loadfile
 local function dofile(path, ...)
     local f = assert(nloadfile(path))
