@@ -150,7 +150,29 @@ CLASS_ACC = {
     ENUM=0x4000,
 }
 
-local debugH = fs.open("/jvml/debug", "w")
+local debugMode = false
+local _pr = print
+local function print(...)
+    if debugMode then
+        _pr(...)
+    end
+end
+local debugH = {}
+local _dbf
+if debugMode then
+    _dbf = fs.open(fs.combine(jcd, 'debug'), 'w')
+end
+function debugH.write(...)
+    if debugMode then
+        _dbf.write(...)
+    end
+end
+
+function debugH.flush(...)
+    if debugMode then
+        _dbf.flush(...)
+    end
+end
 
 function loadJavaClass(file)
     if not fs.exists(file) then return false end
@@ -1706,6 +1728,31 @@ function loadJavaClass(file)
                     free(argslen + 1)
                 end
             end, function() -- B9
+                --invokeinterface
+                local mr = cp[u2()]
+                u2() -- two dead bytes in invokeinterface
+                local cl = resolveClass(cp[mr.class_index])
+                local name = cp[cp[mr.name_and_type_index].name_index].bytes .. cp[cp[mr.name_and_type_index].descriptor_index].bytes
+                local mt = findMethod(cl, name)
+                local argslen = #mt.desc
+
+                -- Need 1 extra register for last argument.
+                alloc()
+
+                -- Move the arguments up.
+                for i = 1, argslen do
+                    emit("move %i %i", peek(i - 1), peek(i))
+                end
+
+                -- Inject the method under the parameters.
+                local rmt = peek(argslen)
+                asmGetRTInfo(rmt, info(mt))
+
+                -- Invoke the method. Result is right after the method.
+                emit("gettable %i %i k(1)", rmt, rmt)
+                emit("call %i %i 2", rmt, argslen + 1)
+
+                free(argslen)
             end, function() -- BA
             end, function() -- BB
                 --new
