@@ -1708,6 +1708,31 @@ function loadJavaClass(file)
 
                 free(argslen)
             end, function() -- B9
+                --invokeinterface
+                local mr = cp[u2()]
+                u2() -- two dead bytes in invokeinterface
+                local cl = resolveClass(cp[mr.class_index])
+                local name = cp[cp[mr.name_and_type_index].name_index].bytes .. cp[cp[mr.name_and_type_index].descriptor_index].bytes
+                local mt = findMethod(cl, name)
+                local argslen = #mt.desc
+
+                -- Need 1 extra register for last argument.
+                alloc()
+
+                -- Move the arguments up.
+                for i = 1, argslen do
+                    emit("move %i %i", peek(i - 1), peek(i))
+                end
+
+                -- Inject the method under the parameters.
+                local rmt = peek(argslen)
+                asmGetRTInfo(rmt, info(mt))
+
+                -- Invoke the method. Result is right after the method.
+                emit("gettable %i %i k(1)", rmt, rmt)
+                emit("call %i %i 2", rmt, argslen + 1)
+
+                free(argslen)
             end, function() -- BA
             end, function() -- BB
                 --new
