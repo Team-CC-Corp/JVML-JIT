@@ -588,13 +588,15 @@ function loadJavaClass(file)
         end
 
         local function asmNewInstance(robj, class)
-            local rclass, rfields = alloc(2)
+            local rclass, rfields, rmethods = alloc(3)
             asmGetRTInfo(rclass, info(class))
+            asmGetRTInfo(rmethods, info(class.methods))
             emit("newtable %i 2 0", robj)
             emit("newtable %i %i 0", rfields, #class.fields)
             emit("settable %i k(1) %i", robj, rclass)
             emit("settable %i k(2) %i", robj, rfields)
-            free(2)
+            emit("settable %i k(3) %i", robj, rmethods)
+            free(3)
         end
 
         local function asmPrintReg(r)
@@ -1651,7 +1653,7 @@ function loadJavaClass(file)
                 local mr = cp[u2()]
                 local cl = resolveClass(cp[mr.class_index])
                 local name = cp[cp[mr.name_and_type_index].name_index].bytes .. cp[cp[mr.name_and_type_index].descriptor_index].bytes
-                local mt = findMethod(cl, name)
+                local mt, mIndex = findMethod(cl, name)
                 local argslen = #mt.desc
 
                 -- Need 1 extra register for last argument.
@@ -1663,12 +1665,18 @@ function loadJavaClass(file)
                 end
 
                 -- Inject the method under the parameters.
-                local rmt = peek(argslen)
-                asmGetRTInfo(rmt, info(mt))
+                local rmIndex = peek(argslen)
+                local objIndex = peek(argslen - 1)
+                local methodTableEntry = alloc()
 
+                asmGetRTInfo(methodTableEntry, info(mIndex))
+                -- Get the methods table from the object
+                emit("gettable %i %i k(3)", rmIndex, objIndex)
+                emit("gettable %i %i %i", rmIndex, rmIndex, methodTableEntry)
+                free(1)
+                emit("gettable %i %i k(1)", rmIndex, rmIndex)
                 -- Invoke the method. Result is right after the method.
-                emit("gettable %i %i k(1)", rmt, rmt)
-                emit("call %i %i 2", rmt, argslen + 1)
+                emit("call %i %i 2", rmIndex, argslen + 1)
 
                 if mt.desc[#mt.desc].type ~= "V" then
                     free(argslen)
