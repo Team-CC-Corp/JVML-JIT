@@ -9,15 +9,18 @@ for i = 1, #args do
         debugMode = true
     elseif arg:sub(1, 1) == "-" then
         print(usage)
+        return
     elseif not mainClass then
         mainClass = arg
     else
         print(usage)
+        return
     end
 end
 
 if not mainClass then
     print(usage)
+    return
 end
 
 local jcd = fs.combine("", shell.getRunningProgram():sub(1, -1 - #(fs.getName(shell.getRunningProgram()))))
