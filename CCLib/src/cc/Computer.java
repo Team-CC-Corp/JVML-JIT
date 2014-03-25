@@ -8,6 +8,7 @@ public final class Computer
     public static native boolean isTurtle();
     public static native int getTime();
     public static native float getClock();
+    public static native Event pullEvent();
     public static native Event pullEvent(String filter);
     
     public static String getVersion() {return null;}
