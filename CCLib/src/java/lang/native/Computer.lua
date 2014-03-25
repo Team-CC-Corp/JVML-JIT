@@ -23,13 +23,48 @@ natives["cc.Computer"]["getClock()F"] = function()
     return os.clock()
 end
 
+natives["cc.Computer"]["pullEvent()Lcc/Event;"] = function()
+    local typ, args
+    (function(t, arg0, ...)
+        typ = toJString(t)
+        args = { ... }
+        args.length = #args
+        args[1] = arg0
+    end)(os.pullEvent())
+
+    if args[1] then
+        local v = args[1]
+        if type(v) == "string" then
+            args[1] = toJString(v)
+        elseif type(v) == "number" then
+            args[1] = wrapPrimitive(v, "D")
+        end
+        args.length = args.length + 1
+    end
+
+    for i = 2, args.length do
+        local v = args[i]
+        if type(v) == "string" then
+            args[i] = toJString(v)
+        elseif type(v) == "number" then
+            args[i] = wrapPrimitive(v, "D")
+        end
+    end
+
+    local eventClass = classByName("cc.Event")
+    local event = { eventClass, {  } }
+    local argsRef = { #args, classByName("java.lang.Object"), args }
+    findMethod(eventClass, "<init>(Ljava/lang/String;[Ljava/lang/Object;)V")[1](event, typ, argsRef)
+    return event
+end
+
 natives["cc.Computer"]["pullEvent(Ljava/lang/String;)Lcc/Event;"] = function(filter)
     local typ, args
     (function(t, arg0, ...)
         typ = toJString(t)
         args = { ... }
         args.length = #args
-        args[0] = arg0
+        args[1] = arg0
     end)(os.pullEvent(toLString(filter)))
 
     if args[1] then
@@ -42,7 +77,7 @@ natives["cc.Computer"]["pullEvent(Ljava/lang/String;)Lcc/Event;"] = function(fil
         args.length = args.length + 1
     end
 
-    for i = 1, args.length do
+    for i = 2, args.length do
         local v = args[i]
         if type(v) == "string" then
             args[i] = toJString(v)
@@ -53,7 +88,7 @@ natives["cc.Computer"]["pullEvent(Ljava/lang/String;)Lcc/Event;"] = function(fil
 
     local eventClass = classByName("cc.Event")
     local event = { eventClass, {  } }
-    local argsRef = { #args, classByName("java.lang.String"), args }
-    findMethod(event, "<init>(Ljava/lang/String;[Ljava/lang/Object;)V")[1](event, typ, asObjRef(args, "[Ljava/lang/Object;"))
-    return ref
+    local argsRef = { #args, classByName("java.lang.Object"), args }
+    findMethod(eventClass, "<init>(Ljava/lang/String;[Ljava/lang/Object;)V")[1](event, typ, argsRef)
+    return event
 end
