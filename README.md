@@ -14,5 +14,3 @@ To compile a java source file and ensure proper checking against the CCLib runti
 ```
 javac -bootclasspath CCLib/build/jar/cc_rt.jar MyFirstProgram.java
 ```
-
-You will also need Yevano's LuaAssemblyTools fork (https://github.com/Yevano/LuaAssemblyTools) for the JIT compilation. For now, there's no robust searching or anything like that, so you'll need the LASM directory to be placed in the root directory for JVML to find it.
