@@ -1759,7 +1759,11 @@ function loadJavaClass(file)
                 emit("gettable %i %i k(1)", rmt, rmt)
                 emit("call %i %i 2", rmt, argslen + 1)
 
-                free(argslen)
+                if mt.desc[#mt.desc].type ~= "V" then
+                    free(argslen)
+                else
+                    free(argslen + 1)
+                end
             end, function() -- BA
             end, function() -- BB
                 --new
