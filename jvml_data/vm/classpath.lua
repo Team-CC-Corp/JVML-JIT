@@ -8,7 +8,7 @@ function findMethod(c,name)
             print(c.methods[i].name)
         end
         if c.methods[i].name == name then
-            return c.methods[i]
+            return c.methods[i], i
         end
     end
 end

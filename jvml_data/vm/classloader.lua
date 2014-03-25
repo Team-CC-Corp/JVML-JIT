@@ -588,13 +588,15 @@ function loadJavaClass(file)
         end
 
         local function asmNewInstance(robj, class)
-            local rclass, rfields = alloc(2)
+            local rclass, rfields, rmethods = alloc(3)
             asmGetRTInfo(rclass, info(class))
+            asmGetRTInfo(rmethods, info(class.methods))
             emit("newtable %i 2 0", robj)
             emit("newtable %i %i 0", rfields, #class.fields)
             emit("settable %i k(1) %i", robj, rclass)
             emit("settable %i k(2) %i", robj, rfields)
-            free(2)
+            emit("settable %i k(3) %i", robj, rmethods)
+            free(3)
         end
 
         local function asmPrintReg(r)
@@ -1089,10 +1091,11 @@ function loadJavaClass(file)
                 local rd = alloc(1)
                 emit("move %i %i", rd, r)
             end, function() -- 5A
-                local v = pop()
-                push(v)
-                table.insert(stack,sp-2,{v[1], v[2]})
-                sp = sp+1
+                local r2, r1 = peek(0), peek(1)
+                local r3 = alloc(1)
+                emit("move %i %i", r3, r2)
+                emit("move %i %i", r2, r1)
+                emit("move %i %i", r1, r3)
             end, function() -- 5B
                 local v = pop()
                 push(v)
@@ -1650,7 +1653,7 @@ function loadJavaClass(file)
                 local mr = cp[u2()]
                 local cl = resolveClass(cp[mr.class_index])
                 local name = cp[cp[mr.name_and_type_index].name_index].bytes .. cp[cp[mr.name_and_type_index].descriptor_index].bytes
-                local mt = findMethod(cl, name)
+                local mt, mIndex = findMethod(cl, name)
                 local argslen = #mt.desc
 
                 -- Need 1 extra register for last argument.
@@ -1662,12 +1665,18 @@ function loadJavaClass(file)
                 end
 
                 -- Inject the method under the parameters.
-                local rmt = peek(argslen)
-                asmGetRTInfo(rmt, info(mt))
+                local rmIndex = peek(argslen)
+                local objIndex = peek(argslen - 1)
+                local methodTableEntry = alloc()
 
+                asmGetRTInfo(methodTableEntry, info(mIndex))
+                -- Get the methods table from the object
+                emit("gettable %i %i k(3)", rmIndex, objIndex)
+                emit("gettable %i %i %i", rmIndex, rmIndex, methodTableEntry)
+                free(1)
+                emit("gettable %i %i k(1)", rmIndex, rmIndex)
                 -- Invoke the method. Result is right after the method.
-                emit("gettable %i %i k(1)", rmt, rmt)
-                emit("call %i %i 2", rmt, argslen + 1)
+                emit("call %i %i 2", rmIndex, argslen + 1)
 
                 if mt.desc[#mt.desc].type ~= "V" then
                     free(argslen)
@@ -1752,13 +1761,26 @@ function loadJavaClass(file)
 
                 -- Inject the method under the parameters.
                 local rmt = peek(argslen)
-                asmGetRTInfo(rmt, info(mt))
+                local obj = peek(argslen - 1)
+
+                -- find the method
+                local find, rcl, rname = alloc(3)
+                asmGetRTInfo(find, info(findMethod))
+                emit("gettable %i %i k(1)", rcl, obj)
+                asmGetRTInfo(rname, info(name))
+                emit("call %i 3 2", find)
+                emit("move %i %i", rmt, find)
+                free(3)
 
                 -- Invoke the method. Result is right after the method.
                 emit("gettable %i %i k(1)", rmt, rmt)
                 emit("call %i %i 2", rmt, argslen + 1)
 
-                free(argslen)
+                if mt.desc[#mt.desc].type ~= "V" then
+                    free(argslen)
+                else
+                    free(argslen + 1)
+                end
             end, function() -- BA
             end, function() -- BB
                 --new
@@ -1927,7 +1949,7 @@ function loadJavaClass(file)
 
         print("Loading and verifying bytecode for " .. name)
         local p = LAT.Lua51.Parser:new()
-        local file = p:Parse(".options 0 " .. (codeAttr.max_locals + 1) .. table.concat(asm), "bytecode")
+        local file = p:Parse(".options 0 " .. (codeAttr.max_locals + 1) .. table.concat(asm), name.."/bytecode")
         --file:StripDebugInfo()
         local bc = file:Compile()
         local f = loadstring(bc)

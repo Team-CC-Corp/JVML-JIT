@@ -38,7 +38,7 @@ public class Test {
 
                     @Override
                     public boolean hasNext() {
-                        return i >= strs.length;
+                        return i < strs.length;
                     }
                     @Override
                     public String next() {
@@ -51,7 +51,7 @@ public class Test {
         };
 
         for (String s : i) {
-            System.out.println(i);
+            System.out.println(s);
         }
     }
 
