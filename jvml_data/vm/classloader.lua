@@ -1089,10 +1089,11 @@ function loadJavaClass(file)
                 local rd = alloc(1)
                 emit("move %i %i", rd, r)
             end, function() -- 5A
-                local v = pop()
-                push(v)
-                table.insert(stack,sp-2,{v[1], v[2]})
-                sp = sp+1
+                local r2, r1 = peek(0), peek(1)
+                local r3 = alloc(1)
+                emit("move %i %i", r3, r2)
+                emit("move %i %i", r2, r1)
+                emit("move %i %i", r1, r3)
             end, function() -- 5B
                 local v = pop()
                 push(v)
