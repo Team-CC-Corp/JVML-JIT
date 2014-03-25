@@ -1928,7 +1928,7 @@ function loadJavaClass(file)
 
         print("Loading and verifying bytecode for " .. name)
         local p = LAT.Lua51.Parser:new()
-        local file = p:Parse(".options 0 " .. (codeAttr.max_locals + 1) .. table.concat(asm), "bytecode")
+        local file = p:Parse(".options 0 " .. (codeAttr.max_locals + 1) .. table.concat(asm), name.."/bytecode")
         --file:StripDebugInfo()
         local bc = file:Compile()
         local f = loadstring(bc)
