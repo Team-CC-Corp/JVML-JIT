@@ -152,7 +152,6 @@ CLASS_ACC = {
 }
 
 local debugMode = debugMode
-print(tostring(debugMode))
 local _pr = print
 local function print(...)
     if debugMode then
