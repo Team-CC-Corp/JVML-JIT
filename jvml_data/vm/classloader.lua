@@ -1753,7 +1753,16 @@ function loadJavaClass(file)
 
                 -- Inject the method under the parameters.
                 local rmt = peek(argslen)
-                asmGetRTInfo(rmt, info(mt))
+                local obj = peek(argslen - 1)
+
+                -- find the method
+                local find, rcl, rname = alloc(3)
+                emit("getglobal %i 'findMethod'", find)
+                emit("gettable %i %i k(1)", rcl, obj)
+                asmGetRTInfo(rname, info(name))
+                emit("call %i 3 2", find)
+                emit("move %i %i", rmt, find)
+                free(3)
 
                 -- Invoke the method. Result is right after the method.
                 emit("gettable %i %i k(1)", rmt, rmt)
@@ -1936,6 +1945,7 @@ function loadJavaClass(file)
         --file:StripDebugInfo()
         local bc = file:Compile()
         local f = loadstring(bc)
+        setfenv(f, getfenv())
         --print(table.concat(asm))
 
         return function(...)
