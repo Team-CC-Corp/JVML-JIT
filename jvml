@@ -67,6 +67,7 @@ do -- load LAT with jvml as virtually the root
     f()
 end
 dofile(fs.combine(env.jcd, "jvml_data/vm/classpath.lua"))
+dofile(fs.combine(env.jcd, "jvml_data/vm/jit.lua"))
 dofile(fs.combine(env.jcd, "jvml_data/vm/classloader.lua"))
 
 env.jcp = env.jcp .. ":/" .. env.jcd -- So that loadJavaClass isn't needed here
