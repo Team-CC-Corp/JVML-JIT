@@ -22,7 +22,7 @@ end
 
 function toJString(str)
     local stringClass = classByName("java.lang.String")
-    local obj = { stringClass, { } }
+    local obj = newInstance(stringClass)
     local charArrayRef = { #str, "C", { } }
     local charArray = charArrayRef[3]
     for i = 1, #str do

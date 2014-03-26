@@ -52,7 +52,7 @@ natives["cc.Computer"]["pullEvent()Lcc/Event;"] = function()
     end
 
     local eventClass = classByName("cc.Event")
-    local event = { eventClass, {  } }
+    local event = newInstance(eventClass)
     local argsRef = { #args, classByName("java.lang.Object"), args }
     findMethod(eventClass, "<init>(Ljava/lang/String;[Ljava/lang/Object;)V")[1](event, typ, argsRef)
     return event
@@ -87,7 +87,7 @@ natives["cc.Computer"]["pullEvent(Ljava/lang/String;)Lcc/Event;"] = function(fil
     end
 
     local eventClass = classByName("cc.Event")
-    local event = { eventClass, {  } }
+    local event = newInstance(eventClass)
     local argsRef = { #args, classByName("java.lang.Object"), args }
     findMethod(eventClass, "<init>(Ljava/lang/String;[Ljava/lang/Object;)V")[1](event, typ, argsRef)
     return event
