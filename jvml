@@ -31,6 +31,13 @@ local env = setmetatable({
 }, {__index=getfenv()})
 
 env.debugMode = debugMode
+env.realPrint = print
+if debugMode then
+    env.debugH = fs.open(fs.combine(jcd, 'debug'), 'w')
+else
+    env.print = function() end
+    env.debugH = {write=function() end, flush=function() end}
+end
 
 local nloadfile = loadfile
 local function dofile(path, ...)
