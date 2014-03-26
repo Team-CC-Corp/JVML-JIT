@@ -31,6 +31,13 @@ local env = setmetatable({
 }, {__index=getfenv()})
 
 env.debugMode = debugMode
+env.realPrint = print
+if debugMode then
+    env.debugH = fs.open(fs.combine(jcd, 'debug'), 'w')
+else
+    env.print = function() end
+    env.debugH = {write=function() end, flush=function() end}
+end
 
 local nloadfile = loadfile
 local function dofile(path, ...)
@@ -60,6 +67,7 @@ do -- load LAT with jvml as virtually the root
     f()
 end
 dofile(fs.combine(env.jcd, "jvml_data/vm/classpath.lua"))
+dofile(fs.combine(env.jcd, "jvml_data/vm/jit.lua"))
 dofile(fs.combine(env.jcd, "jvml_data/vm/classloader.lua"))
 
 env.jcp = env.jcp .. ":/" .. env.jcd -- So that loadJavaClass isn't needed here
