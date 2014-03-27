@@ -1323,9 +1323,30 @@ function createCodeFunction(class, method, codeAttr, name, cp)
             emit("gettable %i %i k(1)", r, r)
         end, function() -- BF
         end, function() -- C0
-            local cl = "L"..cp[cp[u2()].name_index].bytes..";"
-            -- TODO: Check the cast.
+            local c = resolveClass(cp[u2()])
+            -- TODO: Throw if cast fails.
         end, function() -- C1
+            local c = resolveClass(cp[u2()])
+            local r = peek(0)
+            local rclass, rsuper = alloc(2)
+            asmGetRTInfo(rclass, info(c))               -- rclass = c
+            emit("gettable %i %i k(1)", rsuper, r)      -- rsuper = r[1]
+            emit("eq 1 %i %i", rsuper, rclass)          -- if rsuper == rclass then jmp true
+            emit("jmp 4")
+            emit("gettable %i %i k(4)", rsuper, rsuper) -- rsuper = rsuper[4]
+            emit("test %i 0", rsuper)                   -- if rsuper == nil then jmp false -- No more classes to check
+            emit("jmp 3")
+            emit("jmp -6")                              -- else jmp loop
+
+            -- true:
+            emit("loadbool %i 1 0", r)                  -- r = true
+            emit("jmp 1")                               -- jmp end
+
+            -- false:
+            emit("loadbool %i 1 0", r)                  -- r = false
+
+            -- end:
+            free(2)
         end, function() -- C2
         end, function() -- C3
         end, function() -- C4
