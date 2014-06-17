@@ -79,15 +79,6 @@ dofile(fs.combine(env.jcd, "jvml_data/vm/classloader.lua"))
 
 env.jcp = env.jcp .. ":/" .. env.jcd -- So that loadJavaClass isn't needed here
 local m = env.findMethod(env.classByName(mainClass), "main([Ljava/lang/String;)V")[1]
-for i = 1, #env.staticMethods do
-    local m = env.staticMethods[i]
-    local ok, err = pcall(m)
-    if not ok then
-        printError(err)
-        env.printStackTrace(true)
-        return
-    end
-end
 
 local ok, err = pcall(m)
 if not ok then

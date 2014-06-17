@@ -8,8 +8,6 @@ natives = {["java.lang.Object"]={
     end
 }}
 
-staticMethods = { }
-
 function isPrimitive(value)
     return PRIMITIVE_WRAPPERS[value[1]] ~= nil
 end
@@ -605,7 +603,12 @@ function loadJavaClass(file)
         end
 
         local staticmr = findMethod(Class, "<clinit>()V")[1]
-        staticMethods[#staticMethods + 1] = staticmr
+        local ok, err = pcall(staticmr)
+        if not ok then
+            printError(err)
+            env.printStackTrace(true)
+            error("Error in <clinit>()V")
+        end
     end)
 
     fh.close()
