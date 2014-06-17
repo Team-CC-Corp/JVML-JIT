@@ -13,6 +13,10 @@ function findMethod(c,name)
     end
 end
 
+function findObjectField(obj, name)
+    return obj[2][obj[1].fieldIndexByName[name]]
+end
+
 function newInstance(class)
     return { class, { }, class.methods }
 end

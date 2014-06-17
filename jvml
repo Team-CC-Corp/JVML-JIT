@@ -31,11 +31,18 @@ local env = setmetatable({
 }, {__index=getfenv()})
 
 env.debugMode = debugMode
-env.realPrint = print
+local handle = fs.open(fs.combine(jcd, 'debug'), 'w')
 if debugMode then
-    env.debugH = fs.open(fs.combine(jcd, 'debug'), 'w')
+    env.debugH = {
+        write=function(data)
+            print(data)
+            handle.write(data)
+        end,
+        flush=function()
+            handle.flush()
+        end
+    }
 else
-    env.print = function() end
     env.debugH = {write=function() end, flush=function() end}
 end
 
@@ -87,3 +94,4 @@ if not ok then
     printError(err)
     env.printStackTrace(true)
 end
+handle.close()

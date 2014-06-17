@@ -1,4 +1,4 @@
-function createCodeFunction(class, method, codeAttr, name, cp)
+local function compile(class, method, codeAttr, name, cp)
     local function resolveClass(c)
         local cn = cp[c.name_index].bytes:gsub("/",".")
         return classByName(cn)
@@ -257,7 +257,6 @@ function createCodeFunction(class, method, codeAttr, name, cp)
             if s.cl == "D" then
                 emit("loadk %i k(%f)", alloc(), s.bytes)
             elseif s.cl == "J" then
-                print(s.bytes)
                 asmGetRTInfo(alloc(), info(s.bytes))
             else
                 error("Unknown wide constant type.")
@@ -1208,7 +1207,6 @@ function createCodeFunction(class, method, codeAttr, name, cp)
             local cl = resolveClass(cp[mr.class_index])
             local name = cp[cp[mr.name_and_type_index].name_index].bytes .. cp[cp[mr.name_and_type_index].descriptor_index].bytes
             local mt = findMethod(cl, name)
-            print(name)
             local argslen = #mt.desc - 1
 
             -- Need 1 extra register for last argument. 
@@ -1412,13 +1410,13 @@ function createCodeFunction(class, method, codeAttr, name, cp)
         end
     }
     
-    print("Loading: " .. name)
-    print("Length: " .. #code)
-    print("max_locals: " .. codeAttr.max_locals)
+    debugH.write("Loading: " .. name)
+    debugH.write("Length: " .. #code)
+    debugH.write("max_locals: " .. codeAttr.max_locals)
 
     inst = u1()
     while inst do
-        print(string.format("%X", inst))
+        debugH.write(string.format("%X", inst))
         pcMapLJ[asmPC] = pc()
         pcMapJL[pc()] = asmPC
         oplookup[inst]()
@@ -1458,7 +1456,7 @@ function createCodeFunction(class, method, codeAttr, name, cp)
     debugH.flush()
     --print(table.concat(asm))
 
-    print("Loading and verifying bytecode for " .. name)
+    --print("Loading and verifying bytecode for " .. name)
     local p = LAT.Lua51.Parser:new()
     local file = p:Parse(".options 0 " .. (codeAttr.max_locals + 1) .. table.concat(asm), name.."/bytecode")
     --file:StripDebugInfo()
@@ -1466,11 +1464,20 @@ function createCodeFunction(class, method, codeAttr, name, cp)
     local f = loadstring(bc)
     --print(table.concat(asm))
 
+    return f, rti
+    --popStackTrace()
+end
+
+function createCodeFunction(class, method, codeAttr, name, cp)
+    local f
+    local rti
     return function(...)
+        if not f then
+            f, rti = compile(class, method, codeAttr, name, cp)
+        end
         pushStackTrace(name)
         local ret = f(rti, ...)
         popStackTrace()
         return ret
     end
-    --popStackTrace()
 end
