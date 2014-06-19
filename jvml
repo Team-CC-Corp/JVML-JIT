@@ -35,7 +35,7 @@ local handle = fs.open(fs.combine(jcd, 'debug'), 'w')
 if debugMode then
     env.debugH = {
         write=function(data)
-            print(data)
+            --print(data)
             handle.write(data)
         end,
         flush=function()
