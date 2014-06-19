@@ -1337,11 +1337,11 @@ local function compile(class, method, codeAttr, name, cp)
             emit("jmp -6")                              -- else jmp loop
 
             -- true:
-            emit("loadbool %i 1 0", r)                  -- r = true
+            emit("loadk %i k(1)", r)                    -- r = true
             emit("jmp 1")                               -- jmp end
 
             -- false:
-            emit("loadbool %i 1 0", r)                  -- r = false
+            emit("loadk %i k(0)", r)                    -- r = false
 
             -- end:
             free(2)

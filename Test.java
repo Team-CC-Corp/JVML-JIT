@@ -63,5 +63,6 @@ public class Test {
 
     public void test() {
         obj = "hello";
+        System.out.println(obj instanceof String);
     }
 }
