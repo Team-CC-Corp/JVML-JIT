@@ -39,6 +39,11 @@ local function compile(class, method, codeAttr, name, cp)
         return unpack(ret)
     end
 
+    local function freeTo(n)
+        n = (n or 0) + codeAttr.max_locals
+        return free(reg - n)
+    end
+
     local function peek(n)
         return reg - n
     end
@@ -1414,8 +1419,31 @@ local function compile(class, method, codeAttr, name, cp)
     debugH.write("Length: " .. #code)
     debugH.write("max_locals: " .. codeAttr.max_locals)
 
+    local stackMapAttribute
+    for i=0,codeAttr.attributes_count-1 do
+        if codeAttr.attributes[i].name == "StackMapTable" then
+            stackMapAttribute = codeAttr.attributes[i]
+            break
+        end
+    end
+
+    local offset = -1
+    local entryIndex = 0
     inst = u1()
     while inst do
+        -- check the stack map
+        if stackMapAttribute and stackMapAttribute.entries[entryIndex] then
+            local entry = stackMapAttribute.entries[entryIndex]
+            local newOffset = offset + entry.offset_delta + 1
+            if pc() == newOffset then
+                entryIndex = entryIndex + 1
+                offset = newOffset
+
+                freeTo(entry.stack_items)
+            end
+        end
+
+        -- compile the instruction
         debugH.write(string.format("%X", inst))
         pcMapLJ[asmPC] = pc()
         pcMapJL[pc()] = asmPC
