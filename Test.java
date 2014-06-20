@@ -23,9 +23,7 @@ public class Test {
         for (String s : args) {
             System.out.println(s);
         }
-        //Integer intt = new Integer(0xBEEFBABE);
-        //Object[] ints = new Object[4];
-        //ints[0] = "swag";
+        
         Test test = new Test();
         A obj = new B();
         obj.m();
