@@ -617,7 +617,8 @@ function loadJavaClass(file)
         local interfaces_count = u2()
         Class.interfaces = {}
         for i=0, interfaces_count-1 do
-            Class.interfaces[i] = u2()
+            local iname = u2()
+            Class.interfaces[i] = classByName(cp[cp[iname].name_index].bytes:gsub("/","."))
         end
         local fields_count = u2()
         for i=0, fields_count-1 do

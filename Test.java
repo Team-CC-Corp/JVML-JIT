@@ -23,7 +23,7 @@ public class Test {
         for (String s : args) {
             System.out.println(s);
         }
-        
+
         Test test = new Test();
         A obj = new B();
         obj.m();
@@ -54,6 +54,7 @@ public class Test {
         for (String s : i) {
             System.out.println(s);
         }
+        System.out.println(i instanceof Iterable);
     }
 
     Object obj;

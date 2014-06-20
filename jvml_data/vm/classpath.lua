@@ -21,6 +21,33 @@ function newInstance(class)
     return { class, { }, class.methods }
 end
 
+local function implementsInterface(class, interface)
+    if class.super and (class.super == interface or implementsInterface(class.super, interface)) then
+        return 1
+    end
+    for i,v in ipairs(class.interfaces) do
+        if v == interface or implementsInterface(v, interface) then
+            return 1
+        end
+    end
+    return 0
+end
+
+function jInstanceof(obj, class)
+    if bit.band(class.acc, CLASS_ACC.INTERFACE) == CLASS_ACC.INTERFACE then
+        return implementsInterface(obj[1], class)
+    else
+        local oClass = obj[1]
+        while oClass do
+            if oClass == class then
+                return 1
+            end
+            oClass = oClass.super
+        end
+    end
+    return 0
+end
+
 function resolvePath(name)
     for sPath in string.gmatch(jcp, "[^:]+") do
         local fullPath = fs.combine(shell.resolve(sPath), name)
