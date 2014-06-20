@@ -2,19 +2,44 @@ local args = {...}
 
 local usage = "Usage: jvml [-d] <mainclass>"
 local mainClass
-local debugMode = false
-for i = 1, #args do
-    local arg = args[i]
-    if arg == "-d" then
-        debugMode = true
-    elseif arg:sub(1, 1) == "-" then
-        print(usage)
-        return
-    elseif not mainClass then
-        mainClass = arg
+local javaArgs = {}
+
+local switches = {
+    debug=false
+}
+local switchShortcuts = {
+    d="debug"
+}
+
+while args[1] do
+    local arg = table.remove(args, 1)
+    if arg:sub(1,1) == "-" then
+        -- arg is an option
+        local success = true
+        local switch = arg:sub(2)
+        if switches[switch] ~= nil then
+            switches[switch] = true
+        else
+            for c in switch:gmatch(".") do
+                if switchShortcuts[c] then
+                    switches[switchShortcuts[c]] = true
+                else
+                    success = false
+                end
+            end
+        end
+        if not success then
+            print("Unknown argument: ", arg)
+            print(usage)
+            return
+        end
     else
-        print(usage)
-        return
+        -- arg is the main class
+        mainClass = arg
+        for v in function() return table.remove(args, 1) end do
+            -- rest of args goes into javaArgs
+            table.insert(javaArgs, v)
+        end
     end
 end
 
@@ -30,20 +55,12 @@ local env = setmetatable({
     jcp = "/" .. fs.combine(jcd, "CCLib/build/classes")..":."
 }, {__index=getfenv()})
 
-env.debugMode = debugMode
-local handle = fs.open(fs.combine(jcd, 'debug'), 'w')
-if debugMode then
-    env.debugH = {
-        write=function(data)
-            --print(data)
-            handle.write(data)
-        end,
-        flush=function()
-            handle.flush()
-        end
-    }
+env.debugMode = switches.debug
+if switches.debug then
+    local handle = fs.open(fs.combine(jcd, 'debug'), 'w')
+    env.debugH = handle
 else
-    env.debugH = {write=function() end, flush=function() end}
+    env.debugH = {write=function() end, flush=function() end, close=function() end}
 end
 
 local nloadfile = loadfile
@@ -85,4 +102,4 @@ if not ok then
     printError(err)
     env.printStackTrace(true)
 end
-handle.close()
+env.debugH.close()
