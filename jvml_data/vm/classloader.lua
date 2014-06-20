@@ -3,7 +3,9 @@ natives = {["java.lang.Object"]={
     ["registerNatives()V"] = function()
         local path = resolvePath("java/lang/native")
         for i,v in ipairs(fs.list(path)) do
-            dofile(fs.combine(path, v))
+            if v:sub(1,1) ~= "." then
+                dofile(fs.combine(path, v))
+            end
         end
     end
 }}
