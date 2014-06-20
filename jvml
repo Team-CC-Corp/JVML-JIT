@@ -5,10 +5,12 @@ local mainClass
 local javaArgs = {}
 
 local switches = {
-    debug=false
+    debug=false,
+    time=false
 }
 local switchShortcuts = {
-    d="debug"
+    d="debug",
+    t="time"
 }
 
 while args[1] do
@@ -106,9 +108,19 @@ for i,v in ipairs(javaArgs) do
 end
 local m = env.findMethod(env.classByName(mainClass), "main([Ljava/lang/String;)V")[1]
 
+-- Begin
+local startTime
+if switches.time then
+    startTime = os.time()
+end
+
 local ok, err = pcall(m, jArray)
 if not ok then
     printError(err)
     env.printStackTrace(true)
+end
+if switches.time then
+    local endTime = os.time()
+    print("\nTime: ", endTime - startTime)
 end
 env.debugH.close()
