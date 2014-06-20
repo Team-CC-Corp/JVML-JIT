@@ -606,7 +606,7 @@ function loadJavaClass(file)
         local ok, err = pcall(staticmr)
         if not ok then
             printError(err)
-            env.printStackTrace(true)
+            printStackTrace(true)
             error("Error in <clinit>()V")
         end
     end)
