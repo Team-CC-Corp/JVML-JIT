@@ -20,6 +20,9 @@ class B extends A {
 
 public class Test {
     public static void main(String[] args) {
+        for (String s : args) {
+            System.out.println(s);
+        }
         //Integer intt = new Integer(0xBEEFBABE);
         //Object[] ints = new Object[4];
         //ints[0] = "swag";
