@@ -45,14 +45,6 @@ function toLString(str)
     return table.concat(strArray)
 end
 
-function fieldByName(class, name)
-    for i = 1, #class.fields do
-        if class.fields[i].name == name then
-            return i
-        end
-    end
-end
-
 function u2ToSignedShort(i)
     if i > 2^15 - 1 then
         return -(2^16 - i)
