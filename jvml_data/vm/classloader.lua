@@ -686,7 +686,7 @@ function loadJavaClass(file)
         if not ok then
             printError(err)
             printStackTrace(true)
-            error("Error in <clinit>()V")
+            error("Error in "..file.." <clinit>()V")
         end
     end)
 
