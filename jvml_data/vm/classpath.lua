@@ -4,26 +4,26 @@ local stack_trace = {}
 function findMethod(c,name)
     if not c then error("class expected, got nil",2) end
     if c.methodLookup[name] then
-        return c.methodLookup[name]
+        return unpack(c.methodLookup[name])
     end
     for i=1, #c.methods do
         if c.methods[i].name == name then
-            c.methodLookup[name] = c.methods[i]
-            return c.methods[i]
+            c.methodLookup[name] = {c.methods[i],i} -- when it's virtual, the index is needed
+            return c.methods[i], i
         end
     end
     local mt
     if c.super then
         mt = findMethod(c.super, name)
         if mt then
-            c.methodLookup[name] = mt
+            c.methodLookup[name] = {mt}
             return mt
         end
     end
     for i=0, c.interfaces_count-1 do
         mt = findMethod(c.interfaces[i], name)
         if mt then
-            c.methodLookup[name] = mt
+            c.methodLookup[name] = {mt}
             return mt
         end
     end
