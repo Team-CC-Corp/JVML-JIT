@@ -95,16 +95,14 @@ end
 dofile(fs.combine(env.jcd, "jvml_data/vm/classpath.lua"))
 dofile(fs.combine(env.jcd, "jvml_data/vm/jit.lua"))
 dofile(fs.combine(env.jcd, "jvml_data/vm/classloader.lua"))
+dofile(fs.combine(env.jcd, "jvml_data/vm/arrays.lua"))
 
 env.jcp = env.jcp .. ":/" .. env.jcd -- So that loadJavaClass isn't needed here
 
 -- Make java arguments array
-local jArray = {}
-jArray[1] = #javaArgs
-jArray[2] = env.classByName("java.lang.String")
-jArray[3] = {}
+local jArray = env.newArray(env.getArrayClass("[Ljava.lang.String;"), #javaArgs)
 for i,v in ipairs(javaArgs) do
-    jArray[3][i] = env.toJString(v)
+    jArray[5][i] = env.toJString(v)
 end
 local m = env.findMethod(env.classByName(mainClass), "main([Ljava/lang/String;)V")[1]
 

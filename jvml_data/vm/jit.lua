@@ -82,16 +82,25 @@ local function compile(class, method, codeAttr, name, cp)
         emit("gettable %i 0 k(%i) ", r, i)
     end
 
-    local function asmNewInstance(robj, class)
+    local function asmNewInstance(robj, class, customObjectSize)
         local rclass, rfields, rmethods = alloc(3)
         asmGetRTInfo(rclass, info(class))
         asmGetRTInfo(rmethods, info(class.methods))
-        emit("newtable %i 2 0", robj)
+        emit("newtable %i %i 0", robj, customObjectSize or 3)
         emit("newtable %i %i 0", rfields, #class.fields)
         emit("settable %i k(1) %i", robj, rclass)
         emit("settable %i k(2) %i", robj, rfields)
         emit("settable %i k(3) %i", robj, rmethods)
         free(3)
+    end
+
+    local function asmNewArray(robj, rlength, class)
+        local rarray = alloc()
+        emit("newtable %i 0 0", rarray)
+        asmNewInstance(robj, class, 5)
+        emit("settable %i k(4) %i", robj, rlength)
+        emit("settable %i k(5) %i", robj, rarray)
+        free()
     end
 
     local function asmPrintReg(r)
@@ -193,33 +202,22 @@ local function compile(class, method, codeAttr, name, cp)
             else
                 local stringClass = classByName("java.lang.String")
                 local str = cp[s.string_index].bytes
-                local rmt, robj, rcharref, rchars = alloc(4)
-                asmGetRTInfo(rmt, info(findMethod(stringClass, "<init>([C)V")))
-                asmNewInstance(robj, stringClass)
 
-                -- Create the char array ref. Holds array length, primitive type, and the actual array.
-                emit("newtable %i 3 0", rcharref)
-                emit("settable %i k(1) k(%i)", rcharref, #str)
-                emit("settable %i k(2) '%s'", rcharref, "C")
-
-                -- Create the array and save it in the ref.
-                emit("newtable %i 0 0", rchars)
-                emit("settable %i k(3) %i", rcharref, rchars)
-
+                local rstr, rstringInit, rstrDup, rcharRef, rcharArray = alloc(5)
+                asmNewInstance(rstr, stringClass)
+                asmGetRTInfo(rcharArray, info(#str)) -- use rcharArray temporarily for length
+                asmNewArray(rcharRef, rcharArray, getArrayClass("[C"))
+                emit("gettable %i %i k(5)", rcharArray, rcharRef)
                 -- TODO: Don't use an unrolled loop for very large strings.
                 -- Fill the char array.
-                for i = 1, #str do
-                    emit("settable %i k(%i) k(%i)", rchars, i, str:sub(i, i):byte())
+                for i=1,#str do
+                    emit("settable %i k(%i) k(%i)", rcharArray, i, str:sub(i,i):byte())
                 end
-
-                -- Invoke java.lang.String constructor.
-                -- Current stack: rmt, robj, rcharref
-                asmInvokeMethod(rmt, 2, 0)
-
-                -- Need to move the object back in place. Overwrite rmt.
-                emit("move %i %i", rmt, robj)
-
-                free(3)
+                -- Invoke java.lang.String constructor
+                asmGetRTInfo(rstringInit, info(findMethod(stringClass, "<init>([C)V")))
+                emit("move %i %i", rstrDup, rstr)
+                asmInvokeMethod(rstringInit, 2, 0)
+                free(4)
             end
         end, function() -- 13
             --ldc_w
@@ -233,33 +231,22 @@ local function compile(class, method, codeAttr, name, cp)
             else
                 local stringClass = classByName("java.lang.String")
                 local str = cp[s.string_index].bytes
-                local rmt, robj, rcharref, rchars = alloc(4)
-                asmGetRTInfo(rmt, info(findMethod(stringClass, "<init>([C)V")))
-                asmNewInstance(robj, stringClass)
 
-                -- Create the char array ref. Holds array length, primitive type, and the actual array.
-                emit("newtable %i 3 0", rcharref)
-                emit("settable %i k(1) k(%i)", rcharref, #str)
-                emit("settable %i k(2) '%s'", rcharref, "C")
-
-                -- Create the array and save it in the ref.
-                emit("newtable %i 0 0", rchars)
-                emit("settable %i k(3) %i", rcharref, rchars)
-
+                local rstr, rstringInit, rstrDup, rcharRef, rcharArray = alloc(5)
+                asmNewInstance(rstr, stringClass)
+                asmGetRTInfo(rcharArray, info(#str)) -- use rcharArray temporarily for length
+                asmNewArray(rcharRef, rcharArray, getArrayClass("[C"))
+                emit("gettable %i %i k(5)", rcharArray, rcharRef)
                 -- TODO: Don't use an unrolled loop for very large strings.
                 -- Fill the char array.
-                for i = 1, #str do
-                    emit("settable %i k(%i) k(%i)", rchars, i, str:sub(i, i):byte())
+                for i=1,#str do
+                    emit("settable %i k(%i) k(%i)", rcharArray, i, str:sub(i,i):byte())
                 end
-
-                -- Invoke java.lang.String constructor.
-                -- Current stack: rmt, robj, rcharref
-                asmInvokeMethod(rmt, 2, 0)
-
-                -- Need to move the object back in place. Overwrite rmt.
-                emit("move %i %i", rmt, robj)
-
-                free(3)
+                -- Invoke java.lang.String constructor
+                asmGetRTInfo(rstringInit, info(findMethod(stringClass, "<init>([C)V")))
+                emit("move %i %i", rstrDup, rstr)
+                asmInvokeMethod(rstringInit, 2, 0)
+                free(4)
             end
         end, function() -- 14
             --ldc2_w
@@ -382,7 +369,7 @@ local function compile(class, method, codeAttr, name, cp)
             local rarr = peek(1)
             local ri = peek(0)
             emit("add %i %i k(1)", ri, ri)
-            emit("gettable %i %i k(3)", rarr, rarr)
+            emit("gettable %i %i k(5)", rarr, rarr)
             emit("gettable %i %i %i", rarr, rarr, ri)
             free()
         end, function() -- 2F
@@ -390,7 +377,7 @@ local function compile(class, method, codeAttr, name, cp)
             local rarr = peek(1)
             local ri = peek(0)
             emit("add %i %i k(1)", ri, ri)
-            emit("gettable %i %i k(3)", rarr, rarr)
+            emit("gettable %i %i k(5)", rarr, rarr)
             emit("gettable %i %i %i", rarr, rarr, ri)
             free()
         end, function() -- 30
@@ -398,7 +385,7 @@ local function compile(class, method, codeAttr, name, cp)
             local rarr = peek(1)
             local ri = peek(0)
             emit("add %i %i k(1)", ri, ri)
-            emit("gettable %i %i k(3)", rarr, rarr)
+            emit("gettable %i %i k(5)", rarr, rarr)
             emit("gettable %i %i %i", rarr, rarr, ri)
             free()
         end, function() -- 31
@@ -406,7 +393,7 @@ local function compile(class, method, codeAttr, name, cp)
             local rarr = peek(1)
             local ri = peek(0)
             emit("add %i %i k(1)", ri, ri)
-            emit("gettable %i %i k(3)", rarr, rarr)
+            emit("gettable %i %i k(5)", rarr, rarr)
             emit("gettable %i %i %i", rarr, rarr, ri)
             free()
         end, function() -- 32
@@ -414,7 +401,7 @@ local function compile(class, method, codeAttr, name, cp)
             local rarr = peek(1)
             local ri = peek(0)
             emit("add %i %i k(1)", ri, ri)
-            emit("gettable %i %i k(3)", rarr, rarr)
+            emit("gettable %i %i k(5)", rarr, rarr)
             emit("gettable %i %i %i", rarr, rarr, ri)
             free()
         end, function() -- 33
@@ -422,7 +409,7 @@ local function compile(class, method, codeAttr, name, cp)
             local rarr = peek(1)
             local ri = peek(0)
             emit("add %i %i k(1)", ri, ri)
-            emit("gettable %i %i k(3)", rarr, rarr)
+            emit("gettable %i %i k(5)", rarr, rarr)
             emit("gettable %i %i %i", rarr, rarr, ri)
             free()
         end, function() -- 34
@@ -431,7 +418,7 @@ local function compile(class, method, codeAttr, name, cp)
             local rarr = peek(1)
             local ri = peek(0)
             emit("add %i %i k(1)", ri, ri)
-            emit("gettable %i %i k(3)", rarr, rarr)
+            emit("gettable %i %i k(5)", rarr, rarr)
             emit("gettable %i %i %i", rarr, rarr, ri)
             free()
         end, function() -- 35
@@ -439,7 +426,7 @@ local function compile(class, method, codeAttr, name, cp)
             local rarr = peek(1)
             local ri = peek(0)
             emit("add %i %i k(1)", ri, ri)
-            emit("gettable %i %i k(3)", rarr, rarr)
+            emit("gettable %i %i k(5)", rarr, rarr)
             emit("gettable %i %i %i", rarr, rarr, ri)
             free()
         end, function() -- 36
@@ -532,25 +519,25 @@ local function compile(class, method, codeAttr, name, cp)
             --aastore
             local rarr, ri, rval = free(3)
             emit("add %i %i k(1)", ri, ri)
-            emit("gettable %i %i k(3)", rarr, rarr)
+            emit("gettable %i %i k(5)", rarr, rarr)
             emit("settable %i %i %i", rarr, ri, rval)
         end, function() -- 50
             --aastore
             local rarr, ri, rval = free(3)
             emit("add %i %i k(1)", ri, ri)
-            emit("gettable %i %i k(3)", rarr, rarr)
+            emit("gettable %i %i k(5)", rarr, rarr)
             emit("settable %i %i %i", rarr, ri, rval)
         end, function() -- 51
             --aastore
             local rarr, ri, rval = free(3)
             emit("add %i %i k(1)", ri, ri)
-            emit("gettable %i %i k(3)", rarr, rarr)
+            emit("gettable %i %i k(5)", rarr, rarr)
             emit("settable %i %i %i", rarr, ri, rval)
         end, function() -- 52
             --aastore
             local rarr, ri, rval = free(3)
             emit("add %i %i k(1)", ri, ri)
-            emit("gettable %i %i k(3)", rarr, rarr)
+            emit("gettable %i %i k(5)", rarr, rarr)
             emit("settable %i %i %i", rarr, ri, rval)
         end, function() -- 53
             --aastore
@@ -559,25 +546,25 @@ local function compile(class, method, codeAttr, name, cp)
             --asmPrintReg(ri - 1)
             --asmPrintReg(rval - 1)
             emit("add %i %i k(1)", ri, ri)
-            emit("gettable %i %i k(3)", rarr, rarr)
+            emit("gettable %i %i k(5)", rarr, rarr)
             emit("settable %i %i %i", rarr, ri, rval)
         end, function() -- 54
             --aastore
             local rarr, ri, rval = free(3)
             emit("add %i %i k(1)", ri, ri)
-            emit("gettable %i %i k(3)", rarr, rarr)
+            emit("gettable %i %i k(5)", rarr, rarr)
             emit("settable %i %i %i", rarr, ri, rval)
         end, function() -- 55
             --aastore
             local rarr, ri, rval = free(3)
             emit("add %i %i k(1)", ri, ri)
-            emit("gettable %i %i k(3)", rarr, rarr)
+            emit("gettable %i %i k(5)", rarr, rarr)
             emit("settable %i %i %i", rarr, ri, rval)
         end, function() -- 56
             --aastore
             local rarr, ri, rval = free(3)
             emit("add %i %i k(1)", ri, ri)
-            emit("gettable %i %i k(3)", rarr, rarr)
+            emit("gettable %i %i k(5)", rarr, rarr)
             emit("settable %i %i %i", rarr, ri, rval)
         end, function() -- 57
             free()
@@ -1289,47 +1276,30 @@ local function compile(class, method, codeAttr, name, cp)
             asmNewInstance(robj, c)
         end, function() -- BC
             --newarray
-            local type = u1()
-            local r = peek(0)
-            local rlen = alloc()
+            local cn = "["..ARRAY_TYPES[u1()]
+            local class = getArrayClass(cn)
 
-            -- Length is occupying the space we need to put the new array, so copy it to a new register.
-            emit("move %i %i", rlen, r)
-
-            -- Create the array ref. Holds array length, primitive type, and the actual array.
-            emit("newtable %i 0 0", r)
-            emit("settable %i k(1) %i", r, rlen)
-            emit("settable %i k(2) k(%i)", r, type)
-
-            -- Overwrite len with array to save a register and set the array.
-            emit("newtable %i 0 0", rlen)
-            emit("settable %i k(3) %i", r, rlen)
-
+            local rlength = peek(0)
+            local robj = alloc()
+            asmNewArray(robj, rlength, class)
+            --put array in expected register
+            emit("move %i %i", rlength, robj)
             free()
         end, function() -- BD
             --anewarray
-            local c = resolveClass(cp[u2()])
-            local r = peek(0)
-            local rn = alloc()
+            local cn = "[L"..cp[cp[u2()].name_index].bytes:gsub("/",".")..";"
+            local class = getArrayClass(cn)
 
-            -- Length is occupying the space we need to put the new array, so copy it to a new register.
-            emit("move %i %i", rn, r)
-
-            -- Create the array ref. Holds array length, primitive type, and the actual array.
-            emit("newtable %i 0 0", r)
-            emit("settable %i k(1) %i", r, rn)
-            asmGetRTInfo(rn, info(c))
-            emit("settable %i k(2) %i", r, rn)
-
-            -- Create the array.
-            emit("newtable %i 0 0", rn)
-            emit("settable %i k(3) %i", r, rn)
-
+            local rlength = peek(0)
+            local robj = alloc()
+            asmNewArray(robj, rlength, class)
+            --put array in expected register
+            emit("move %i %i", rlength, robj)
             free()
         end, function() -- BE
             --arraylength
             local r = peek(0)
-            emit("gettable %i %i k(1)", r, r)
+            emit("gettable %i %i k(4)", r, r)
         end, function() -- BF
         end, function() -- C0
             local c = resolveClass(cp[u2()])
