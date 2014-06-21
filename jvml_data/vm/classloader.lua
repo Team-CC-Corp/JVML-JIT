@@ -614,9 +614,9 @@ function loadJavaClass(file)
         Class.acc = access_flags
         Class.fieldIndexByName = { }
 
-        local interfaces_count = u2()
+        Class.interfaces_count = u2()
         Class.interfaces = {}
-        for i=0, interfaces_count-1 do
+        for i=0, Class.interfaces_count-1 do
             local iname = u2()
             Class.interfaces[i] = classByName(cp[cp[iname].name_index].bytes:gsub("/","."))
         end
