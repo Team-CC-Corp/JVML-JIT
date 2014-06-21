@@ -3,19 +3,29 @@ local stack_trace = {}
 
 function findMethod(c,name)
     if not c then error("class expected, got nil",2) end
+    if c.methodLookup[name] then
+        return c.methodLookup[name]
+    end
     for i=1, #c.methods do
         if c.methods[i].name == name then
-            return c.methods[i], i
+            c.methodLookup[name] = c.methods[i]
+            return c.methods[i]
         end
     end
     local mt
     if c.super then
         mt = findMethod(c.super, name)
+        if mt then
+            c.methodLookup[name] = mt
+            return mt
+        end
     end
-    if mt then return mt end
     for i=0, c.interfaces_count-1 do
         mt = findMethod(c.interfaces[i], name)
-        if mt then return mt end
+        if mt then
+            c.methodLookup[name] = mt
+            return mt
+        end
     end
 end
 
@@ -98,6 +108,7 @@ function createClass(super_name, cn)
     cls[2] = cls.fields
     cls.methods = {}
     cls[3] = cls.methods
+    cls.methodLookup = {}
     if super_name then -- we have a custom Object class file which won't have a super
         local super = classByName(super_name)
         cls.super = super
