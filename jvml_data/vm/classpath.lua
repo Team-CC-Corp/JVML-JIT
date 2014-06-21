@@ -25,7 +25,8 @@ local function implementsInterface(class, interface)
     if class.super and (class.super == interface or implementsInterface(class.super, interface)) then
         return 1
     end
-    for i,v in ipairs(class.interfaces) do
+    for i=0, class.interfaces_count-1 do
+        local v = class.interfaces[i]
         if v == interface or implementsInterface(v, interface) then
             return 1
         end
