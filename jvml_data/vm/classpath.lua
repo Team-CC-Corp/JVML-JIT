@@ -8,6 +8,15 @@ function findMethod(c,name)
             return c.methods[i], i
         end
     end
+    local mt
+    if c.super then
+        mt = findMethod(c.super, name)
+    end
+    if mt then return mt end
+    for i=0, c.interfaces_count-1 do
+        mt = findMethod(c.interfaces[i], name)
+        if mt then return mt end
+    end
 end
 
 function findObjectField(obj, name)
