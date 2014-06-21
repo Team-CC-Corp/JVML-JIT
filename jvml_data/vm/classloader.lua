@@ -179,48 +179,6 @@ function loadJavaClass(file)
         return bit.blshift(u1(),24) + bit.blshift(u1(),16) + bit.blshift(u1(),8) + u1()
     end
 
-    local function isIndirectEqual(typed, superd)
-        local i = 1
-        while true do
-            local typec = typed:sub(i, i)
-            local superc = superd:sub(i, i)
-
-            if typec == "[" then
-                if superc ~= "[" then
-                    return false
-                end
-                i = i + 1
-            elseif typec == "L" then
-                if superc ~= "L" then
-                    return false
-                end
-                local typeName = typed:sub(i + 1, -2):gsub("/", ".")
-                local superName = superd:sub(i + 1, -2):gsub("/", ".")
-                local type = classByName(typeName)
-                local super = classByName(superName)
-                local class = type
-                while class do
-                    if class == super then
-                        return true
-                    end
-                    class = class.super
-                end
-                return false
-            else
-                -- TEST
-                --[[if superc == "L" and superd:sub(i) == "Ljava/lang/Object;" then
-                    return true
-                end
-
-                if typed == "B" or typed == "C" or typed == "S" then
-                    return true
-                end
-                return typec == superc]]
-                return true
-            end
-        end
-    end
-
     local function parse_descriptor(desc,descriptor)
         --parse descriptor
         local i = 1
@@ -607,7 +565,6 @@ function loadJavaClass(file)
         if not Class then
             return false
         end
-        Class.constantPool = cp
 
         --start processing the data
         Class.name = cn
@@ -676,9 +633,9 @@ function loadJavaClass(file)
         end
 
         local attrib_count = u2()
-        Class.attributes = {}
+        local attributes = {}
         for i=0, attrib_count-1 do
-            Class.attributes[i] = attribute()
+            attributes[i] = attribute()
         end
 
         local staticmr = findMethod(Class, "<clinit>()V")[1]
