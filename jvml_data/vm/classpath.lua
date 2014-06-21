@@ -29,7 +29,7 @@ function findMethod(c,name)
     end
 end
 
-function findObjectField(obj, name)
+function getObjectField(obj, name)
     return obj[2][obj[1].fieldIndexByName[name]]
 end
 

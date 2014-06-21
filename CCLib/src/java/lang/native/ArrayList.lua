@@ -7,14 +7,14 @@ natives["java.util.ArrayList"]["initArray()V"] = function(this)
 end
 
 natives["java.util.ArrayList"]["add(Ljava/lang/Object;)Z"] = function(this, e)
-	local arr = findObjectField(this, "array")
+	local arr = getObjectField(this, "array")
 	arr[3][arr[1] + 1] = e
 	arr[1] = arr[1] + 1
 	return 1 -- java booleans are 1/0
 end
 
 natives["java.util.ArrayList"]["add(ILjava/lang/Object;)Z"] = function(this, i, e)
-	local arr = findObjectField(this, "array")
+	local arr = getObjectField(this, "array")
 	assert(i < arr[1] and i >= 0, "ArrayList index out of bounds")
 	table.insert(arr[3], i + 1, e)
 	arr[1] = arr[1] + 1
@@ -22,13 +22,13 @@ natives["java.util.ArrayList"]["add(ILjava/lang/Object;)Z"] = function(this, i, 
 end
 
 natives["java.util.ArrayList"]["clear()V"] = function(this)
-	local arr = findObjectField(this, "array")
+	local arr = getObjectField(this, "array")
 	arr[3] = {}
 	arr[1] = 0
 end
 
 natives["java.util.ArrayList"]["remove(Ljava/lang/Object;)Z"] = function(this, e)
-	local arr = findObjectField(this, "array")
+	local arr = getObjectField(this, "array")
 	for i=1, arr[1] do
 		if arr[3][i] == e then
 			table.remove(arr[3], i)
@@ -40,7 +40,7 @@ natives["java.util.ArrayList"]["remove(Ljava/lang/Object;)Z"] = function(this, e
 end
 
 natives["java.util.ArrayList"]["remove(I)Ljava/lang/Object;"] = function(this, i)
-	local arr = findObjectField(this, "array")
+	local arr = getObjectField(this, "array")
 	assert(i < arr[1] and i >= 0, "ArrayList index out of bounds")
 	local e = table.remove(arr[3], i + 1)
 	arr[1] = arr[1] - 1
