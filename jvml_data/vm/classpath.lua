@@ -78,6 +78,15 @@ function resolvePath(name)
     end
 end
 
+local jClasses = {}
+function getJClass(name)
+    if not jClasses[name] then
+        jClasses[name] = newInstance(classByName("java.lang.Class"))
+        setObjectField(jClasses[name], "name", toJString(name))
+    end
+    return jClasses[name]
+end
+
 function classByName(cn)
     local c = class[cn]
     if c then

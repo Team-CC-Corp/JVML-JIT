@@ -187,6 +187,9 @@ local function compile(class, method, codeAttr, name, cp)
             local s = cp[u1()]
             if s.bytes then
                 emit("loadk %i k(%s)", alloc(), s.bytes)
+            elseif s.tag == CONSTANT.Class then
+                local r = alloc()
+                asmGetRTInfo(r, info(getJClass(cp[s.name_index].bytes)))
             else
                 local stringClass = classByName("java.lang.String")
                 local str = cp[s.string_index].bytes
@@ -224,6 +227,9 @@ local function compile(class, method, codeAttr, name, cp)
             local s = cp[u2()]
             if s.bytes then
                 emit("loadk %i k(%s)", alloc(), s.bytes)
+            elseif s.tag == CONSTANT.Class then
+                local r = alloc()
+                asmGetRTInfo(r, info(getJClass(cp[s.name_index].bytes)))
             else
                 local stringClass = classByName("java.lang.String")
                 local str = cp[s.string_index].bytes

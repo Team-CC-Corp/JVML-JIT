@@ -29,6 +29,7 @@ public class Test {
         obj.m();
         ((B) obj).v();
 
+        System.out.println(String.class.getName());
 
         Iterable<String> i = new Iterable<String>() {
             @Override
