@@ -23,6 +23,10 @@ function findObjectField(obj, name)
     return obj[2][obj[1].fieldIndexByName[name]]
 end
 
+function setObjectField(obj, name, val)
+    obj[2][obj[1].fieldIndexByName[name]] = val
+end
+
 function newInstance(class)
     return { class, { }, class.methods }
 end
