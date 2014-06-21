@@ -658,7 +658,7 @@ function loadJavaClass(file)
                     if not natives[cn] then natives[cn] = {} end
                     m[1] = function(...)
                         pushStackTrace(mt_name, function() error('',0) end)
-                        if not natives[cn][m.name] then
+                        if not (natives[cn] and natives[cn][m.name]) then
                             error("Native not implemented: " .. Class.name .. "." .. m.name, 0)
                         end
                         local ret = natives[cn][m.name](...)
