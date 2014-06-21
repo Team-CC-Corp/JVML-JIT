@@ -4,9 +4,6 @@ local stack_trace = {}
 function findMethod(c,name)
     if not c then error("class expected, got nil",2) end
     for i=1, #c.methods do
-        if c == "java.lang.String" then
-            print(c.methods[i].name)
-        end
         if c.methods[i].name == name then
             return c.methods[i], i
         end
