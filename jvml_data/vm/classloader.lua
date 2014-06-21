@@ -23,8 +23,10 @@ end
 function toJString(str)
     local stringClass = classByName("java.lang.String")
     local obj = newInstance(stringClass)
-    local charArrayRef = { #str, "C", { } }
-    local charArray = charArrayRef[3]
+
+    local charArray = getArrayClass("[C")
+    local charArrayRef = newArray(charArray, #str)
+    local charArray = charArrayRef[5]
     for i = 1, #str do
         charArray[i] = str:sub(i, i):byte()
     end
@@ -35,9 +37,9 @@ end
 function toLString(str)
     local stringClass = classByName("java.lang.String")
     local strArray = { }
-    local charArrayRef = str[2][stringClass.fieldIndexByName["value"]]
-    local len = charArrayRef[1]
-    local charArray = charArrayRef[3]
+    local charArrayRef = getObjectField(str, "value")
+    local len = charArrayRef[4]
+    local charArray = charArrayRef[5]
 
     for i = 1, len do
         strArray[i] = string.char(charArray[i])
@@ -69,7 +71,7 @@ PRIMITIVE_WRAPPERS = {
     J = "java.lang.Long"
 }
 
-ARRAY_TYPES = {
+ARRAY_TYPES_LOOKUP = {
     Z=4,
     C=5,
     F=6,
@@ -80,12 +82,9 @@ ARRAY_TYPES = {
     J=11
 }
 
-do
-    local t = {}
-    for k,v in pairs(ARRAY_TYPES) do
-        t[v] = k
-    end
-    ARRAY_TYPES = t
+ARRAY_TYPES = {}
+for k,v in pairs(ARRAY_TYPES_LOOKUP) do
+    ARRAY_TYPES[v] = k
 end
 
 TYPELOOKUP = {
@@ -570,7 +569,7 @@ function loadJavaClass(file)
             Class.interfaces[i] = classByName(cp[cp[iname].name_index].bytes:gsub("/","."))
         end
         local fields_count = u2()
-        for i=0, fields_count-1 do
+        for i=1, fields_count do
             Class.fields[i] = field_info()
             Class.fieldIndexByName[Class.fields[i].name] = i
         end
