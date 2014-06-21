@@ -14,7 +14,7 @@ local function compile(class, method, codeAttr, name, cp)
             asm[#asm + 1] = string.format(str, ...) .. "\n"
         end, ...)
         if err then
-            error("asd", 2)
+            error(err, 2)
         end
     end
 
