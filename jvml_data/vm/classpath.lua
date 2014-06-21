@@ -4,17 +4,59 @@ local stack_trace = {}
 function findMethod(c,name)
     if not c then error("class expected, got nil",2) end
     for i=1, #c.methods do
-        if c == "java.lang.String" then
-            print(c.methods[i].name)
-        end
         if c.methods[i].name == name then
             return c.methods[i], i
         end
     end
+    local mt
+    if c.super then
+        mt = findMethod(c.super, name)
+    end
+    if mt then return mt end
+    for i=0, c.interfaces_count-1 do
+        mt = findMethod(c.interfaces[i], name)
+        if mt then return mt end
+    end
+end
+
+function findObjectField(obj, name)
+    return obj[2][obj[1].fieldIndexByName[name]]
+end
+
+function setObjectField(obj, name, val)
+    obj[2][obj[1].fieldIndexByName[name]] = val
 end
 
 function newInstance(class)
     return { class, { }, class.methods }
+end
+
+local function implementsInterface(class, interface)
+    if class.super and (class.super == interface or implementsInterface(class.super, interface)) then
+        return 1
+    end
+    for i=0, class.interfaces_count-1 do
+        local v = class.interfaces[i]
+        if v == interface or implementsInterface(v, interface) then
+            return 1
+        end
+    end
+    return 0
+end
+
+function jInstanceof(obj, class)
+    if bit.band(class.acc, CLASS_ACC.INTERFACE) == CLASS_ACC.INTERFACE then
+        return implementsInterface(obj[1], class)
+    else
+        local oClass = obj[1]
+        while oClass do
+            if oClass == class then
+                return 1
+            end
+            oClass = oClass.super
+        end
+    end
+    return 0
 end
 
 function resolvePath(name)

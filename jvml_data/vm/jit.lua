@@ -1,4 +1,4 @@
-function createCodeFunction(class, method, codeAttr, name, cp)
+local function compile(class, method, codeAttr, name, cp)
     local function resolveClass(c)
         local cn = cp[c.name_index].bytes:gsub("/",".")
         return classByName(cn)
@@ -14,7 +14,7 @@ function createCodeFunction(class, method, codeAttr, name, cp)
             asm[#asm + 1] = string.format(str, ...) .. "\n"
         end, ...)
         if err then
-            error("asd", 2)
+            error(err, 2)
         end
     end
 
@@ -37,6 +37,11 @@ function createCodeFunction(class, method, codeAttr, name, cp)
             reg = reg - 1
         end
         return unpack(ret)
+    end
+
+    local function freeTo(n)
+        n = (n or 0) + codeAttr.max_locals
+        return free(reg - n)
     end
 
     local function peek(n)
@@ -257,7 +262,6 @@ function createCodeFunction(class, method, codeAttr, name, cp)
             if s.cl == "D" then
                 emit("loadk %i k(%f)", alloc(), s.bytes)
             elseif s.cl == "J" then
-                print(s.bytes)
                 asmGetRTInfo(alloc(), info(s.bytes))
             else
                 error("Unknown wide constant type.")
@@ -1208,7 +1212,6 @@ function createCodeFunction(class, method, codeAttr, name, cp)
             local cl = resolveClass(cp[mr.class_index])
             local name = cp[cp[mr.name_and_type_index].name_index].bytes .. cp[cp[mr.name_and_type_index].descriptor_index].bytes
             local mt = findMethod(cl, name)
-            print(name)
             local argslen = #mt.desc - 1
 
             -- Need 1 extra register for last argument. 
@@ -1328,24 +1331,12 @@ function createCodeFunction(class, method, codeAttr, name, cp)
         end, function() -- C1
             local c = resolveClass(cp[u2()])
             local r = peek(0)
-            local rclass, rsuper = alloc(2)
-            asmGetRTInfo(rclass, info(c))               -- rclass = c
-            emit("gettable %i %i k(1)", rsuper, r)      -- rsuper = r[1]
-            emit("eq 1 %i %i", rsuper, rclass)          -- if rsuper == rclass then jmp true
-            emit("jmp 4")
-            emit("gettable %i %i k(4)", rsuper, rsuper) -- rsuper = rsuper[4]
-            emit("test %i 0", rsuper)                   -- if rsuper == nil then jmp false -- No more classes to check
-            emit("jmp 3")
-            emit("jmp -6")                              -- else jmp loop
 
-            -- true:
-            emit("loadbool %i 1 0", r)                  -- r = true
-            emit("jmp 1")                               -- jmp end
-
-            -- false:
-            emit("loadbool %i 1 0", r)                  -- r = false
-
-            -- end:
+            local robj, rclass = alloc(2)
+            emit("move %i %i", robj, r)
+            asmGetRTInfo(rclass, info(c))
+            asmGetRTInfo(r, info(jInstanceof))
+            emit("call %i 3 2", r)
             free(2)
         end, function() -- C2
         end, function() -- C3
@@ -1412,13 +1403,36 @@ function createCodeFunction(class, method, codeAttr, name, cp)
         end
     }
     
-    print("Loading: " .. name)
-    print("Length: " .. #code)
-    print("max_locals: " .. codeAttr.max_locals)
+    debugH.write("Loading: " .. name)
+    debugH.write("Length: " .. #code)
+    debugH.write("max_locals: " .. codeAttr.max_locals)
 
+    local stackMapAttribute
+    for i=0,codeAttr.attributes_count-1 do
+        if codeAttr.attributes[i].name == "StackMapTable" then
+            stackMapAttribute = codeAttr.attributes[i]
+            break
+        end
+    end
+
+    local offset = -1
+    local entryIndex = 0
     inst = u1()
     while inst do
-        print(string.format("%X", inst))
+        -- check the stack map
+        if stackMapAttribute and stackMapAttribute.entries[entryIndex] then
+            local entry = stackMapAttribute.entries[entryIndex]
+            local newOffset = offset + entry.offset_delta + 1
+            if pc() == newOffset then
+                entryIndex = entryIndex + 1
+                offset = newOffset
+
+                freeTo(entry.stack_items)
+            end
+        end
+
+        -- compile the instruction
+        debugH.write(string.format("%X", inst))
         pcMapLJ[asmPC] = pc()
         pcMapJL[pc()] = asmPC
         oplookup[inst]()
@@ -1458,7 +1472,7 @@ function createCodeFunction(class, method, codeAttr, name, cp)
     debugH.flush()
     --print(table.concat(asm))
 
-    print("Loading and verifying bytecode for " .. name)
+    --print("Loading and verifying bytecode for " .. name)
     local p = LAT.Lua51.Parser:new()
     local file = p:Parse(".options 0 " .. (codeAttr.max_locals + 1) .. table.concat(asm), name.."/bytecode")
     --file:StripDebugInfo()
@@ -1466,11 +1480,20 @@ function createCodeFunction(class, method, codeAttr, name, cp)
     local f = loadstring(bc)
     --print(table.concat(asm))
 
+    return f, rti
+    --popStackTrace()
+end
+
+function createCodeFunction(class, method, codeAttr, name, cp)
+    local f
+    local rti
     return function(...)
+        if not f then
+            f, rti = compile(class, method, codeAttr, name, cp)
+        end
         pushStackTrace(name)
         local ret = f(rti, ...)
         popStackTrace()
         return ret
     end
-    --popStackTrace()
 end

@@ -20,9 +20,10 @@ class B extends A {
 
 public class Test {
     public static void main(String[] args) {
-        //Integer intt = new Integer(0xBEEFBABE);
-        //Object[] ints = new Object[4];
-        //ints[0] = "swag";
+        for (String s : args) {
+            System.out.println(s+": String Building");
+        }
+
         Test test = new Test();
         A obj = new B();
         obj.m();
@@ -53,6 +54,7 @@ public class Test {
         for (String s : i) {
             System.out.println(s);
         }
+        System.out.println(i instanceof Iterable);
     }
 
     Object obj;
@@ -63,5 +65,6 @@ public class Test {
 
     public void test() {
         obj = "hello";
+        System.out.println(obj instanceof String);
     }
 }

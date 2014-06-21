@@ -14,4 +14,8 @@ public class Character {
     public String toString() {
         return new String(new char[] {value});
     }
+
+    public char charValue() {
+        return value;
+    }
 }

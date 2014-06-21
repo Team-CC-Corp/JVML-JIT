@@ -3,12 +3,12 @@ natives = {["java.lang.Object"]={
     ["registerNatives()V"] = function()
         local path = resolvePath("java/lang/native")
         for i,v in ipairs(fs.list(path)) do
-            dofile(fs.combine(path, v))
+            if v:sub(1,1) ~= "." then
+                dofile(fs.combine(path, v))
+            end
         end
     end
 }}
-
-staticMethods = { }
 
 function isPrimitive(value)
     return PRIMITIVE_WRAPPERS[value[1]] ~= nil
@@ -149,6 +149,18 @@ CLASS_ACC = {
     SYNTHETIC=0x1000,
     ANNOTATION=0x2000,
     ENUM=0x4000,
+}
+
+VERIFICATION_TYPES = {
+    Top_variable_info = 0,
+    Integer_variable_info = 1,
+    Float_variable_info = 2,
+    Long_variable_info = 3,
+    Double_variable_info = 4,
+    Null_variable_info = 5,
+    UninitializedThis_variable_info = 6,
+    Object_variable_info = 7,
+    Uninitialized_variable_info = 8
 }
 
 function loadJavaClass(file)
@@ -376,6 +388,15 @@ function loadJavaClass(file)
         return c
     end
 
+    local function verification_type_info(info)
+        info.tag = u1()
+        if info.tag == VERIFICATION_TYPES.Object_variable_info then
+            info.cpool_index = u2()
+        elseif info.tag == VERIFICATION_TYPES.Uninitialized_variable_info then
+            info.offset = u2()
+        end
+    end
+
     local function attribute()
         local attrib = {}
         attrib.attribute_name_index = u2()
@@ -460,6 +481,61 @@ function loadJavaClass(file)
             --lel, this doesn't have content in it--
         elseif an == "SourceFile" then
             attrib.source_file_index = u2()
+        elseif an == "StackMapTable" then
+            attrib.number_of_entries = u2()
+            attrib.entries = {}
+            local entries = attrib.entries
+
+            for i=0,attrib.number_of_entries-1 do
+                entries[i] = {}
+                local entry = entries[i]
+                entry.frame_type = u1()
+                local frame_type = entry.frame_type
+
+                if frame_type >= 0 and frame_type <= 63 then
+                    --same_frame
+                    entry.offset_delta = frame_type
+                    entry.stack_items = 0
+                elseif frame_type >=64 and frame_type <= 127 then
+                    --same_locals_1_stack_item_frame
+                    entry.offset_delta = frame_type - 64
+                    entry.stack_items = 1
+
+                    verification_type_info({}) -- dump. We don't implement verification
+                elseif frame_type == 247 then
+                    --same_locals_1_stack_item_frame_extended
+                    entry.offset_delta = u2()
+                    entry.stack_items = 1
+
+                    verification_type_info({}) -- dump
+                elseif frame_type >= 248 and frame_type <= 250 then
+                    --chop_frame
+                    entry.offset_delta = u2()
+                    entry.stack_items = 0
+                elseif frame_type == 251 then
+                    --same_frame_extended
+                    entry.offset_delta = u2()
+                    entry.stack_items = 0
+                elseif frame_type >= 252 and frame_type <= 254 then
+                    --append_frame
+                    entry.offset_delta = u2()
+                    entry.stack_items = 0
+                    for i=1,frame_type - 251 do
+                        verification_type_info({}) -- dump
+                    end
+                elseif frame_type == 255 then
+                    --full_frame
+                    entry.offset_delta = u2()
+                    local number_of_locals = u2()
+                    for i=0,number_of_locals-1 do
+                        verification_type_info({}) -- dump
+                    end
+                    entry.stack_items = u2()
+                    for i=0,entry.stack_items-1 do
+                        verification_type_info({}) -- dump
+                    end
+                end
+            end
         else
             --print("Unhandled Attrib: "..an)
             attrib.bytes = {}
@@ -538,10 +614,11 @@ function loadJavaClass(file)
         Class.acc = access_flags
         Class.fieldIndexByName = { }
 
-        local interfaces_count = u2()
+        Class.interfaces_count = u2()
         Class.interfaces = {}
-        for i=0, interfaces_count-1 do
-            Class.interfaces[i] = u2()
+        for i=0, Class.interfaces_count-1 do
+            local iname = u2()
+            Class.interfaces[i] = classByName(cp[cp[iname].name_index].bytes:gsub("/","."))
         end
         local fields_count = u2()
         for i=0, fields_count-1 do
@@ -581,7 +658,7 @@ function loadJavaClass(file)
                     if not natives[cn] then natives[cn] = {} end
                     m[1] = function(...)
                         pushStackTrace(mt_name, function() error('',0) end)
-                        if not natives[cn][m.name] then
+                        if not (natives[cn] and natives[cn][m.name]) then
                             error("Native not implemented: " .. Class.name .. "." .. m.name, 0)
                         end
                         local ret = natives[cn][m.name](...)
@@ -605,7 +682,12 @@ function loadJavaClass(file)
         end
 
         local staticmr = findMethod(Class, "<clinit>()V")[1]
-        staticMethods[#staticMethods + 1] = staticmr
+        local ok, err = pcall(staticmr)
+        if not ok then
+            printError(err)
+            printStackTrace(true)
+            error("Error in <clinit>()V")
+        end
     end)
 
     fh.close()
