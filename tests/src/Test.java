@@ -23,7 +23,7 @@ public class Test {
         for (String s : args) {
             System.out.println(s+": String Building");
         }
-
+        System.out.println(cc.Computer.getTime());
         Test test = new Test();
         A obj = new B();
         obj.m();

@@ -10,6 +10,9 @@
 		<copy todir="build/classes/java/lang/native">  
 			<fileset dir="src/java/lang/native"/>  
 		</copy>
+		<copy todir="build/classes/cc/native">  
+			<fileset dir="src/cc/native"/>  
+		</copy>
 	</target>
 
 	<target name="jar" depends="compile">

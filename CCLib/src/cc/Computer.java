@@ -1,6 +1,10 @@
 package cc;
 public final class Computer
 {
+    static {
+        System.load("cc/native/Computer.lua");
+    }
+
     private Computer() {}
     public static native void shutdown();
     public static native void restart();
