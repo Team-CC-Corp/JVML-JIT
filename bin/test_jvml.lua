@@ -15,6 +15,7 @@ for i,v in ipairs(fs.list(tests)) do
 		    if not ok then
 		    	printError(err)
 		        vm.printStackTrace(true)
+		        return
 		    end
 		end
 	end
