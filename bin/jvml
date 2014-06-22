@@ -41,6 +41,9 @@ end
 ---------------------------------------------------------------------------------------------------------------
 -- Load the VM
 ---------------------------------------------------------------------------------------------------------------
+for i,v in ipairs(options.classpath) do
+    options.classpath[i] = shell.resolve(v)
+end
 local vm = setmetatable({
     jcd = jcd,
     jcp = table.concat(options.classpath, ":"),
