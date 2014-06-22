@@ -2,7 +2,7 @@ local jcd = shell.resolve(fs.combine(fs.getDir(shell.getRunningProgram()), "..")
 local program = fs.combine(jcd, "bin/jvml")
 local tests = fs.combine(jcd, "tests/build")
 
-shell.run(program, "-cp", tests, "-g")
+shell.run(program, "-cp", tests, "-g", "-d")
 local vm = jvml.popVM()
 
 for i,v in ipairs(fs.list(tests)) do
