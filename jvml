@@ -30,10 +30,23 @@ if not options.mainclass then
     return
 end
 
+
 local env = setmetatable({
     jcd = jcd,
-    jcp = table.concat(options.classpath, ":")
+    jcp = table.concat(options.classpath, ":"),
 }, {__index=getfenv()})
+
+local outputFile
+if options.output then
+    outputFile = assert(fs.open(options.output, "w"), "Failed to open " .. options.output)
+    env.print = function(...)
+        print(...)
+        for i,v in ipairs({...}) do
+            outputFile.write(tostring(v))
+        end
+        outputFile.write("\n")
+    end
+end
 
 env.debugMode = options.debug
 if options.debug then
@@ -96,5 +109,9 @@ end
 if options.time then
     local endTime = os.time()
     print("\nTime: ", endTime - startTime)
+end
+
+if options.output then
+    outputFile.close()
 end
 env.debugH.close()
