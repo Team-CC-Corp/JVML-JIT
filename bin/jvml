@@ -1,4 +1,4 @@
-local jcd = shell.resolve(fs.combine(fs.getDir(shell.getRunningProgram()), ".."))
+local jcd = shell.resolve("/"..fs.combine(fs.getDir(shell.getRunningProgram()), ".."))
 
 local libDir = fs.combine(jcd, "lib")
 for i,v in ipairs(fs.list(libDir)) do
