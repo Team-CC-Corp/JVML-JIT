@@ -14,4 +14,8 @@ public class Float extends Number {
     public String toString() {
         return Number.toString(value);
     }
+
+    public float floatValue() {
+        return value;
+    }
 }

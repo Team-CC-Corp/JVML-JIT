@@ -29,4 +29,8 @@ public class Byte extends Number {
     public String toString() {
         return Integer.toString((int)value);
     }
+
+    public byte byteValue() {
+        return value;
+    }
 }

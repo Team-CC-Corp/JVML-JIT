@@ -14,4 +14,8 @@ public class Long extends Number {
     public String toString() {
         return Number.toString(value);
     }
+
+    public long longValue() {
+        return value;
+    }
 }

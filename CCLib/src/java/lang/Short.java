@@ -14,4 +14,8 @@ public class Short extends Number {
     public String toString() {
         return Number.toString(value);
     }
+
+    public short shortValue() {
+        return value;
+    }
 }

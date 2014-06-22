@@ -14,4 +14,8 @@ public class Double extends Number {
     public String toString() {
         return Number.toString(value);
     }
+
+    public double doubleValue() {
+        return value;
+    }
 }

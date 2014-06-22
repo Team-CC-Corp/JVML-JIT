@@ -17,4 +17,8 @@ public class Boolean {
     public String toString() {
         return value ? "true" : "false";
     }
+
+    public boolean booleanValue() {
+        return value;
+    }
 }

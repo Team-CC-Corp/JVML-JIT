@@ -42,4 +42,8 @@ public class Integer extends Number {
     public String toString() {
         return Number.toString(value);
     }
+
+    public int intValue() {
+        return value;
+    }
 }
