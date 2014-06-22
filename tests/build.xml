@@ -1,0 +1,12 @@
+<project name="JVML_JIT_TESTS" default="main">
+	<target name="clean">
+		<delete dir="build"/>
+	</target>
+
+	<target name="compile">
+		<mkdir dir="build"/>
+		<javac bootclasspath="../CCLib/build/classes" srcdir="src" destdir="build"/>
+	</target>
+
+	<target name="main" depends="compile"></target>
+</project>
