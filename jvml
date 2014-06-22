@@ -50,7 +50,7 @@ if not mainClass then
     return
 end
 
-local jcd = fs.combine("", shell.getRunningProgram():sub(1, -1 - #(fs.getName(shell.getRunningProgram()))))
+local jcd = fs.getDir(shell.getRunningProgram())
 
 local env = setmetatable({
     jcd = jcd,
@@ -96,8 +96,6 @@ dofile(fs.combine(env.jcd, "jvml_data/vm/classpath.lua"))
 dofile(fs.combine(env.jcd, "jvml_data/vm/jit.lua"))
 dofile(fs.combine(env.jcd, "jvml_data/vm/classloader.lua"))
 dofile(fs.combine(env.jcd, "jvml_data/vm/arrays.lua"))
-
-env.jcp = env.jcp .. ":/" .. env.jcd -- So that loadJavaClass isn't needed here
 
 -- Make java arguments array
 local jArray = env.newArray(env.getArrayClass("[Ljava.lang.String;"), #javaArgs)
