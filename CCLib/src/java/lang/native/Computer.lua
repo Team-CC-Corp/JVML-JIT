@@ -53,7 +53,8 @@ natives["cc.Computer"]["pullEvent()Lcc/Event;"] = function()
 
     local eventClass = classByName("cc.Event")
     local event = newInstance(eventClass)
-    local argsRef = { #args, classByName("java.lang.Object"), args }
+    local argsRef = newArray(getArrayClass("[java.lang.Object;"), #args)
+    argsRef[5] = args
     findMethod(eventClass, "<init>(Ljava/lang/String;[Ljava/lang/Object;)V")[1](event, typ, argsRef)
     return event
 end
