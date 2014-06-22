@@ -2,7 +2,7 @@ local jcd = shell.resolve(fs.combine(fs.getDir(shell.getRunningProgram()), "..")
 
 local libDir = fs.combine(jcd, "lib")
 for i,v in ipairs(fs.list(libDir)) do
-    if not v:find("^%.") then
+    if not v:find("^%.") and not _G[v] then
         os.loadAPI(fs.combine(libDir, v))
     end
 end
