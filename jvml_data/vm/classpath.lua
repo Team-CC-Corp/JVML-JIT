@@ -69,11 +69,13 @@ local function _jInstanceof(obj, class)
     return 0
 end
 function jInstanceof(obj, class)
+    if not obj then
+        return false
+    end
     if not obj[1].instanceofCache[class] then
         obj[1].instanceofCache[class] = _jInstanceof(obj, class)
     end
     return obj[1].instanceofCache[class]
-
 end
 
 function resolvePath(name)
