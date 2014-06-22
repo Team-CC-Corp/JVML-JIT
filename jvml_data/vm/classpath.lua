@@ -54,7 +54,7 @@ local function implementsInterface(class, interface)
     return 0
 end
 
-function jInstanceof(obj, class)
+local function _jInstanceof(obj, class)
     if bit.band(class.acc, CLASS_ACC.INTERFACE) == CLASS_ACC.INTERFACE then
         return implementsInterface(obj[1], class)
     else
@@ -67,6 +67,13 @@ function jInstanceof(obj, class)
         end
     end
     return 0
+end
+function jInstanceof(obj, class)
+    if not obj[1].instanceofCache[class] then
+        obj[1].instanceofCache[class] = _jInstanceof(obj, class)
+    end
+    return obj[1].instanceofCache[class]
+
 end
 
 function resolvePath(name)
@@ -118,6 +125,7 @@ function createClass(super_name, cn)
     cls.methods = {}
     cls[3] = cls.methods
     cls.methodLookup = {}
+    cls.instanceofCache = {}
     if super_name then -- we have a custom Object class file which won't have a super
         local super = classByName(super_name)
         cls.super = super
