@@ -2,14 +2,14 @@ natives["java.util.ArrayList"] = natives["java.util.ArrayList"] or {}
 
 natives["java.util.ArrayList"]["initArray()V"] = function(this)
 	-- array must be initialized natively, as generics can't be used for array construction
-	local arr = {0, classByName("java.lang.Object"), {}}
+	local arr = newArray(getArrayClass("[Ljava.lang.Object;"), 0)
 	setObjectField(this, "array", arr)
 end
 
 natives["java.util.ArrayList"]["add(Ljava/lang/Object;)Z"] = function(this, e)
 	local arr = getObjectField(this, "array")
-	arr[5][arr[1] + 1] = e
-	arr[4] = arr[1] + 1
+	arr[5][arr[4] + 1] = e
+	arr[4] = arr[4] + 1
 	return 1 -- java booleans are 1/0
 end
 
