@@ -1303,7 +1303,18 @@ local function compile(class, method, codeAttr, name, cp)
         end, function() -- BF
         end, function() -- C0
             local c = resolveClass(cp[u2()])
-            -- TODO: Throw if cast fails.
+            local r = peek(0)
+            local rjInstanceof, robj, rclass = alloc(3)
+            emit("move %i %i", robj, r)
+            asmGetRTInfo(rclass, info(c))
+            asmGetRTInfo(rjInstanceof, info(jInstanceof))
+            emit("call %i 3 2", rjInstanceof)
+            local rassert, rsuccess, rmsg = rjInstanceof, robj, rclass
+            emit("move %i %i", rsuccess, rjInstanceof)
+            asmGetRTInfo(rassert, info(assert))
+            asmGetRTInfo(rmsg, info("Failed to cast to "..c.name))
+            emit("call %i 3 1", rassert)
+            free(3)
         end, function() -- C1
             local c = resolveClass(cp[u2()])
             local r = peek(0)
