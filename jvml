@@ -1,64 +1,42 @@
-local args = {...}
+local jcd = fs.getDir(shell.getRunningProgram())
 
-local usage = "Usage: jvml [-d] <mainclass>"
-local mainClass
-local javaArgs = {}
-
-local switches = {
-    debug=false,
-    time=false
-}
-local switchShortcuts = {
-    d="debug",
-    t="time"
-}
-
-while args[1] do
-    local arg = table.remove(args, 1)
-    if arg:sub(1,1) == "-" then
-        -- arg is an option
-        local success = true
-        local switch = arg:sub(2)
-        if switches[switch] ~= nil then
-            switches[switch] = true
-        else
-            for c in switch:gmatch(".") do
-                if switchShortcuts[c] then
-                    switches[switchShortcuts[c]] = true
-                else
-                    success = false
-                end
-            end
-        end
-        if not success then
-            print("Unknown argument: ", arg)
-            print(usage)
-            return
-        end
-    else
-        -- arg is the main class
-        mainClass = arg
-        for v in function() return table.remove(args, 1) end do
-            -- rest of args goes into javaArgs
-            table.insert(javaArgs, v)
-        end
-    end
+os.loadAPI(fs.combine(jcd, "argparse"))
+local parser = argparse.new()
+parser
+    :switch"debug"
+    :shortcut"d"
+parser
+    :switch"time"
+    :shortcut"t"
+parser
+    :parameter"classpath"
+    :shortcut"cp"
+    :multi()
+parser
+    :parameter"output"
+    :shortcut"o"
+parser
+    :argument"mainclass"
+parser
+    :argument"javaArgs"
+    :count"*"
+parser:usage"Usage: jvml [args, ...] <main class> [java args, ...]"
+local options = parser:parse({debug=false,time=false,classpath={"/" .. fs.combine(jcd, "CCLib/build/classes"), "."},javaArgs={}}, ...)
+if not options then
+    return
 end
-
-if not mainClass then
-    print(usage)
+if not options.mainclass then
+    parser:printUsage()
     return
 end
 
-local jcd = fs.getDir(shell.getRunningProgram())
-
 local env = setmetatable({
     jcd = jcd,
-    jcp = "/" .. fs.combine(jcd, "CCLib/build/classes")..":."
+    jcp = table.concat(options.classpath, ":")
 }, {__index=getfenv()})
 
-env.debugMode = switches.debug
-if switches.debug then
+env.debugMode = options.debug
+if options.debug then
     local handle = fs.open(fs.combine(jcd, 'debug'), 'w')
     env.debugH = handle
 else
@@ -98,15 +76,15 @@ dofile(fs.combine(env.jcd, "jvml_data/vm/classloader.lua"))
 dofile(fs.combine(env.jcd, "jvml_data/vm/arrays.lua"))
 
 -- Make java arguments array
-local jArray = env.newArray(env.getArrayClass("[Ljava.lang.String;"), #javaArgs)
-for i,v in ipairs(javaArgs) do
+local jArray = env.newArray(env.getArrayClass("[Ljava.lang.String;"), #options.javaArgs)
+for i,v in ipairs(options.javaArgs) do
     jArray[5][i] = env.toJString(v)
 end
-local m = env.findMethod(env.classByName(mainClass), "main([Ljava/lang/String;)V")[1]
+local m = env.findMethod(env.classByName(options.mainclass), "main([Ljava/lang/String;)V")[1]
 
 -- Begin
 local startTime
-if switches.time then
+if options.time then
     startTime = os.time()
 end
 
@@ -115,7 +93,7 @@ if not ok then
     printError(err)
     env.printStackTrace(true)
 end
-if switches.time then
+if options.time then
     local endTime = os.time()
     print("\nTime: ", endTime - startTime)
 end
