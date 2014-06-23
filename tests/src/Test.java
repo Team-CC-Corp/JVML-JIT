@@ -26,7 +26,6 @@ public class Test {
         System.out.println(cc.Computer.getTime());
         Test test = new Test();
         A obj = new B();
-        obj.m();
         ((B) obj).v();
 
         System.out.println(String.class.getName());
@@ -35,7 +34,7 @@ public class Test {
             @Override
             public Iterator<String> iterator() {
                 return new Iterator<String>() {
-                    private String[] strs = {"Test 1", "Test 2", "Test 3"};
+                    private String[] strs = {"Test 1", "Test 2"};
                     private int i = 0;
 
                     @Override
@@ -66,6 +65,5 @@ public class Test {
 
     public void test() {
         obj = "hello";
-        System.out.println(obj instanceof String);
     }
 }
