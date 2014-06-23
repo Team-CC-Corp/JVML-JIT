@@ -107,7 +107,9 @@ function classByName(cn)
     if not fullPath then
         error("Cannot find class ".. cn, 0)
     end
-    if not loadJavaClass(fullPath) then
+
+    local fh = assert(fs.open(fullPath,"rb"), "File not found: " .. fullPath)
+    if not loadJavaClass(fh) then
         error("Cannot load class " .. cn, 0)
     else
         c = class[cn]

@@ -154,9 +154,7 @@ VERIFICATION_TYPES = {
     Uninitialized_variable_info = 8
 }
 
-function loadJavaClass(file)
-    if not fs.exists(file) then return false end
-    local fh = fs.open(file,"rb")
+function loadJavaClass(fh)
     local cn
     local cp = {}
     local i = 0
