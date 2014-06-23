@@ -19,4 +19,5 @@ public final class Class<T> {
     public String getName() {
     	return name;
     }
+    native public static Class getPrimitiveClass(String name);
 }

@@ -2,6 +2,7 @@ package java.lang;
 
 public class Character {
     private final char value;
+    public static final Class<Character>  TYPE = (Class<Character>) Class.getPrimitiveClass("char");
 
     public static Character valueOf(char value) {
         return new Character(value);
