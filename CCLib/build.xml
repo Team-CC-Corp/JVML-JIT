@@ -5,7 +5,7 @@
 
 	<target name="compile">
 		<mkdir dir="build/classes"/>
-		<javac srcdir="src" destdir="build/classes"/>
+		<javac bootclasspath="src" srcdir="src" destdir="build/classes"/>
 		<mkdir dir="build/classes/java/lang/native"/>
 		<copy todir="build/classes/java/lang/native">  
 			<fileset dir="src/java/lang/native"/>  
