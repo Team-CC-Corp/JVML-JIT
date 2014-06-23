@@ -12,16 +12,16 @@ function findMethod(c,name)
             return c.methods[i], i
         end
     end
-    local mt
+    -- everything after this point is entirely in case of interfaces with default methods
     if c.super then
-        mt = findMethod(c.super, name)
+        local mt = findMethod(c.super, name)
         if mt then
             c.methodLookup[name] = {mt}
             return mt
         end
     end
-    for i=0, c.interfaces_count-1 do
-        mt = findMethod(c.interfaces[i], name)
+    for i=1, c.interfaces_count do
+        local mt = findMethod(c.interfaces[i], name)
         if mt then
             c.methodLookup[name] = {mt}
             return mt
@@ -45,7 +45,7 @@ local function implementsInterface(class, interface)
     if class.super and (class.super == interface or implementsInterface(class.super, interface)) then
         return 1
     end
-    for i=0, class.interfaces_count-1 do
+    for i=1, class.interfaces_count do
         local v = class.interfaces[i]
         if v == interface or implementsInterface(v, interface) then
             return 1
