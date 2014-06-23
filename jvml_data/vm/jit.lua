@@ -1083,7 +1083,9 @@ local function compile(class, method, codeAttr, name, cp)
             end
             pc(addr[2])
         end, function() -- AA
+            error("AA not implemented.") -- TODO
         end, function() -- AB
+            error("AB not implemented.")
         end, function() -- AC
             emit("return %i 2", free())
         end, function() -- AD
@@ -1268,6 +1270,7 @@ local function compile(class, method, codeAttr, name, cp)
                 free(argslen + 1)
             end
         end, function() -- BA
+            error("BA not implemented.") -- TODO
         end, function() -- BB
             --new
             local cr = cp[u2()]
@@ -1326,67 +1329,131 @@ local function compile(class, method, codeAttr, name, cp)
             emit("call %i 3 2", r)
             free(2)
         end, function() -- C2
+            error("C2 not implemented.") -- TODO
         end, function() -- C3
+            error("C3 not implemented.") -- TODO
         end, function() -- C4
+            error("C4 not implemented.") -- TODO
         end, function() -- C5
+            error("C5 not implemented.") -- TODO
         end, function() -- C6
+            local joffset = u2ToSignedShort(u2())
+            emit("test %i 0", free(1))
+            emit("#jmp %i %i", joffset, 1)
         end, function() -- C7
+            error("C7 not implemented.") -- TODO
         end, function() -- C8
+            error("C8 not implemented.") -- TODO
         end, function() -- C9
+            error("C9 not implemented.") -- TODO
         end, function() -- CA
+            error("CA not implemented.") -- TODO
         end, function() -- CB
+            error("CB not implemented.") -- TODO
         end, function() -- CC
+            error("CC not implemented.") -- TODO
         end, function() -- CD
+            error("CD not implemented.") -- TODO
         end, function() -- CE
+            error("CE not implemented.") -- TODO
         end, function() -- CF
+            error("CF not implemented.") -- TODO
         end, function() -- D0
+            error("D0 not implemented.") -- TODO
         end, function() -- D1
+            error("D1 not implemented.") -- TODO
         end, function() -- D2
+            error("D2 not implemented.") -- TODO
         end, function() -- D3
+            error("D3 not implemented.") -- TODO
         end, function() -- D4
+            error("D4 not implemented.") -- TODO
         end, function() -- D5
+            error("D5 not implemented.") -- TODO
         end, function() -- D6
+            error("D6 not implemented.") -- TODO
         end, function() -- D7
+            error("D7 not implemented.") -- TODO
         end, function() -- D8
+            error("D8 not implemented.") -- TODO
         end, function() -- D9
+            error("D9 not implemented.") -- TODO
         end, function() -- DA
+            error("DA not implemented.") -- TODO
         end, function() -- DB
+            error("DB not implemented.") -- TODO
         end, function() -- DC
+            error("DC not implemented.") -- TODO
         end, function() -- DD
+            error("DD not implemented.") -- TODO
         end, function() -- DE
+            error("DE not implemented.") -- TODO
         end, function() -- DF
+            error("DF not implemented.") -- TODO
         end, function() -- E0
+            error("E0 not implemented.") -- TODO
         end, function() -- E1
+            error("E1 not implemented.") -- TODO
         end, function() -- E2
+            error("E2 not implemented.") -- TODO
         end, function() -- E3
+            error("E3 not implemented.") -- TODO
         end, function() -- E4
+            error("E4 not implemented.") -- TODO
         end, function() -- E5
+            error("E5 not implemented.") -- TODO
         end, function() -- E6
+            error("E6 not implemented.") -- TODO
         end, function() -- E7
+            error("E7 not implemented.") -- TODO
         end, function() -- E8
+            error("E8 not implemented.") -- TODO
         end, function() -- E9
+            error("E9 not implemented.") -- TODO
         end, function() -- EA
+            error("EA not implemented.") -- TODO
         end, function() -- EB
+            error("EB not implemented.") -- TODO
         end, function() -- EC
+            error("EC not implemented.") -- TODO
         end, function() -- ED
+            error("ED not implemented.") -- TODO
         end, function() -- EE
+            error("EE not implemented.") -- TODO
         end, function() -- EF
+            error("EF not implemented.") -- TODO
         end, function() -- F0
+            error("F0 not implemented.") -- TODO
         end, function() -- F1
+            error("F1 not implemented.") -- TODO
         end, function() -- F2
+            error("F2 not implemented.") -- TODO
         end, function() -- F3
+            error("F3 not implemented.") -- TODO
         end, function() -- F4
+            error("F4 not implemented.") -- TODO
         end, function() -- F5
+            error("F5 not implemented.") -- TODO
         end, function() -- F6
+            error("F6 not implemented.") -- TODO
         end, function() -- F7
+            error("F7 not implemented.") -- TODO
         end, function() -- F8
+            error("F8 not implemented.") -- TODO
         end, function() -- F9
+            error("F9 not implemented.") -- TODO
         end, function() -- FA
+            error("FA not implemented.") -- TODO
         end, function() -- FB
+            error("FB not implemented.") -- TODO
         end, function() -- FC
+            error("FC not implemented.") -- TODO
         end, function() -- FD
+            error("FD not implemented.") -- TODO
         end, function() -- FE
+            error("FE not implemented.") -- TODO
         end, function() -- FF
+            error("FF not implemented.") -- TODO
         end
     }
     
