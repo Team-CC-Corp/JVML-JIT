@@ -58,6 +58,7 @@ if options.output then
             outputFile.write(tostring(v))
         end
         outputFile.write("\n")
+        outputFile.flush()
     end
 end
 
