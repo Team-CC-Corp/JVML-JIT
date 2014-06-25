@@ -24,6 +24,21 @@ public final class Class<T> {
     native public Class<? super T> getSuperclass();
     native public Method getMethod(String name, Class<?>... parameterTypes);
     native public Method[] getMethods();
+    native public Class<?>[] getInterfaces();
+    native public boolean isInterface();
+    native public boolean isInstance(Object obj);
+    native public boolean isAssignableFrom(Class<?> cls);
+    native public T newInstance();
+
+    public T cast(Object obj)
+    {
+        if(obj != null && !this.isInstance(obj))
+        {
+            // TODO throw exception
+            return null;
+        }
+        return (T) obj;
+    }
 
     native public static Class getPrimitiveClass(String name);
 }
