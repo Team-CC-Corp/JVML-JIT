@@ -98,7 +98,7 @@ natives["java.lang.Class"]["getInterfaces()[Ljava/lang/Class;"] = function(this)
     local array = newArray(getArrayClass("Ljava/lang/Class;"), len)
     array[5] = { }
     for i = 1, len do
-        array[5][#array[5] + 1] = classByName(class.interfaces[i].name)
+        array[5][#array[5] + 1] = getJClass(class.interfaces[i].name)
     end
     return array
 end
