@@ -60,7 +60,9 @@ natives["java.lang.Class"]["getMethod(Ljava/lang/String;[Ljava/lang/Class;)Ljava
 end
 
 local function getMethodNames(class, t)
-	getMethodNames(class.super, t)
+	if class.super then
+		getMethodNames(class.super, t)
+	end
 	for i,v in ipairs(class.methods) do
 		t[v.name] = true
 	end
