@@ -200,24 +200,7 @@ local function compile(class, method, codeAttr, name, cp)
                 local r = alloc()
                 asmGetRTInfo(r, info(getJClass(cp[s.name_index].bytes:gsub("/", "."))))
             else
-                local stringClass = classByName("java.lang.String")
-                local str = cp[s.string_index].bytes
-
-                local rstr, rstringInit, rstrDup, rcharRef, rcharArray = alloc(5)
-                asmNewInstance(rstr, stringClass)
-                asmGetRTInfo(rcharArray, info(#str)) -- use rcharArray temporarily for length
-                asmNewArray(rcharRef, rcharArray, getArrayClass("[C"))
-                emit("gettable %i %i k(5)", rcharArray, rcharRef)
-                -- TODO: Don't use an unrolled loop for very large strings.
-                -- Fill the char array.
-                for i=1,#str do
-                    emit("settable %i k(%i) k(%i)", rcharArray, i, str:sub(i,i):byte())
-                end
-                -- Invoke java.lang.String constructor
-                asmGetRTInfo(rstringInit, info(findMethod(stringClass, "<init>([C)V")))
-                emit("move %i %i", rstrDup, rstr)
-                asmInvokeMethod(rstringInit, 2, 0)
-                free(4)
+                asmGetRTInfo(alloc(), info(toJString(cp[s.string_index].bytes)))
             end
         end, function() -- 13
             --ldc_w
@@ -229,24 +212,7 @@ local function compile(class, method, codeAttr, name, cp)
                 local r = alloc()
                 asmGetRTInfo(r, info(getJClass(cp[s.name_index].bytes:gsub("/", "."))))
             else
-                local stringClass = classByName("java.lang.String")
-                local str = cp[s.string_index].bytes
-
-                local rstr, rstringInit, rstrDup, rcharRef, rcharArray = alloc(5)
-                asmNewInstance(rstr, stringClass)
-                asmGetRTInfo(rcharArray, info(#str)) -- use rcharArray temporarily for length
-                asmNewArray(rcharRef, rcharArray, getArrayClass("[C"))
-                emit("gettable %i %i k(5)", rcharArray, rcharRef)
-                -- TODO: Don't use an unrolled loop for very large strings.
-                -- Fill the char array.
-                for i=1,#str do
-                    emit("settable %i k(%i) k(%i)", rcharArray, i, str:sub(i,i):byte())
-                end
-                -- Invoke java.lang.String constructor
-                asmGetRTInfo(rstringInit, info(findMethod(stringClass, "<init>([C)V")))
-                emit("move %i %i", rstrDup, rstr)
-                asmInvokeMethod(rstringInit, 2, 0)
-                free(4)
+                asmGetRTInfo(alloc(), info(toJString(cp[s.string_index].bytes)))
             end
         end, function() -- 14
             --ldc2_w
