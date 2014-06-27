@@ -200,7 +200,11 @@ local function compile(class, method, codeAttr, name, cp)
                 local r = alloc()
                 asmGetRTInfo(r, info(getJClass(cp[s.name_index].bytes:gsub("/", "."))))
             else
-                asmGetRTInfo(alloc(), info(toJString(cp[s.string_index].bytes)))
+                local rtoJString, rStr = alloc(2)
+                asmGetRTInfo(rtoJString, info(toJString))
+                asmGetRTInfo(rStr, info(cp[s.string_index].bytes))
+                emit("call %i 2 2", rtoJString)
+                free()
             end
         end, function() -- 13
             --ldc_w
@@ -212,7 +216,11 @@ local function compile(class, method, codeAttr, name, cp)
                 local r = alloc()
                 asmGetRTInfo(r, info(getJClass(cp[s.name_index].bytes:gsub("/", "."))))
             else
-                asmGetRTInfo(alloc(), info(toJString(cp[s.string_index].bytes)))
+                local rtoJString, rStr = alloc(2)
+                asmGetRTInfo(rtoJString, info(toJString))
+                asmGetRTInfo(rStr, info(cp[s.string_index].bytes))
+                emit("call %i 2 2", rtoJString)
+                free()
             end
         end, function() -- 14
             --ldc2_w
