@@ -11,7 +11,7 @@ natives["java.lang.reflect.Method"]["invoke(Ljava/lang/Object;[Ljava/lang/Object
 		local className = toLString(getObjectField(declaringClass, "name"))
 		class = classByName(className)
 	end
-	mt = assert(findMethod(class, methodName), "Couldn't find method: " .. methodName)
+	local mt = assert(findMethod(class, methodName), "Couldn't find method: " .. methodName)
 
 	-- Check static
 	assert((target == nil) == (bit.band(mt.acc, METHOD_ACC.STATIC) > 0), "Mismatch in target or static invocation")
