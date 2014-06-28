@@ -3,7 +3,15 @@ natives["java.lang.reflect.Method"] = natives["java.lang.reflect.Method"] or {}
 natives["java.lang.reflect.Method"]["invoke(Ljava/lang/Object;[Ljava/lang/Object;)Ljava/lang/Object;"] = function(this, target, args)
 	local methodName = toLString(getObjectField(this, "name"))
 
-	local mt = assert(findMethod(target[1], methodName), "Couldn't find method: " .. methodName)
+	local class
+	if target then
+		class = target[1]
+	else
+		local declaringClass = getObjectField(this, "declaringClass")
+		local className = toLString(getObjectField(declaringClass, "name"))
+		class = classByName(className)
+	end
+	mt = assert(findMethod(class, methodName), "Couldn't find method: " .. methodName)
 
 	-- Check static
 	assert((target == nil) == (bit.band(mt.acc, METHOD_ACC.STATIC) > 0), "Mismatch in target or static invocation")
@@ -24,7 +32,7 @@ natives["java.lang.reflect.Method"]["invoke(Ljava/lang/Object;[Ljava/lang/Object
 
 	local ret = mt[1](unpack(newArgs))
 	local retType = mt.desc[#mt.desc]
-	if retType.array_depth == 0 and not retType.type:find("^L") then
+	if retType.array_depth == 0 and not retType.type:find("^L") and retType.type ~= "V" then
 		-- return type is primitive. Need to box the primitive to return Object
 		ret = wrapPrimitive(ret, retType.type)
 	end

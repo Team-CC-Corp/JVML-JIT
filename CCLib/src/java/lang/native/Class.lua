@@ -56,6 +56,7 @@ natives["java.lang.Class"]["getMethod(Ljava/lang/String;[Ljava/lang/Class;)Ljava
 	assert(methodName, "Failed to find method: "..noReturnName)
 	local methodObj = newInstance(classByName("java.lang.reflect.Method"))
 	setObjectField(methodObj, "name", toJString(methodName))
+	setObjectField(methodObj, "declaringClass", getJClass(class.name))
 	return methodObj
 end
 
@@ -79,6 +80,7 @@ natives["java.lang.Class"]["getMethods()[Ljava/lang/reflect/Method;"] = function
 	for k,v in pairs(t) do
 		local m = newInstance(classByName("java.lang.reflect.Method"))
 		setObjectField(m, "name", toJString(k))
+		setObjectField(m, "declaringClass", getJClass(class.name))
 		table.insert(jmethods, m)
 	end
 	local mArray = newArray(getArrayClass("[Ljava.lang.reflect.Method;"), #jmethods)
