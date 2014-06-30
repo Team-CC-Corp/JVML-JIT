@@ -1075,27 +1075,28 @@ local function compile(class, method, codeAttr, name, cp)
         end, function() -- B2
             --getstatic
             local fr = cp[u2()]
-            local cl = resolveClass(cp[fr.class_index])
+            local class = resolveClass(cp[fr.class_index])
             local name = cp[cp[fr.name_and_type_index].name_index].bytes
-            local fi = cl.fieldIndexByName[name]
+            local fi = class.fieldIndexByName[name]
             local r = alloc()
-            asmGetRTInfo(r, info(cl.fields))
+            asmGetRTInfo(r, info(class.fields))
             emit("gettable %i %i k(%i)", r, r, fi)
         end, function() -- B3
             --putstatic
             local fr = cp[u2()]
-            local cl = resolveClass(cp[fr.class_index])
+            local class = resolveClass(cp[fr.class_index])
             local name = cp[cp[fr.name_and_type_index].name_index].bytes
             local fi = class.fieldIndexByName[name]
             local value = peek(0)
             local r = alloc()
-            asmGetRTInfo(r, info(cl.fields))
+            asmGetRTInfo(r, info(class.fields))
             emit("settable %i k(%i) %i", r, fi, value)
             free(2)
         end, function() -- B4
             --getfield
             local fr = cp[u2()]
             local name = cp[cp[fr.name_and_type_index].name_index].bytes
+            local class = resolveClass(cp[fr.class_index])
             local fi = class.fieldIndexByName[name]
             local r = peek(0)
             emit("gettable %i %i k(2)", r, r)
@@ -1104,6 +1105,7 @@ local function compile(class, method, codeAttr, name, cp)
             --putfield
             local fr = cp[u2()]
             local name = cp[cp[fr.name_and_type_index].name_index].bytes
+            local class = resolveClass(cp[fr.class_index])
             local fi = class.fieldIndexByName[name]
             local robj = peek(1)
             local rval = peek(0)
