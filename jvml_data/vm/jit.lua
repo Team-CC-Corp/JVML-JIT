@@ -1069,7 +1069,26 @@ local function compile(class, method, codeAttr, name, cp)
             end
             pc(addr[2])
         end, function() -- AA
-            error("AA not implemented.") -- TODO
+            -- Unfortunately can't do any jump table optimization here since Lua doesn't
+            -- have a dynamic jump instruction...
+            local rkey = peek(0)
+
+            -- Align to 4 bytes.
+            local padding = 4 - pc() % 4
+            pc(pc() + padding)
+
+            local default = s4()
+            local low = s4()
+            local high = s4()
+            local noffsets = high - low + 1
+
+            for i = 1, noffsets do
+                local offset = s4()     -- offset to jump to if rkey == match
+                emit("eq 1 k(%i) %i", low + i - 1, rkey)
+                emit("#jmp %i %i", offset, (i - 1) * 2 + 1)
+            end
+
+            emit("#jmp %i %i", default, noffsets * 2)
         end, function() -- AB
             local rkey = free()
 
