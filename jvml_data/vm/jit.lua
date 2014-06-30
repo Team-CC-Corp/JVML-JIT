@@ -78,6 +78,18 @@ local function compile(class, method, codeAttr, name, cp)
         return bit.blshift(u1(),8) + u1()
     end
 
+    local function u4()
+        return bit.blshift(u1(),24) + bit.blshift(u1(),16) + bit.blshift(u1(),8) + u1()
+    end
+
+    local function s4()
+        local u = u4()
+        if u < 2147483648 then
+            return u
+        end
+        return u - 4294967296
+    end
+
     local function asmGetRTInfo(r, i)
         emit("gettable %i 0 k(%i) ", r, i)
     end
@@ -1059,7 +1071,23 @@ local function compile(class, method, codeAttr, name, cp)
         end, function() -- AA
             error("AA not implemented.") -- TODO
         end, function() -- AB
-            error("AB not implemented.")
+            local rkey = free()
+
+            -- Align to 4 bytes.
+            local padding = 4 - pc() % 4
+            pc(pc() + padding)
+
+            local default = s4()        -- default jump
+            local npairs = s4()         -- number of cases
+
+            for i = 1, npairs do
+                local match = s4()      -- try to match this to the key
+                local offset = s4()     -- offset to jump to if rkey == match
+                emit("eq 1 k(%i) %i", match, rkey)
+                emit("#jmp %i %i", offset, (i - 1) * 2 + 1)
+            end
+
+            emit("#jmp %i %i", default, npairs * 2)
         end, function() -- AC
             emit("return %i 2", free())
         end, function() -- AD
