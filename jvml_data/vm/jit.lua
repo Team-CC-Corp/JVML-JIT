@@ -1314,20 +1314,14 @@ local function compile(class, method, codeAttr, name, cp)
             error("C5 not implemented.") -- TODO
         end, function() -- C6
             local joffset = u2ToSignedShort(u2())
-            local rvalue = peek(0)
-            local rnil = alloc()
-            emit("loadnil %i %i", rnil, rnil)
-            emit("eq 1 %i %i", rvalue, rnil)
-            emit("#jmp %i %i", joffset, 2)
-            free(2)
+            local rvalue = free()
+            emit("eq 1 %i nil", rvalue)
+            emit("#jmp %i %i", joffset, 1)
         end, function() -- C7
             local joffset = u2ToSignedShort(u2())
-            local rvalue = peek(0)
-            local rnil = alloc()
-            emit("loadnil %i %i", rnil, rnil)
-            emit("eq 0 %i %i", rvalue, rnil)
-            emit("#jmp %i %i", joffset, 2)
-            free(2)
+            local rvalue = free()
+            emit("eq 0 %i nil", rvalue)
+            emit("#jmp %i %i", joffset, 1)
         end, function() -- C8
             error("C8 not implemented.") -- TODO
         end, function() -- C9
