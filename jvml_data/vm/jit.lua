@@ -1434,10 +1434,6 @@ local function compile(class, method, codeAttr, name, cp)
             error("FF not implemented.") -- TODO
         end
     }
-    
-    debugH.write("Loading: " .. name)
-    debugH.write("Length: " .. #code)
-    debugH.write("max_locals: " .. codeAttr.max_locals)
 
     local stackMapAttribute
     for i=0,codeAttr.attributes_count-1 do
@@ -1464,7 +1460,6 @@ local function compile(class, method, codeAttr, name, cp)
         end
 
         -- compile the instruction
-        debugH.write(string.format("%X", inst))
         pcMapLJ[asmPC] = pc()
         pcMapJL[pc()] = asmPC
         oplookup[inst]()
@@ -1485,8 +1480,6 @@ local function compile(class, method, codeAttr, name, cp)
             local lpc = pcMapJL[jpc] -- + jmpLOffset
             -- Lua offset
             local loffset = lpc - i - 1
-            --if loffset < 0 then loffset = loffset - 1 end
-            --if loffset > 0 then loffset = loffset - 1 end
             asm[i] = "jmp " .. loffset .. "\n"
         end
     end
