@@ -1027,14 +1027,14 @@ local function compile(class, method, codeAttr, name, cp)
             emit("le 1 %i %i", free(2))
             emit("#jmp %i %i", joffset, 1)
         end, function() -- A5
-            --ifle
-            local joffset = u2ToSignedShort(u2())
-            emit("le 1 %i k(0)", free())
-            emit("#jmp %i %i", joffset, 1)
-        end, function() -- A6
-            --if_icmpeq
+            --if_acmpeq
             local joffset = u2ToSignedShort(u2())
             emit("eq 1 %i %i", free(2))
+            emit("#jmp %i %i", joffset, 1)
+        end, function() -- A6
+            --if_acmpne
+            local joffset = u2ToSignedShort(u2())
+            emit("eq 0 %i %i", free(2))
             emit("#jmp %i %i", joffset, 1)
         end, function() -- A7
             --goto
