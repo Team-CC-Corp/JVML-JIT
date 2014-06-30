@@ -1317,7 +1317,9 @@ local function compile(class, method, codeAttr, name, cp)
             emit("test %i 0", free(1))
             emit("#jmp %i %i", joffset, 1)
         end, function() -- C7
-            error("C7 not implemented.") -- TODO
+            local joffset = u2ToSignedShort(u2())
+            emit("test %i 1", free(1))
+            emit("#jmp %i %i", joffset, 1)
         end, function() -- C8
             error("C8 not implemented.") -- TODO
         end, function() -- C9
