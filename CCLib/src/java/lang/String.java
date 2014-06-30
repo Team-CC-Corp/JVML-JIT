@@ -50,6 +50,7 @@ public class String {
         }
     }
 
+    @Override
     public boolean equals(Object anObject) {
         if (this == anObject) {
             return true;
@@ -77,6 +78,7 @@ public class String {
         return count;
     }
 
+    @Override
     public String toString() {
         return this;
     }

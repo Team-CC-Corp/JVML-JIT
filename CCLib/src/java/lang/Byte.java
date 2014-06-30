@@ -34,4 +34,12 @@ public class Byte extends Number {
     public byte byteValue() {
         return value;
     }
+
+    @Override
+    public boolean equals(Object obj) {
+        if(obj instanceof Byte) {
+            return value == ((Byte)obj).byteValue();
+        }
+        return false;
+    }
 }

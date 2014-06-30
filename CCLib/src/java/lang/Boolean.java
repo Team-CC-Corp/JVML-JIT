@@ -15,11 +15,20 @@ public class Boolean {
         this.value = value;
     }
 
+    @Override
     public String toString() {
         return value ? "true" : "false";
     }
 
     public boolean booleanValue() {
         return value;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if(obj instanceof Boolean) {
+            return value == ((Boolean)obj).booleanValue();
+        }
+        return false;
     }
 }

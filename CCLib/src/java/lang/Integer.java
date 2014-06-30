@@ -47,4 +47,12 @@ public class Integer extends Number {
     public int intValue() {
         return value;
     }
+
+    @Override
+    public boolean equals(Object obj) {
+        if(obj instanceof Integer) {
+            return value == ((Integer)obj).intValue();
+        }
+        return false;
+    }
 }

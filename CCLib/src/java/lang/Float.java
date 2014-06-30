@@ -19,4 +19,12 @@ public class Float extends Number {
     public float floatValue() {
         return value;
     }
+
+    @Override
+    public boolean equals(Object obj) {
+        if(obj instanceof Float) {
+            return value == ((Float)obj).floatValue();
+        }
+        return false;
+    }
 }

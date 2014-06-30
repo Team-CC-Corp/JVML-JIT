@@ -19,4 +19,12 @@ public class Character {
     public char charValue() {
         return value;
     }
+
+    @Override
+    public boolean equals(Object obj) {
+        if(obj instanceof Character) {
+            return value == ((Character)obj).charValue();
+        }
+        return false;
+    }
 }

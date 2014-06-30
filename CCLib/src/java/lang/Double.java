@@ -19,4 +19,12 @@ public class Double extends Number {
     public double doubleValue() {
         return value;
     }
+
+    @Override
+    public boolean equals(Object obj) {
+        if(obj instanceof Double) {
+            return value == ((Double)obj).doubleValue();
+        }
+        return false;
+    }
 }

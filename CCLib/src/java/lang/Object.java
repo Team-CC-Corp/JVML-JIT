@@ -8,4 +8,8 @@ public class Object {
 
     public native String toString();
     public native Class<?> getClass();
+
+    public boolean equals(Object obj) {
+        return this == obj;
+    }
 }

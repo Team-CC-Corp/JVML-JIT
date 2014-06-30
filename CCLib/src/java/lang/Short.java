@@ -19,4 +19,12 @@ public class Short extends Number {
     public short shortValue() {
         return value;
     }
+
+    @Override
+    public boolean equals(Object obj) {
+        if(obj instanceof Short) {
+            return value == ((Short)obj).shortValue();
+        }
+        return false;
+    }
 }
