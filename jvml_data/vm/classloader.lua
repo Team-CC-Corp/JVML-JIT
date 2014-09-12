@@ -607,9 +607,9 @@ function loadJavaClass(fh)
                         if not (natives[cn] and natives[cn][m.name]) then
                             error("Native not implemented: " .. Class.name .. "." .. m.name, 0)
                         end
-                        local ret = natives[cn][m.name](...)
+                        local ret, exception = natives[cn][m.name](...)
                         popStackTrace()
-                        return ret
+                        return ret, exception
                     end
                 else
                     --print(m.name," doesn't have code")

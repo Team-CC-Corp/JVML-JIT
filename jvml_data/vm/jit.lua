@@ -145,6 +145,21 @@ local function compile(class, method, codeAttr, name, cp)
         free()
     end
 
+    local function asmPushStackTrace()
+        local rpush, rname = alloc(2)
+        asmGetRTInfo(rpush, info(pushStackTrace))
+        asmGetRTInfo(rname, info(name))
+        emit("call %i 2 1", rpush)
+        free(2)
+    end
+
+    local function asmPopStackTrace()
+        local rpop = alloc()
+        asmGetRTInfo(rpop, info(popStackTrace))
+        emit("call %i 1 1", rpop)
+        free()
+    end
+
     local inst
 
     local oplookup = {
@@ -1108,16 +1123,22 @@ local function compile(class, method, codeAttr, name, cp)
 
             emit("#jmp %i %i", default, npairs * 2)
         end, function() -- AC
+            asmPopStackTrace()
             emit("return %i 2", free())
         end, function() -- AD
+            asmPopStackTrace()
             emit("return %i 2", free())
         end, function() -- AE
+            asmPopStackTrace()
             emit("return %i 2", free())
         end, function() -- AF
+            asmPopStackTrace()
             emit("return %i 2", free())
         end, function() -- B0
+            asmPopStackTrace()
             emit("return %i 2", free())
         end, function() -- B1
+            asmPopStackTrace()
             emit("return 0 1")
         end, function() -- B2
             --getstatic
@@ -1495,6 +1516,7 @@ local function compile(class, method, codeAttr, name, cp)
     local offset = -1
     local entryIndex = 0
     inst = u1()
+    asmPushStackTrace()
     while inst do
         -- check the stack map
         if stackMapAttribute and stackMapAttribute.entries[entryIndex] then
@@ -1565,9 +1587,6 @@ function createCodeFunction(class, method, codeAttr, name, cp)
         if not f then
             f, rti = compile(class, method, codeAttr, name, cp)
         end
-        pushStackTrace(name)
-        local ret = f(rti, ...)
-        popStackTrace()
-        return ret
+        return f(rti, ...)
     end
 end
