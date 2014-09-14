@@ -160,6 +160,52 @@ local function compile(class, method, codeAttr, name, cp)
         free()
     end
 
+    local function asmInstanceOf(c)
+        local r = peek(0)
+        local robj, rclass = alloc(2)
+        emit("move %i %i", robj, r)
+        asmGetRTInfo(rclass, info(c))
+        asmGetRTInfo(r, info(jInstanceof))
+        emit("call %i 3 2", r)
+        free(2)
+    end
+
+    local function asmCheckThrow(rexception)
+        emit("test %i 0", rexception)
+        -- It's expected that no more reading is done after calling asmCheckThrow
+        -- TODO: Come up with a better solution tahn expecting that
+        emit("#jmp (%i)", pc() + 1)
+
+        local exceptionHandlers = {}
+        for i=0, codeAttr.exception_table_length-1 do
+            local handler = codeAttr.exception_table[i]
+            if handler.start_pc <= pc() and handler.end_pc > pc() then
+                table.insert(exceptionHandlers, handler)
+            end
+        end
+        for i=1, #exceptionHandlers do
+            local handler = exceptionHandlers[i]
+            if handler.catch_type == 0 then
+                emit("#jmp (%i)", handler.handler_pc)
+            else
+                local c = resolveClass(cp[handler.catch_type])
+                local rtest = alloc()
+                emit("move %i %i", rtest, rexception)
+                asmInstanceOf(c)
+                emit("test %i 0", rtest)
+                emit("jmp 2")
+                emit("move %i %i", codeAttr.max_locals + 1, rexception)
+                emit("#jmp (%i)", handler.handler_pc)
+                free()
+            end
+        end
+        local rnil, rexc = alloc(2)
+        emit("loadnil %i %i", rnil, rnil)
+        emit("move %i %i", rexc, rexception)
+        emit("return %i 3", rnil)
+        free(2)
+    end
+
     local inst
 
     local oplookup = {
@@ -1198,23 +1244,31 @@ local function compile(class, method, codeAttr, name, cp)
             end
 
             -- Inject the method under the parameters.
-            local rmIndex = peek(argslen)
+            local rmt = peek(argslen)
             local objIndex = peek(argslen - 1)
             local methodTableEntry = alloc()
 
             asmGetRTInfo(methodTableEntry, info(mIndex))
             -- Get the methods table from the object
-            emit("gettable %i %i k(3)", rmIndex, objIndex)
-            emit("gettable %i %i %i", rmIndex, rmIndex, methodTableEntry)
+            emit("gettable %i %i k(3)", rmt, objIndex)
+            emit("gettable %i %i %i", rmt, rmt, methodTableEntry)
             free(1)
-            emit("gettable %i %i k(1)", rmIndex, rmIndex)
+            emit("gettable %i %i k(1)", rmt, rmt)
             -- Invoke the method. Result is right after the method.
-            emit("call %i %i 2", rmIndex, argslen + 1)
+            emit("call %i %i 3", rmt, argslen + 1)
+
+            -- Free down to ret, exception
+            -- Same as freeing all arguments except the argument representing the object
+            free(argslen - 1)
+            local ret, exception = rmt, rmt + 1
+            asmCheckThrow(exception)
 
             if mt.desc[#mt.desc].type ~= "V" then
-                free(argslen)
+                -- free exception
+                free()
             else
-                free(argslen + 1)
+                -- free nil, exception
+                free(2)
             end
         end, function() -- B7
             --invokespecial
@@ -1238,12 +1292,20 @@ local function compile(class, method, codeAttr, name, cp)
 
             -- Invoke the method. Result is right after the method.
             emit("gettable %i %i k(1)", rmt, rmt)
-            emit("call %i %i 2", rmt, argslen + 1)
+            emit("call %i %i 3", rmt, argslen + 1)
+
+            -- Free down to ret, exception
+            -- Same as freeing all arguments except the argument representing the object
+            free(argslen - 1)
+            local ret, exception = rmt, rmt + 1
+            asmCheckThrow(exception)
 
             if mt.desc[#mt.desc].type ~= "V" then
-                free(argslen)
+                -- free exception
+                free()
             else
-                free(argslen + 1)
+                -- free nil, exception
+                free(2)
             end
         end, function() -- B8
             --invokestatic
@@ -1267,12 +1329,25 @@ local function compile(class, method, codeAttr, name, cp)
 
             -- Invoke the method. Result is right after the method.
             emit("gettable %i %i k(1)", rmt, rmt)
-            emit("call %i %i 2", rmt, argslen + 1)
+            emit("call %i %i 3", rmt, argslen + 1)
+
+            -- Free down to ret, exception
+            -- More complicated than other invokes
+            -- Might actually need to allocate a slot if the method had no arguments
+            if argslen == 0 then
+                alloc()
+            else
+                free(argslen - 1)
+            end
+            local ret, exception = rmt, rmt + 1
+            asmCheckThrow(exception)
 
             if mt.desc[#mt.desc].type ~= "V" then
-                free(argslen)
+                -- free exception
+                free()
             else
-                free(argslen + 1)
+                -- free nil, exception
+                free(2)
             end
         end, function() -- B9
             --invokeinterface
@@ -1306,12 +1381,20 @@ local function compile(class, method, codeAttr, name, cp)
 
             -- Invoke the method. Result is right after the method.
             emit("gettable %i %i k(1)", rmt, rmt)
-            emit("call %i %i 2", rmt, argslen + 1)
+            emit("call %i %i 3", rmt, argslen + 1)
+
+            -- Free down to ret, exception
+            -- Same as freeing all arguments except the argument representing the object
+            free(argslen - 1)
+            local ret, exception = rmt, rmt + 1
+            asmCheckThrow(exception)
 
             if mt.desc[#mt.desc].type ~= "V" then
-                free(argslen)
+                -- free exception
+                free()
             else
-                free(argslen + 1)
+                -- free nil, exception
+                free(2)
             end
         end, function() -- BA
             error("BA not implemented.") -- TODO
@@ -1364,14 +1447,7 @@ local function compile(class, method, codeAttr, name, cp)
             free(3)
         end, function() -- C1
             local c = resolveClass(cp[u2()])
-            local r = peek(0)
-
-            local robj, rclass = alloc(2)
-            emit("move %i %i", robj, r)
-            asmGetRTInfo(rclass, info(c))
-            asmGetRTInfo(r, info(jInstanceof))
-            emit("call %i 3 2", r)
-            free(2)
+            asmInstanceOf(c)
         end, function() -- C2
             error("C2 not implemented.") -- TODO
         end, function() -- C3
@@ -1540,15 +1616,20 @@ local function compile(class, method, codeAttr, name, cp)
     for i = 1, #asm do
         local inst = asm[i]
         if inst:sub(1, 4) == "#jmp" then
-            -- Java offset
-            local i1 = inst:find("%s") + 1
-            local i2 = inst:find("%s", i1) + 1
-            local joffset = tonumber(inst:sub(i1, i2 - 2))
-            local jmpLOffset = tonumber(inst:sub(i2, -2))
+            local _, _, sjoffset, sjmpLOffset = inst:find("^#jmp ([+-]?%d+) ([+-]?%d+)")
+
             -- Java instruction to jump to
-            local jpc = pcMapLJ[i - jmpLOffset] + joffset
+            local jpc
+            if sjoffset and sjmpLOffset then
+                local joffset, jmpLOffset = tonumber(sjoffset), tonumber(sjmpLOffset)
+                jpc = pcMapLJ[i - jmpLOffset] + joffset
+            else
+                local _, _, sjpc = inst:find("^#jmp %((%d+)%)")
+                jpc = tonumber(sjpc)
+            end
+
             -- Lua instruction to jump to
-            local lpc = pcMapJL[jpc] -- + jmpLOffset
+            local lpc = pcMapJL[jpc]
             -- Lua offset
             local loffset = lpc - i - 1
             asm[i] = "jmp " .. loffset .. "\n"

@@ -124,9 +124,12 @@ if not options.g then
         startTime = os.time()
     end
 
-    local ok, err = pcall(m, jArray)
+    local ok, err, exc = pcall(m, jArray)
     if not ok then
         printError(err)
+        vm.printStackTrace(true)
+    elseif exc then
+        printError("Exception thrown")
         vm.printStackTrace(true)
     end
     if options.time then

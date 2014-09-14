@@ -27,7 +27,8 @@ for i,v in ipairs(testsToRun) do
 			term.setTextColor(colors.yellow)
 			print(v)
 			term.setTextColor(colors.white)
-			m[1](jArray)
+			local ret, exc = m[1](jArray)
+			assert(not exc)
 			return true
 		end
 	end)
