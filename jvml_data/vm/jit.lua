@@ -170,12 +170,7 @@ local function compile(class, method, codeAttr, name, cp)
         free(2)
     end
 
-    local function asmCheckThrow(rexception)
-        emit("test %i 0", rexception)
-        -- It's expected that no more reading is done after calling asmCheckThrow
-        -- TODO: Come up with a better solution tahn expecting that
-        emit("#jmp (%i)", pc() + 1)
-
+    local function asmThrow(rexception)
         local exceptionHandlers = {}
         for i=0, codeAttr.exception_table_length-1 do
             local handler = codeAttr.exception_table[i]
@@ -204,6 +199,15 @@ local function compile(class, method, codeAttr, name, cp)
         emit("move %i %i", rexc, rexception)
         emit("return %i 3", rnil)
         free(2)
+    end
+
+    local function asmCheckThrow(rexception)
+        emit("test %i 0", rexception)
+        -- It's expected that no more reading is done after calling asmCheckThrow
+        -- TODO: Come up with a better solution tahn expecting that
+        emit("#jmp (%i)", pc() + 1)
+
+        asmThrow(rexception)
     end
 
     local inst
@@ -1431,6 +1435,8 @@ local function compile(class, method, codeAttr, name, cp)
             local r = peek(0)
             emit("gettable %i %i k(4)", r, r)
         end, function() -- BF
+            local rexception = peek(0)
+            asmThrow(rexception)
         end, function() -- C0
             local c = resolveClass(cp[u2()])
             local r = peek(0)
