@@ -195,6 +195,7 @@ local function compile(class, method, codeAttr, cp)
                 free()
             end
         end
+        asmPopStackTrace()
         local rnil, rexc = alloc(2)
         emit("loadnil %i %i", rnil, rnil)
         emit("move %i %i", rexc, rexception)

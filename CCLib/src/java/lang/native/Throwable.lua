@@ -14,5 +14,6 @@ natives["java.lang.Throwable"]["fillInStackTrace()Ljava/lang/Throwable;"] = func
 		end
 		m[1](stackTrace[5][i], toJString(v.className), toJString(v.methodName), toJString("FILENAME"), lineNumber)
 	end
+	setObjectField(this, "stackTrace", stackTrace)
 	return this
 end
