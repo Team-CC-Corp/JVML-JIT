@@ -28,6 +28,9 @@ for i,v in ipairs(testsToRun) do
 			print(v)
 			term.setTextColor(colors.white)
 			local ret, exc = m[1](jArray)
+			if exc then
+				vm.findMethod(exc[1], "printStackTrace()V")[1]()
+			end
 			assert(not exc)
 			return true
 		end

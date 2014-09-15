@@ -14,5 +14,6 @@ public class ExceptionTest {
 		} catch(Exception e) {
 			System.out.println("Caught test");
 		}
+		throw new RuntimeException("Error yo");
 	}
 }

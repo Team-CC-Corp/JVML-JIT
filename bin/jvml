@@ -129,8 +129,7 @@ if not options.g then
         printError(err)
         vm.printStackTrace(true)
     elseif exc then
-        printError("Exception thrown")
-        vm.printStackTrace(true)
+        vm.findMethod(exc[1], "printStackTrace()V")[1]()
     end
     if options.time then
         local endTime = os.time()

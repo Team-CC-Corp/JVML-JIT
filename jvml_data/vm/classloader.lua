@@ -595,15 +595,13 @@ function loadJavaClass(fh)
                 if v.code then ca = v end
             end
 
-            local mt_name = Class.name.."."..m.name
-
             table.insert(doAfter, function()
                 if ca then
-                    m[1] = createCodeFunction(Class, m, ca, mt_name, cp)
+                    m[1] = createCodeFunction(Class, m, ca, cp)
                 elseif bit.band(m.acc,METHOD_ACC.NATIVE) == METHOD_ACC.NATIVE then
                     if not natives[cn] then natives[cn] = {} end
                     m[1] = function(...)
-                        pushStackTrace(mt_name, function() error('',0) end)
+                        pushStackTrace(Class.name, m.name)
                         if not (natives[cn] and natives[cn][m.name]) then
                             error("Native not implemented: " .. Class.name .. "." .. m.name, 0)
                         end

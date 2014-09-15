@@ -146,18 +146,26 @@ function createClass(super_name, cn)
     return cls
 end
 
-function pushStackTrace(s)
-    table.insert(stack_trace, s)
+function pushStackTrace(className, methodName)
+    table.insert(stack_trace, {className=className, methodName=methodName})
 end
 
 function popStackTrace()
     table.remove(stack_trace)
 end
 
+function getStackTrace()
+    local newTrace = {}
+    for i,v in ipairs(stack_trace) do
+        newTrace[i] = {className=v.className, methodName=v.methodName}
+    end
+    return newTrace
+end
+
 function printStackTrace(isError)
     local reversedtable = {}
     for i,v in ipairs(stack_trace) do
-        reversedtable[#stack_trace - i + 1] = v
+        reversedtable[#stack_trace - i + 1] = v.className .. "." .. v.methodName
     end
     ((isError and printError) or print)(table.concat(reversedtable,"\n"))
 end

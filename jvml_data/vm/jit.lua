@@ -1,4 +1,4 @@
-local function compile(class, method, codeAttr, name, cp)
+local function compile(class, method, codeAttr, cp)
     local function resolveClass(c)
         local cn = cp[c.name_index].bytes:gsub("/",".")
         return classByName(cn)
@@ -146,11 +146,12 @@ local function compile(class, method, codeAttr, name, cp)
     end
 
     local function asmPushStackTrace()
-        local rpush, rname = alloc(2)
+        local rpush, rClassName, rMethodName = alloc(3)
         asmGetRTInfo(rpush, info(pushStackTrace))
-        asmGetRTInfo(rname, info(name))
-        emit("call %i 2 1", rpush)
-        free(2)
+        asmGetRTInfo(rClassName, info(class.name))
+        asmGetRTInfo(rMethodName, info(method.name))
+        emit("call %i 3 1", rpush)
+        free(3)
     end
 
     local function asmPopStackTrace()
@@ -1642,7 +1643,7 @@ local function compile(class, method, codeAttr, name, cp)
         end
     end
 
-    debugH.write(name .. "\n")
+    debugH.write(class.name .. "." .. method.name .. "\n")
     debugH.write("Length: " .. (asmPC - 1) .. "\n")
     debugH.write("Locals: " .. codeAttr.max_locals .. "\n")
     for i = 1, #asm do
@@ -1657,7 +1658,7 @@ local function compile(class, method, codeAttr, name, cp)
 
     --print("Loading and verifying bytecode for " .. name)
     local p = LAT.Lua51.Parser:new()
-    local file = p:Parse(".options 0 " .. (codeAttr.max_locals + 1) .. table.concat(asm), name.."/bytecode")
+    local file = p:Parse(".options 0 " .. (codeAttr.max_locals + 1) .. table.concat(asm), class.name .. "." .. method.name.."/bytecode")
     --file:StripDebugInfo()
     local bc = file:Compile()
     local f = loadstring(bc)
@@ -1667,12 +1668,12 @@ local function compile(class, method, codeAttr, name, cp)
     --popStackTrace()
 end
 
-function createCodeFunction(class, method, codeAttr, name, cp)
+function createCodeFunction(class, method, codeAttr, cp)
     local f
     local rti
     return function(...)
         if not f then
-            f, rti = compile(class, method, codeAttr, name, cp)
+            f, rti = compile(class, method, codeAttr, cp)
         end
         return f(rti, ...)
     end
