@@ -1,6 +1,11 @@
 package java.io;
 
 public class PrintStream {
-    public native void println(char[] c);
-    public native void println(Object obj);
+    public void println(char[] c) {
+    	println((String)(c == null ? null : new String(c)));
+    }
+    public void println(Object obj) {
+    	println((String)(obj == null ? null : obj.toString()));
+    }
+    public native void println(String str);
 }
