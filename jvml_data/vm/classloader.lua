@@ -558,7 +558,6 @@ function loadJavaClass(fh)
         --start processing the data
         Class.name = cn
         Class.acc = access_flags
-        Class.fieldIndexByName = { }
 
         Class.interfaces_count = u2()
         Class.interfaces = {}
@@ -568,9 +567,11 @@ function loadJavaClass(fh)
         end
         local fields_count = u2()
         for i=1, fields_count do
-            Class.fields[i] = field_info()
-            Class.fieldIndexByName[Class.fields[i].name] = i
+            local newField = field_info()
+            table.insert(Class.field_info, newField)
+            Class.fieldIndexByName[newField.name] = #Class.field_info
         end
+
         local methods_count = u2()
         local initialCount = #Class.methods
         local subtractor = 0

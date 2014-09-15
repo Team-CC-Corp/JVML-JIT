@@ -1,4 +1,3 @@
-local class = {}
 local stack_trace = {}
 
 function findMethod(c,name)
@@ -96,6 +95,7 @@ function getJClass(name)
     return jClasses[name]
 end
 
+local class = {}
 function classByName(cn)
     local c = class[cn]
     if c then
@@ -126,6 +126,8 @@ function createClass(super_name, cn)
     cls[1] = cn
     cls.fields = {}
     cls[2] = cls.fields
+    cls.field_info = {}
+    cls.fieldIndexByName = {}
     cls.methods = {}
     cls[3] = cls.methods
     cls.methodLookup = {}
@@ -134,10 +136,13 @@ function createClass(super_name, cn)
         local super = classByName(super_name)
         cls.super = super
         cls[4] = super
-        for i,v in pairs(super.fields) do
-            cls.fields[i] = v
-            cls[2][i] = v
+        for k,v in pairs(super.field_info) do
+            cls.field_info[k] = v
         end
+        for k,v in pairs(super.fieldIndexByName) do
+            cls.fieldIndexByName[k] = v
+        end
+
         for i,v in pairs(super.methods) do
             cls.methods[i] = v
             cls[3][i] = v
