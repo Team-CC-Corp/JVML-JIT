@@ -36,6 +36,30 @@ public class StringBuilder {
 		return append(o.toString());
 	}
 
+	public StringBuilder append(boolean b) {
+		return append(Boolean.valueOf(b));
+	}
+
+	public StringBuilder append(char c) {
+		return append(Character.valueOf(c));
+	}
+
+	public StringBuilder append(int i) {
+		return append(Integer.valueOf(i));
+	}
+
+	public StringBuilder append(long lng) {
+		return append(Long.valueOf(lng));
+	}
+
+	public StringBuilder append(float f) {
+		return append(Float.valueOf(f));
+	}
+
+	public StringBuilder append(double d) {
+		return append(Double.valueOf(d));
+	}
+
 	public String toString() {
 		char[] arr = new char[string.size()];
 		for (int i = 0; i < arr.length; ++i) {
