@@ -5,7 +5,6 @@ function getArrayClass(name)
 		local Class = createClass("java.lang.Object", name)
 		Class.name = name
         Class.acc = 0 -- TODO: Figure out exactly what to assign to this
-        Class.fieldIndexByName = {}
 
         Class.interfaces_count = 0
         Class.interfaces = {}
