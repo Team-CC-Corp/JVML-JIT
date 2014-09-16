@@ -155,7 +155,7 @@ local function compile(class, method, codeAttr, cp)
         local rpush, rClassName, rMethodName = alloc(3)
         asmGetRTInfo(rpush, info(pushStackTrace))
         asmGetRTInfo(rClassName, info(class.name))
-        asmGetRTInfo(rMethodName, info(method.name))
+        asmGetRTInfo(rMethodName, info(method.name:gsub("L.-/(%a+);", "%1;")))
         emit("call %i 3 1", rpush)
         free(3)
     end

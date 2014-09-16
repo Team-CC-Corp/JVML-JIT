@@ -602,7 +602,7 @@ function loadJavaClass(fh)
                 elseif bit.band(m.acc,METHOD_ACC.NATIVE) == METHOD_ACC.NATIVE then
                     if not natives[cn] then natives[cn] = {} end
                     m[1] = function(...)
-                        pushStackTrace(Class.name, m.name)
+                        pushStackTrace(Class.name, m.name:gsub("L.-/(%a+);", "%1;"))
                         if not (natives[cn] and natives[cn][m.name]) then
                             error("Native not implemented: " .. Class.name .. "." .. m.name, 0)
                         end

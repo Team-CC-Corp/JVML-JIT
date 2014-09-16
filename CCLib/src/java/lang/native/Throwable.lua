@@ -12,7 +12,7 @@ natives["java.lang.Throwable"]["fillInStackTrace()Ljava/lang/Throwable;"] = func
 		if bit.band(m.acc,METHOD_ACC.NATIVE) == METHOD_ACC.NATIVE then
 			lineNumber = -2
 		end
-		m[1](stackTrace[5][i], toJString(v.className), toJString(v.methodName), toJString("FILENAME"), lineNumber)
+		m[1](stackTrace[5][i], toJString(v.className), toJString(v.methodName), toJString("?"), lineNumber)
 	end
 	setObjectField(this, "stackTrace", stackTrace)
 	return this
