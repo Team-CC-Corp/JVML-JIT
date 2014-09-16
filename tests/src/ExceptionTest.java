@@ -1,6 +1,6 @@
 public class ExceptionTest {
 	public static void test() {
-		throw new RuntimeException();
+		throw new RuntimeException("Runtime Exception message");
 	}
 
 	public static void main(String[] args) {
@@ -13,7 +13,7 @@ public class ExceptionTest {
 			}
 		} catch(Exception e) {
 			System.out.println("Caught test");
+			e.printStackTrace();
 		}
-		throw new RuntimeException("Error yo");
 	}
 }
