@@ -1649,9 +1649,9 @@ local function compile(class, method, codeAttr, cp)
     debugH.write("Locals: " .. codeAttr.max_locals .. "\n")
     for i = 1, #asm do
         if pcMapLJ[i] then
-            debugH.write(string.format("%X:\n", code[pcMapLJ[i]]))
+            debugH.write(string.format("[%i] %X:\n", pcMapLJ[i], code[pcMapLJ[i]]))
         end
-        debugH.write(string.format("[%i] %s", i, asm[i]))
+        debugH.write(string.format("\t[%i] %s", i, asm[i]))
     end
     debugH.write("\n")
     debugH.flush()
