@@ -39,9 +39,15 @@ local function compile(class, method, codeAttr, cp)
         return unpack(ret)
     end
 
+    -- freeTo IS NOW DECEPTIVELY NAMED
+    -- It is also capable of allocating memory if n > current stack!
     local function freeTo(n)
         n = (n or 0) + codeAttr.max_locals
-        return free(reg - n)
+        if n <= reg then
+            return free(reg - n)
+        else
+            return alloc(n - reg)
+        end
     end
 
     local function peek(n)
