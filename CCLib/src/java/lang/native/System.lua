@@ -5,3 +5,11 @@ natives["java.lang.System"]["load(Ljava/lang/String;)V"] = function(jString)
 	local path = resolvePath(str)
 	dofile(path)
 end
+
+-- TODO: Reimplement this less naively
+natives["java.lang.System"]["arraycopy(Ljava/lang/Object;ILjava/lang/Object;II)V"] = function(
+	src, srcPos, dest, destPos, length)
+	for i=1,length do
+		dest[5][i + destPos] = src[5][i + srcPos]
+	end
+end
