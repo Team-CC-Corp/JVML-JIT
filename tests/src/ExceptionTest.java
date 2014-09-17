@@ -1,6 +1,11 @@
 public class ExceptionTest {
 	public static void main(String[] args) {
-		a(3);
+		try {
+			a(3);
+		} catch (Exception e) {
+			e.printStackTrace();
+			System.out.println("Caught");
+		}
 	}
 
 	public static void a(int x) {
