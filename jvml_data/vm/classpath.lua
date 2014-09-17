@@ -151,8 +151,8 @@ function createClass(super_name, cn)
     return cls
 end
 
-function pushStackTrace(className, methodName)
-    table.insert(stack_trace, {className=className, methodName=methodName})
+function pushStackTrace(className, methodName, fileName, lineNumber)
+    table.insert(stack_trace, {className=className, methodName=methodName, fileName=fileName, lineNumber=lineNumber})
 end
 
 function popStackTrace()
@@ -162,7 +162,7 @@ end
 function getStackTrace()
     local newTrace = {}
     for i,v in ipairs(stack_trace) do
-        newTrace[i] = {className=v.className, methodName=v.methodName}
+        newTrace[i] = {className=v.className, methodName=v.methodName, fileName=v.fileName, lineNumber=v.lineNumber}
     end
     return newTrace
 end

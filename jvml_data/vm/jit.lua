@@ -4,6 +4,14 @@ local function compile(class, method, codeAttr, cp)
         return classByName(cn)
     end
 
+    local lineNumberAttribute
+    for i=0,codeAttr.attributes_count-1 do
+        if codeAttr.attributes[i].name == "LineNumberTable" then
+            lineNumberAttribute = codeAttr.attributes[i]
+            break
+        end
+    end
+
     local code = codeAttr.code
     local asm = { }
 
@@ -151,13 +159,15 @@ local function compile(class, method, codeAttr, cp)
         free()
     end
 
-    local function asmPushStackTrace()
-        local rpush, rClassName, rMethodName = alloc(3)
+    local function asmPushStackTrace(className, methodName, fileName, lineNumber)
+        local rpush, rClassName, rMethodName, rFileName, rLineNumber = alloc(5)
         asmGetRTInfo(rpush, info(pushStackTrace))
-        asmGetRTInfo(rClassName, info(class.name))
-        asmGetRTInfo(rMethodName, info(method.name:gsub("L.-/(%a+);", "%1;")))
-        emit("call %i 3 1", rpush)
-        free(3)
+        asmGetRTInfo(rClassName, info(className))
+        asmGetRTInfo(rMethodName, info(methodName))
+        asmGetRTInfo(rFileName, info(fileName))
+        asmGetRTInfo(rLineNumber, info(lineNumber))
+        emit("call %i 5 1", rpush)
+        free(5)
     end
 
     local function asmPopStackTrace()
@@ -216,6 +226,21 @@ local function compile(class, method, codeAttr, cp)
         emit("#jmp (%i)", pc() + 1)
 
         asmThrow(rexception)
+    end
+
+    local function getCurrentLineNumber()
+        local ln
+        if lineNumberAttribute then
+            local len = lineNumberAttribute.line_number_table_length
+            for i = 0, len - 1 do
+                local entry = lineNumberAttribute.line_number_table[i]
+                if entry.start_pc > pc() then
+                    ln = lineNumberAttribute.line_number_table[i - 1].line_number
+                    break
+                end
+            end
+        end
+        return ln
     end
 
     local inst
@@ -1247,6 +1272,9 @@ local function compile(class, method, codeAttr, cp)
             local mt, mIndex = findMethod(cl, name)
             local argslen = #mt.desc
 
+            local ln = getCurrentLineNumber()
+            asmPushStackTrace(class.name, method.name:sub(1, method.name:find("%(") - 1), "", ln or 0)
+
             -- Need 1 extra register for last argument.
             alloc()
 
@@ -1290,6 +1318,9 @@ local function compile(class, method, codeAttr, cp)
             local mt = findMethod(cl, name)
             local argslen = #mt.desc
 
+            local ln = getCurrentLineNumber()
+            asmPushStackTrace(class.name, method.name:sub(1, method.name:find("%(") - 1), "", ln or 0)
+
             -- Need 1 extra register for last argument. 
             alloc()
 
@@ -1326,6 +1357,9 @@ local function compile(class, method, codeAttr, cp)
             local name = cp[cp[mr.name_and_type_index].name_index].bytes .. cp[cp[mr.name_and_type_index].descriptor_index].bytes
             local mt = findMethod(cl, name)
             local argslen = #mt.desc - 1
+
+            local ln = getCurrentLineNumber()
+            asmPushStackTrace(class.name, method.name:sub(1, method.name:find("%(") - 1), "", ln or 0)
 
             -- Need 1 extra register for last argument. 
             alloc()
@@ -1369,6 +1403,9 @@ local function compile(class, method, codeAttr, cp)
             local name = cp[cp[mr.name_and_type_index].name_index].bytes .. cp[cp[mr.name_and_type_index].descriptor_index].bytes
             local mt = findMethod(cl, name)
             local argslen = #mt.desc
+
+            local ln = getCurrentLineNumber()
+            asmPushStackTrace(class.name, method.name:sub(1, method.name:find("%(") - 1), "", ln or 0)
 
             -- Need 1 extra register for last argument.
             alloc()
@@ -1606,7 +1643,7 @@ local function compile(class, method, codeAttr, cp)
     local offset = -1
     local entryIndex = 0
     inst = u1()
-    asmPushStackTrace()
+    --asmPushStackTrace()
     while inst do
         -- check the stack map
         if stackMapAttribute and stackMapAttribute.entries[entryIndex] then

@@ -5,7 +5,7 @@
 
 	<target name="compile">
 		<mkdir dir="build"/>
-		<javac bootclasspath="../CCLib/build/classes" srcdir="src" destdir="build"/>
+		<javac bootclasspath="../CCLib/build/classes" srcdir="src" destdir="build" debug="on" debuglevel="lines,vars,source"/>
 	</target>
 
 	<target name="main" depends="compile"></target>

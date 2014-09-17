@@ -423,7 +423,17 @@ function loadJavaClass(fh)
                 }
             end
         elseif an == "LocalVariableTypeTable" then
-            error("LVTT is so mainstream",0)
+            attrib.local_variable_type_table_length = u2()
+            attrib.local_variable_type_table = {}
+            for i=0, attrib.local_variable_type_table_length-1 do
+                attrib.local_variable_type_table[i] = {
+                    start_pc = u2(),
+                    length = u2(),
+                    name_index = u2(),
+                    signature_index = u2(),
+                    index = u2()
+                }
+            end
         elseif an == "Deprecated" then
             --lel, this doesn't have content in it--
         elseif an == "SourceFile" then

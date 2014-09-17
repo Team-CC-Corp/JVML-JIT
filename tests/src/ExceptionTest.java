@@ -1,19 +1,19 @@
 public class ExceptionTest {
-	public static void test() {
-		throw new RuntimeException("Runtime Exception message");
+	public static void main(String[] args) {
+		a(3);
 	}
 
-	public static void main(String[] args) {
-		try {
-			try {
-				throw new Exception();
-			} catch(Exception e) {
-				System.out.println("Caught");
-				test();
-			}
-		} catch(Exception e) {
-			System.out.println("Caught test");
-			e.printStackTrace();
-		}
+	public static void a(int x) {
+		if(x == 0)
+			throw new RuntimeException("Runtime Exception message");
+		b(x);
+	}
+
+	public static void b(int x) {
+		c(x);
+	}
+
+	public static void c(int x) {
+		a(x - 1);
 	}
 }

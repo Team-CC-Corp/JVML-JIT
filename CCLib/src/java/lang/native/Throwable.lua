@@ -8,11 +8,11 @@ natives["java.lang.Throwable"]["fillInStackTrace()Ljava/lang/Throwable;"] = func
 	for i,v in ipairs(lStackTrace) do
 		stackTrace[5][i] = newInstance(StackTraceElement)
 		local m = findMethod(StackTraceElement, "<init>(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;I)V")
-		local lineNumber = 0
+		local lineNumber = v.lineNumber
 		if bit.band(m.acc,METHOD_ACC.NATIVE) == METHOD_ACC.NATIVE then
 			lineNumber = -2
 		end
-		m[1](stackTrace[5][i], toJString(v.className), toJString(v.methodName), toJString("?"), lineNumber)
+		m[1](stackTrace[5][i], toJString(v.className), toJString(v.methodName), toJString("?"), lineNumber or -1)
 	end
 	setObjectField(this, "stackTrace", stackTrace)
 	return this
