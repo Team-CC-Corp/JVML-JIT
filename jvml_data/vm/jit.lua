@@ -159,13 +159,13 @@ local function compile(class, method, codeAttr, cp)
         free()
     end
 
-    local function asmPushStackTrace(className, methodName, fileName, lineNumber)
+    local function asmPushStackTrace()
         local rpush, rClassName, rMethodName, rFileName, rLineNumber = alloc(5)
         asmGetRTInfo(rpush, info(pushStackTrace))
-        asmGetRTInfo(rClassName, info(className))
-        asmGetRTInfo(rMethodName, info(methodName))
-        asmGetRTInfo(rFileName, info(fileName))
-        asmGetRTInfo(rLineNumber, info(lineNumber))
+        asmGetRTInfo(rClassName, info(class.name))
+        asmGetRTInfo(rMethodName, info(method.name:sub(1, method.name:find("%(") - 1)))
+        asmGetRTInfo(rFileName, info(""))
+        asmGetRTInfo(rLineNumber, info(0))
         emit("call %i 5 1", rpush)
         free(5)
     end
@@ -175,6 +175,14 @@ local function compile(class, method, codeAttr, cp)
         asmGetRTInfo(rpop, info(popStackTrace))
         emit("call %i 1 1", rpop)
         free()
+    end
+
+    local function asmSetStackTraceLineNumber(ln)
+        local rset, rln = alloc(2)
+        asmGetRTInfo(rset, info(setStackTraceLineNumber))
+        asmGetRTInfo(rln, info(ln))
+        emit("call %i 2 1", rset)
+        free(2)
     end
 
     local function asmInstanceOf(c)
@@ -1272,8 +1280,7 @@ local function compile(class, method, codeAttr, cp)
             local mt, mIndex = findMethod(cl, name)
             local argslen = #mt.desc
 
-            local ln = getCurrentLineNumber()
-            asmPushStackTrace(class.name, method.name:sub(1, method.name:find("%(") - 1), "", ln or 0)
+            asmSetStackTraceLineNumber(getCurrentLineNumber() or 0)
 
             -- Need 1 extra register for last argument.
             alloc()
@@ -1318,8 +1325,7 @@ local function compile(class, method, codeAttr, cp)
             local mt = findMethod(cl, name)
             local argslen = #mt.desc
 
-            local ln = getCurrentLineNumber()
-            asmPushStackTrace(class.name, method.name:sub(1, method.name:find("%(") - 1), "", ln or 0)
+            asmSetStackTraceLineNumber(getCurrentLineNumber() or 0)
 
             -- Need 1 extra register for last argument. 
             alloc()
@@ -1358,8 +1364,7 @@ local function compile(class, method, codeAttr, cp)
             local mt = findMethod(cl, name)
             local argslen = #mt.desc - 1
 
-            local ln = getCurrentLineNumber()
-            asmPushStackTrace(class.name, method.name:sub(1, method.name:find("%(") - 1), "", ln or 0)
+            asmSetStackTraceLineNumber(getCurrentLineNumber() or 0)
 
             -- Need 1 extra register for last argument. 
             alloc()
@@ -1404,8 +1409,7 @@ local function compile(class, method, codeAttr, cp)
             local mt = findMethod(cl, name)
             local argslen = #mt.desc
 
-            local ln = getCurrentLineNumber()
-            asmPushStackTrace(class.name, method.name:sub(1, method.name:find("%(") - 1), "", ln or 0)
+            asmSetStackTraceLineNumber(getCurrentLineNumber() or 0)
 
             -- Need 1 extra register for last argument.
             alloc()
@@ -1643,7 +1647,7 @@ local function compile(class, method, codeAttr, cp)
     local offset = -1
     local entryIndex = 0
     inst = u1()
-    --asmPushStackTrace()
+    asmPushStackTrace()
     while inst do
         -- check the stack map
         if stackMapAttribute and stackMapAttribute.entries[entryIndex] then

@@ -167,6 +167,10 @@ function popStackTrace()
     table.remove(stack_trace)
 end
 
+function setStackTraceLineNumber(ln)
+    stack_trace[#stack_trace].lineNumber = ln
+end
+
 function getStackTrace()
     local newTrace = {}
     for i,v in ipairs(stack_trace) do
