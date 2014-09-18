@@ -7,5 +7,5 @@ natives["java.lang.Enum"]["_valueOf(Ljava/lang/Class;Ljava/lang/String;)Ljava/la
 	if not key then
 		return nil
 	end
-	return class[2][key]
+	return class.fields[key]
 end

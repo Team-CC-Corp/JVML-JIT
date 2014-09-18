@@ -131,6 +131,18 @@ METHOD_ACC = {
     SYNTHETIC=0x1000,
 }
 
+FIELD_ACC = {
+    PUBLIC=0x0001,
+    PRIVATE=0x0002,
+    PROTECTED=0x0004,
+    STATIC=0x0008,
+    FINAL=0x0010,
+    VOLATILE=0x0040,
+    TRANSIENT=0x0080,
+    SYNTHETIC=0x1000,
+    ENUM=0x4000
+}
+
 CLASS_ACC = {
     PUBLIC=0x0001,
     FINAL=0x0010,
@@ -578,31 +590,29 @@ function loadJavaClass(fh)
         local fields_count = u2()
         for i=1, fields_count do
             local newField = field_info()
-            table.insert(Class.field_info, newField)
-            Class.fieldIndexByName[newField.name] = #Class.field_info
+            if bit.band(newField.access_flags, FIELD_ACC.STATIC) > 0 then
+                table.insert(Class.static_field_info, newField)
+                Class.fieldIndexByName[newField.name] = #Class.static_field_info
+            else
+                table.insert(Class.field_info, newField)
+                Class.fieldIndexByName[newField.name] = #Class.field_info
+            end
         end
 
         local methods_count = u2()
-        local initialCount = #Class.methods
-        local subtractor = 0
+        local instanceMethods = {}
         local doAfter = { }
-        for index=1, methods_count do
-            local i = index + initialCount - subtractor
-
+        for i=1, methods_count do
             local m = method_info()
-            for i2,v in ipairs(Class.methods) do
-                --print(v.name)
-                if v.name == m.name then
-                    i = i2
-                    subtractor = subtractor + 1
-                end
+
+            if bit.band(m.acc,METHOD_ACC.STATIC) == METHOD_ACC.STATIC then
+                table.insert(Class.staticMethods, m)
+            else
+                table.insert(instanceMethods, m)
             end
 
-            Class.methods[i] = m
-            --find code attrib
             local ca
             for _, v in pairs(m.attributes) do
-                --print(v.name)
                 if v.code then ca = v end
             end
 
@@ -620,11 +630,62 @@ function loadJavaClass(fh)
                         popStackTrace()
                         return ret, exception
                     end
-                else
-                    --print(m.name," doesn't have code")
                 end
             end)
         end
+        for i,m in ipairs(instanceMethods) do
+            local foundInSuper = false
+            for i2,v in ipairs(Class.methods) do
+                if v.name == m.name then
+                    foundInSuper = true
+                    i = i2
+                end
+            end
+            if foundInSuper then
+                Class.methods[i] = m
+            else
+                table.insert(Class.methods, m)
+            end
+        end
+--        for index=1, methods_count do
+--            local i = index + initialCount - subtractor
+--
+--            local m = method_info()
+--            for i2,v in ipairs(Class.methods) do
+--                --print(v.name)
+--                if v.name == m.name then
+--                    i = i2
+--                    subtractor = subtractor + 1
+--                end
+--            end
+--
+--            Class.methods[i] = m
+--            --find code attrib
+--            local ca
+--            for _, v in pairs(m.attributes) do
+--                --print(v.name)
+--                if v.code then ca = v end
+--            end
+--
+--            table.insert(doAfter, function()
+--                if ca then
+--                    m[1] = createCodeFunction(Class, m, ca, cp)
+--                elseif bit.band(m.acc,METHOD_ACC.NATIVE) == METHOD_ACC.NATIVE then
+--                    if not natives[cn] then natives[cn] = {} end
+--                    m[1] = function(...)
+--                        pushStackTrace(Class.name, m.name:gsub("L.-/(%a+);", "%1;"))
+--                        if not (natives[cn] and natives[cn][m.name]) then
+--                            error("Native not implemented: " .. Class.name .. "." .. m.name, 0)
+--                        end
+--                        local ret, exception = natives[cn][m.name](...)
+--                        popStackTrace()
+--                        return ret, exception
+--                    end
+--                else
+--                    --print(m.name," doesn't have code")
+--                end
+--            end)
+--        end
 
         for i, v in pairs(doAfter) do
             v()

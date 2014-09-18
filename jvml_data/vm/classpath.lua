@@ -11,6 +11,12 @@ function findMethod(c,name)
             return c.methods[i], i
         end
     end
+    for i=1, #c.staticMethods do
+        if c.staticMethods[i].name == name then
+            c.methodLookup[name] = {c.staticMethods[i],i} -- don't think i matters in statics but no reason not to
+            return c.staticMethods[i], i
+        end
+    end
     -- everything after this point is entirely in case of interfaces with default methods
     if c.super then
         local mt = findMethod(c.super, name)
@@ -133,6 +139,10 @@ function createClass(super_name, cn)
     cls.fieldIndexByName = {}
     cls.methods = {}
     cls[3] = cls.methods
+
+    cls.static_field_info = {}
+    cls.staticMethods = {}
+
     cls.methodLookup = {}
     cls.instanceofCache = {}
     if super_name then -- we have a custom Object class file which won't have a super

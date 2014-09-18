@@ -13,6 +13,11 @@ local function findMethodName(class, name)
 			return v.name
 		end
 	end
+	for i,v in ipairs(class.staticMethods) do
+		if v.name:find(name, 1, true) then
+			return v.name
+		end
+	end
 	-- default interface methods
 	for i,v in ipairs(class.interfaces) do
 		local iname = findMethodName(v, name)
