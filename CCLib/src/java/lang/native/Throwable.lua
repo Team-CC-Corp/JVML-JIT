@@ -3,9 +3,10 @@ natives["java.lang.Throwable"] = natives["java.lang.Throwable"] or {}
 natives["java.lang.Throwable"]["fillInStackTrace()Ljava/lang/Throwable;"] = function(this)
 	local stackTrace = newArray(getArrayClass("[Ljava.lang.StackTraceElement;"), 0)
 	local lStackTrace = getStackTrace()
-	stackTrace[4] = #lStackTrace
+	stackTrace[4] = #lStackTrace - 1
 	local StackTraceElement = classByName("java.lang.StackTraceElement")
-	for i,v in ipairs(lStackTrace) do
+	for i=1,#lStackTrace-1 do
+		local v = lStackTrace[i]
 		stackTrace[5][i] = newInstance(StackTraceElement)
 		local m = findMethod(StackTraceElement, "<init>(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;I)V")
 		local lineNumber = v.lineNumber

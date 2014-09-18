@@ -251,6 +251,20 @@ local function compile(class, method, codeAttr, cp)
         return ln
     end
 
+    local function asmRefillStackTrace(rexception)
+        asmSetStackTraceLineNumber(getCurrentLineNumber())
+
+        local rfill, rexc = alloc(2)
+
+        local fillInStackTrace = findMethod(classByName("java.lang.Throwable"), "fillInStackTrace()Ljava/lang/Throwable;")
+
+        asmGetRTInfo(rfill, info(fillInStackTrace[1]))
+        emit("move %i %i", rexc, rexception)
+        emit("call %i 2 1", rfill)
+
+        free(2)
+    end
+
     local inst
 
     local oplookup = {
@@ -1485,6 +1499,7 @@ local function compile(class, method, codeAttr, cp)
             emit("gettable %i %i k(4)", r, r)
         end, function() -- BF
             local rexception = peek(0)
+            asmRefillStackTrace(rexception)
             asmThrow(rexception)
         end, function() -- C0
             local c = resolveClass(cp[u2()])
