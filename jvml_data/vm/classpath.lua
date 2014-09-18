@@ -14,6 +14,10 @@ function findMethod(c,name)
     -- everything after this point is entirely in case of interfaces with default methods
     if c.super then
         local mt = findMethod(c.super, name)
+        if mt and bit.band(mt.acc,METHOD_ACC.STATIC) == METHOD_ACC.STATIC then
+            c.methodLookup[name] = {}
+            return nil
+        end
         if mt then
             c.methodLookup[name] = {mt}
             return mt
@@ -21,6 +25,10 @@ function findMethod(c,name)
     end
     for i=1, c.interfaces_count do
         local mt = findMethod(c.interfaces[i], name)
+        if mt and bit.band(mt.acc,METHOD_ACC.STATIC) == METHOD_ACC.STATIC then
+            c.methodLookup[name] = {}
+            return nil
+        end
         if mt then
             c.methodLookup[name] = {mt}
             return mt

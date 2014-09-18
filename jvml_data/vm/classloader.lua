@@ -637,11 +637,13 @@ function loadJavaClass(fh)
         end
 
         local staticmr = findMethod(Class, "<clinit>()V")[1]
-        local ok, err = pcall(staticmr)
-        if not ok then
-            printError(err)
-            printStackTrace(true)
-            error("Error in "..Class.name.." <clinit>()V")
+        if staticmr then
+            local ok, err = pcall(staticmr)
+            if not ok then
+                printError(err)
+                printStackTrace(true)
+                error("Error in "..Class.name.." <clinit>()V")
+            end
         end
     end)
 
