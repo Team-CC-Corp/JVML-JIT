@@ -6,14 +6,18 @@ local function compile(class, method, codeAttr, cp)
 
     local lineNumberAttribute
     local stackMapAttribute
-    local sourceFileName
     for i=0,codeAttr.attributes_count-1 do
         if codeAttr.attributes[i].name == "LineNumberTable" then
             lineNumberAttribute = codeAttr.attributes[i]
         elseif codeAttr.attributes[i].name == "StackMapTable" then
             stackMapAttribute = codeAttr.attributes[i]
-        elseif codeAttr.attributes[i].name == "SourceFile" then
-            sourceFileName = cp[codeAttr.attributes[i].source_file_index].bytes
+        end
+    end
+
+    local sourceFileName
+    for i=0,class.attributes_count-1 do
+        if class.attributes[i].name == "SourceFile" then
+            sourceFileName = cp[class.attributes[i].source_file_index].bytes
         end
     end
 

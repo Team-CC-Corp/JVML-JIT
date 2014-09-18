@@ -630,10 +630,10 @@ function loadJavaClass(fh)
             v()
         end
 
-        local attrib_count = u2()
-        local attributes = {}
-        for i=0, attrib_count-1 do
-            attributes[i] = attribute()
+        Class.attributes_count = u2()
+        Class.attributes = {}
+        for i=0, Class.attributes_count-1 do
+            Class.attributes[i] = attribute()
         end
 
         local staticmr = findMethod(Class, "<clinit>()V")
