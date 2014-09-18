@@ -5,10 +5,12 @@ local function compile(class, method, codeAttr, cp)
     end
 
     local lineNumberAttribute
+    local stackMapAttribute
     for i=0,codeAttr.attributes_count-1 do
         if codeAttr.attributes[i].name == "LineNumberTable" then
             lineNumberAttribute = codeAttr.attributes[i]
-            break
+        elseif codeAttr.attributes[i].name == "StackMapTable" then
+            stackMapAttribute = codeAttr.attributes[i]
         end
     end
 
@@ -1650,14 +1652,6 @@ local function compile(class, method, codeAttr, cp)
             error("FF not implemented.") -- TODO
         end
     }
-
-    local stackMapAttribute
-    for i=0,codeAttr.attributes_count-1 do
-        if codeAttr.attributes[i].name == "StackMapTable" then
-            stackMapAttribute = codeAttr.attributes[i]
-            break
-        end
-    end
 
     local offset = -1
     local entryIndex = 0
