@@ -252,7 +252,7 @@ local function compile(class, method, codeAttr, cp)
     end
 
     local function asmRefillStackTrace(rexception)
-        asmSetStackTraceLineNumber(getCurrentLineNumber())
+        asmSetStackTraceLineNumber(getCurrentLineNumber() or 0)
 
         local rfill, rexc = alloc(2)
 
