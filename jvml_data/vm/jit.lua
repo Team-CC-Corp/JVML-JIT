@@ -24,8 +24,12 @@ local function compile(class, method, codeAttr, cp)
     local code = codeAttr.code
     local asm = { }
 
+    local comments = { }
     local asmPC = 1
-    local function emit(str, ...)
+    local function emitWithComment(comment, str, ...)
+        if comment then
+            comments[asmPC] = "\t\t\t; " .. comment
+        end
         local _, err = pcall(function(...)
             asmPC = asmPC + 1
             asm[#asm + 1] = string.format(str, ...) .. "\n"
@@ -33,6 +37,10 @@ local function compile(class, method, codeAttr, cp)
         if err then
             error(err, 2)
         end
+    end
+
+    local function emit(str, ...)
+        emitWithComment(nil, str, ...)
     end
 
     local reg = codeAttr.max_locals
@@ -1262,7 +1270,7 @@ local function compile(class, method, codeAttr, cp)
             local fi = class.fieldIndexByName[name]
             local r = alloc()
             asmGetRTInfo(r, info(class.fields))
-            emit("gettable %i %i k(%i)", r, r, fi)
+            emitWithComment(class.name.."."..name, "gettable %i %i k(%i)", r, r, fi)
         end, function() -- B3
             --putstatic
             local fr = cp[u2()]
@@ -1272,7 +1280,7 @@ local function compile(class, method, codeAttr, cp)
             local value = peek(0)
             local r = alloc()
             asmGetRTInfo(r, info(class.fields))
-            emit("settable %i k(%i) %i", r, fi, value)
+            emitWithComment(class.name.."."..name, "settable %i k(%i) %i", r, fi, value)
             free(2)
         end, function() -- B4
             --getfield
@@ -1282,7 +1290,7 @@ local function compile(class, method, codeAttr, cp)
             local fi = class.fieldIndexByName[name]
             local r = peek(0)
             emit("gettable %i %i k(2)", r, r)
-            emit("gettable %i %i k(%i)", r, r, fi)
+            emitWithComment(class.name.."."..name, "gettable %i %i k(%i)", r, r, fi)
         end, function() -- B5
             --putfield
             local fr = cp[u2()]
@@ -1293,7 +1301,7 @@ local function compile(class, method, codeAttr, cp)
             local rval = peek(0)
             local rfields = alloc()
             emit("gettable %i %i k(2)", rfields, robj)
-            emit("settable %i k(%i) %i", rfields, fi, rval)
+            emitWithComment(class.name.."."..name, "settable %i k(%i) %i", rfields, fi, rval)
             free(3)
         end, function() -- B6
             --invokevirtual
@@ -1325,7 +1333,7 @@ local function compile(class, method, codeAttr, cp)
             free(1)
             emit("gettable %i %i k(1)", rmt, rmt)
             -- Invoke the method. Result is right after the method.
-            emit("call %i %i 3", rmt, argslen + 1)
+            emitWithComment(cl.name.."."..name, "call %i %i 3", rmt, argslen + 1)
 
             -- Free down to ret, exception
             -- Same as freeing all arguments except the argument representing the object
@@ -1364,7 +1372,7 @@ local function compile(class, method, codeAttr, cp)
 
             -- Invoke the method. Result is right after the method.
             emit("gettable %i %i k(1)", rmt, rmt)
-            emit("call %i %i 3", rmt, argslen + 1)
+            emitWithComment(cl.name.."."..name, "call %i %i 3", rmt, argslen + 1)
 
             -- Free down to ret, exception
             -- Same as freeing all arguments except the argument representing the object
@@ -1403,7 +1411,7 @@ local function compile(class, method, codeAttr, cp)
 
             -- Invoke the method. Result is right after the method.
             emit("gettable %i %i k(1)", rmt, rmt)
-            emit("call %i %i 3", rmt, argslen + 1)
+            emitWithComment(cl.name.."."..name, "call %i %i 3", rmt, argslen + 1)
 
             -- Free down to ret, exception
             -- More complicated than other invokes
@@ -1457,7 +1465,7 @@ local function compile(class, method, codeAttr, cp)
 
             -- Invoke the method. Result is right after the method.
             emit("gettable %i %i k(1)", rmt, rmt)
-            emit("call %i %i 3", rmt, argslen + 1)
+            emitWithComment(cl.name.."."..name, "call %i %i 3", rmt, argslen + 1)
 
             -- Free down to ret, exception
             -- Same as freeing all arguments except the argument representing the object
@@ -1714,7 +1722,13 @@ local function compile(class, method, codeAttr, cp)
         if pcMapLJ[i] then
             debugH.write(string.format("[%i] %X:\n", pcMapLJ[i], code[pcMapLJ[i]]))
         end
-        debugH.write(string.format("\t[%i] %s", i, asm[i]))
+        debugH.write(string.format("\t[%i] %s", i, asm[i]:gsub("\n$", function()
+            if comments[i] then
+                return comments[i] .. "\n"
+            else
+                return "\n"
+            end
+        end)))
     end
     debugH.write("\n")
     debugH.flush()
