@@ -636,9 +636,9 @@ function loadJavaClass(fh)
             attributes[i] = attribute()
         end
 
-        local staticmr = findMethod(Class, "<clinit>()V")[1]
+        local staticmr = findMethod(Class, "<clinit>()V")
         if staticmr then
-            local ok, err = pcall(staticmr)
+            local ok, err = pcall(staticmr[1])
             if not ok then
                 printError(err)
                 error("Error in "..Class.name.." <clinit>()V")
