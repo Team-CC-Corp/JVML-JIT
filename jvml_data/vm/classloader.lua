@@ -641,7 +641,6 @@ function loadJavaClass(fh)
             local ok, err = pcall(staticmr)
             if not ok then
                 printError(err)
-                printStackTrace(printError)
                 error("Error in "..Class.name.." <clinit>()V")
             end
         end
