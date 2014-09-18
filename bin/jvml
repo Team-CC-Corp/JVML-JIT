@@ -127,7 +127,7 @@ if not options.g then
     local ok, err, exc = pcall(m, jArray)
     if not ok then
         printError(err)
-        vm.printStackTrace(true)
+        vm.printStackTrace(printError)
     elseif exc then
         vm.findMethod(exc[1], "printStackTrace()V")[1](exc)
     end

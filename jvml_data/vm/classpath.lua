@@ -175,10 +175,10 @@ function getStackTrace()
     return newTrace
 end
 
-function printStackTrace(isError)
+function printStackTrace(printer)
     local reversedtable = {}
     for i,v in ipairs(stack_trace) do
         reversedtable[#stack_trace - i + 1] = v.className .. "." .. v.methodName .. ":" .. (v.lineNumber or -1)
     end
-    ((isError and printError) or print)(table.concat(reversedtable,"\n"))
+    (printer or print)(table.concat(reversedtable,"\n"))
 end

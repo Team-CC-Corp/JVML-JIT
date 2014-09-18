@@ -38,7 +38,7 @@ for i,v in ipairs(testsToRun) do
 	if not ok then
     	printError(err)
     	print()
-        vm.printStackTrace(true)
+        vm.printStackTrace(printError)
         print()
 
         term.setTextColor(colors.orange)
