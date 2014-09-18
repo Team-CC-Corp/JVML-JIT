@@ -117,12 +117,7 @@ function classByName(cn)
     end
 
     local fh = assert(fs.open(fullPath,"rb"), "File not found: " .. fullPath)
-    if not loadJavaClass(fh) then
-        error("Cannot load class " .. cn, 0)
-    else
-        c = class[cn]
-        return c
-    end
+    return class[assert(loadJavaClass(fh), "Cannot load class " .. cn)]
 end
 
 -- TODO: Index numerically only
