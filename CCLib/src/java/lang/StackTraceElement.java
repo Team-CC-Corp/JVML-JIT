@@ -35,11 +35,10 @@ public final class StackTraceElement {
     }
 
     public String toString() {
-        /*return getClassName() + "." + methodName +
+        return getClassName() + "." + methodName +
             (isNativeMethod() ? "(Native Method)" :
              (fileName != null && lineNumber >= 0 ?
               "(" + fileName + ":" + lineNumber + ")" :
-              (fileName != null ?  "("+fileName+")" : "(Unknown Source)")));*/
-        return declaringClass + "." + methodName + ":" + lineNumber;
+              (fileName != null ?  "("+fileName+")" : "(Unknown Source)")));
     }
 }

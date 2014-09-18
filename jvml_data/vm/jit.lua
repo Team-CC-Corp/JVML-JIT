@@ -6,11 +6,14 @@ local function compile(class, method, codeAttr, cp)
 
     local lineNumberAttribute
     local stackMapAttribute
+    local sourceFileName
     for i=0,codeAttr.attributes_count-1 do
         if codeAttr.attributes[i].name == "LineNumberTable" then
             lineNumberAttribute = codeAttr.attributes[i]
         elseif codeAttr.attributes[i].name == "StackMapTable" then
             stackMapAttribute = codeAttr.attributes[i]
+        elseif codeAttr.attributes[i].name == "SourceFile" then
+            sourceFileName = cp[codeAttr.attributes[i].source_file_index].bytes
         end
     end
 
@@ -166,7 +169,7 @@ local function compile(class, method, codeAttr, cp)
         asmGetRTInfo(rpush, info(pushStackTrace))
         asmGetRTInfo(rClassName, info(class.name))
         asmGetRTInfo(rMethodName, info(method.name:sub(1, method.name:find("%(") - 1)))
-        asmGetRTInfo(rFileName, info(""))
+        asmGetRTInfo(rFileName, info(sourceFileName or ""))
         asmGetRTInfo(rLineNumber, info(0))
         emit("call %i 5 1", rpush)
         free(5)
