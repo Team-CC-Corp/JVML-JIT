@@ -48,9 +48,9 @@ public class Throwable {
 
     public void printStackTrace(PrintStream out) {
     	out.println(this);
-    	for (StackTraceElement elem : stackTrace) {
-    		out.println("\tat " + elem.toString());
-    	}
+        for (int i = stackTrace.length - 1; i >= 0; --i) {
+            out.println("\tat " + stackTrace[i].toString());
+        }
     }
 
     public native Throwable fillInStackTrace();
