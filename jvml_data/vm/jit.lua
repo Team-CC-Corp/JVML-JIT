@@ -162,11 +162,7 @@ local function compile(class, method, codeAttr, cp)
         emit("loadk %i k(1)", ri)
         emit("le 0 %i %i", ri, rlength)
         emit("jmp 3")
-        if class == getArrayClass("[Z") then
-            emit("settable %i %i false", rarray, ri)
-        else
-            emit("settable %i %i k(0)", rarray, ri)
-        end
+        emit("settable %i %i k(0)", rarray, ri) -- all primitives are represented by integers and default to 0
         emit("add %i %i k(1)", ri, ri)
         emit("jmp -5")
 
