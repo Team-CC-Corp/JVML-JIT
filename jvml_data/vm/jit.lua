@@ -310,6 +310,28 @@ local function compile(class, method, codeAttr, cp)
         free(2)
     end
 
+    local function asmCheckNullPointer(robj)
+        local npException = classByName("java.lang.NullPointerException")
+        local con = findMethod(npException, "<init>()V")
+
+        emit("test %i 1", robj)
+        local jmpPC1 = emit("")
+        
+        local rexc, rcon, rexcDup = alloc(3)
+        asmNewInstance(rexc, npException)
+        asmGetRTInfo(rcon, info(con[1]))
+        emit("move %i %i", rexcDup, rexc)
+        emit("call %i 2 1", rcon)
+        free(2)
+        asmRefillStackTrace(rexc)
+        asmThrow(rexc)
+
+        local jmpPC2 = asmPC
+        emitInsert(jmpPC1 - 1, "jmp %i", jmpPC2 - jmpPC1)
+
+        free(1)
+    end
+
     local function asmAALoad()
         --aaload
         local oobException = classByName("java.lang.ArrayIndexOutOfBoundsException")
@@ -317,6 +339,9 @@ local function compile(class, method, codeAttr, cp)
 
         local rarr = peek(1)
         local ri = peek(0)
+
+        asmCheckNullPointer(rarr)
+
         local rlen, rexc, rcon, rpexc, rpi = alloc(5)
         emit("gettable %i %i k(4)", rlen, rarr)
         emit("lt 1 %i %i", ri, rlen)
@@ -345,6 +370,9 @@ local function compile(class, method, codeAttr, cp)
         local rarr = peek(2)
         local ri = peek(1)
         local rval = peek(0)
+
+        asmCheckNullPointer(rarr)
+
         local rlen, rexc, rcon, rpexc, rpi = alloc(5)
         emit("gettable %i %i k(4)", rlen, rarr)
         emit("lt 1 %i %i", ri, rlen)
@@ -1297,6 +1325,9 @@ local function compile(class, method, codeAttr, cp)
             local class = resolveClass(cp[fr.class_index])
             local fi = class.fieldIndexByName[name]
             local r = peek(0)
+
+            asmCheckNullPointer(r)
+
             emit("gettable %i %i k(2)", r, r)
             emitWithComment(class.name.."."..name, "gettable %i %i k(%i)", r, r, fi)
         end, function() -- B5
@@ -1307,6 +1338,9 @@ local function compile(class, method, codeAttr, cp)
             local fi = class.fieldIndexByName[name]
             local robj = peek(1)
             local rval = peek(0)
+
+            asmCheckNullPointer(robj)
+
             local rfields = alloc()
             emit("gettable %i %i k(2)", rfields, robj)
             emitWithComment(class.name.."."..name, "settable %i k(%i) %i", rfields, fi, rval)
@@ -1320,6 +1354,7 @@ local function compile(class, method, codeAttr, cp)
             local argslen = #mt.desc
 
             asmSetStackTraceLineNumber(getCurrentLineNumber() or 0)
+            asmCheckNullPointer(peek(argslen - 1))
 
             -- Need 1 extra register for last argument.
             alloc()
@@ -1365,6 +1400,7 @@ local function compile(class, method, codeAttr, cp)
             local argslen = #mt.desc
 
             asmSetStackTraceLineNumber(getCurrentLineNumber() or 0)
+            --asmCheckNullPointer(peek(argslen - 1))        -- in no case should invokespecial need null checking
 
             -- Need 1 extra register for last argument. 
             alloc()
@@ -1449,6 +1485,7 @@ local function compile(class, method, codeAttr, cp)
             local argslen = #mt.desc
 
             asmSetStackTraceLineNumber(getCurrentLineNumber() or 0)
+            asmCheckNullPointer(peek(argslen - 1))
 
             -- Need 1 extra register for last argument.
             alloc()
