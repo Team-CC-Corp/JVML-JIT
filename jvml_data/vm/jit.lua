@@ -845,7 +845,6 @@ local function compile(class, method, codeAttr, cp)
             free(8)
         end, function() -- 50
             --aastore
-            local rarr, ri, rval = free(3)
             local oobException = classByName("java.lang.ArrayIndexOutOfBoundsException")
             local con = findMethod(oobException, "<init>(I)V")
 
