@@ -308,6 +308,64 @@ local function compile(class, method, codeAttr, cp)
         free(2)
     end
 
+    local function asmAALoad()
+        --aaload
+        local oobException = classByName("java.lang.ArrayIndexOutOfBoundsException")
+        local con = findMethod(oobException, "<init>(I)V")
+
+        local rarr = peek(1)
+        local ri = peek(0)
+        local rlen, rexc, rcon, rpexc, rpi = alloc(5)
+        emit("gettable %i %i k(4)", rlen, rarr)
+        emit("lt 1 %i %i", ri, rlen)
+        emit("")                                    -- Placeholder for jump.
+
+        local p1 = asmPC
+        asmNewInstance(rexc, oobException)
+        asmGetRTInfo(rcon, info(con[1]))
+        emit("move %i %i", rpi, ri)
+        emit("move %i %i", rpexc, rexc)
+        emit("call %i 3 3", rcon)
+        asmRefillStackTrace(rexc)
+        asmThrow(rexc)
+        local p2 = asmPC
+        emitInsert(p1 - 1, "jmp %i", p2 - p1)           -- Insert calculated jump.
+        emit("add %i %i k(1)", ri, ri)
+        emit("gettable %i %i k(5)", rarr, rarr)
+        emit("gettable %i %i %i", rarr, rarr, ri)
+
+        free(6)
+    end
+
+    local function asmAAStore()
+        local oobException = classByName("java.lang.ArrayIndexOutOfBoundsException")
+        local con = findMethod(oobException, "<init>(I)V")
+
+        local rarr = peek(2)
+        local ri = peek(1)
+        local rval = peek(0)
+        local rlen, rexc, rcon, rpexc, rpi = alloc(5)
+        emit("gettable %i %i k(4)", rlen, rarr)
+        emit("lt 1 %i %i", ri, rlen)
+        emit("")                                    -- Placeholder for jump.
+
+        local p1 = asmPC
+        asmNewInstance(rexc, oobException)
+        asmGetRTInfo(rcon, info(con[1]))
+        emit("move %i %i", rpi, ri)
+        emit("move %i %i", rpexc, rexc)
+        emit("call %i 3 3", rcon)
+        asmRefillStackTrace(rexc)
+        asmThrow(rexc)
+        local p2 = asmPC
+        emitInsert(p1 - 1, "jmp %i", p2 - p1)           -- Insert calculated jump.
+        emit("add %i %i k(1)", ri, ri)
+        emit("gettable %i %i k(5)", rarr, rarr)
+        emit("settable %i %i %i", rarr, ri, rval)
+
+        free(8)
+    end
+
     local inst
 
     local oplookup = {
@@ -514,221 +572,21 @@ local function compile(class, method, codeAttr, cp)
             local r = alloc()
             emit("move %i 4", r)
         end, function() -- 2E
-            --aaload
-            local oobException = classByName("java.lang.ArrayIndexOutOfBoundsException")
-            local con = findMethod(oobException, "<init>(I)V")
-
-            local rarr = peek(1)
-            local ri = peek(0)
-            local rlen, rexc, rcon, rpexc, rpi = alloc(5)
-            emit("gettable %i %i k(4)", rlen, rarr)
-            emit("lt 1 %i %i", ri, rlen)
-            emit("")                                    -- Placeholder for jump.
-
-            local p1 = asmPC
-            asmNewInstance(rexc, oobException)
-            asmGetRTInfo(rcon, info(con[1]))
-            emit("move %i %i", rpi, ri)
-            emit("move %i %i", rpexc, rexc)
-            emit("call %i 3 3", rcon)
-            asmRefillStackTrace(rexc)
-            asmThrow(rexc)
-            local p2 = asmPC
-            emitInsert(p1 - 1, "jmp %i", p2 - p1)           -- Insert calculated jump.
-            emit("add %i %i k(1)", ri, ri)
-            emit("gettable %i %i k(5)", rarr, rarr)
-            emit("gettable %i %i %i", rarr, rarr, ri)
-
-            free(6)
+            asmAALoad()
         end, function() -- 2F
-            --aaload
-            local oobException = classByName("java.lang.ArrayIndexOutOfBoundsException")
-            local con = findMethod(oobException, "<init>(I)V")
-
-            local rarr = peek(1)
-            local ri = peek(0)
-            local rlen, rexc, rcon, rpexc, rpi = alloc(5)
-            emit("gettable %i %i k(4)", rlen, rarr)
-            emit("lt 1 %i %i", ri, rlen)
-            emit("")                                    -- Placeholder for jump.
-
-            local p1 = asmPC
-            asmNewInstance(rexc, oobException)
-            asmGetRTInfo(rcon, info(con[1]))
-            emit("move %i %i", rpi, ri)
-            emit("move %i %i", rpexc, rexc)
-            emit("call %i 3 3", rcon)
-            asmRefillStackTrace(rexc)
-            asmThrow(rexc)
-            local p2 = asmPC
-            emitInsert(p1 - 1, "jmp %i", p2 - p1)           -- Insert calculated jump.
-            emit("add %i %i k(1)", ri, ri)
-            emit("gettable %i %i k(5)", rarr, rarr)
-            emit("gettable %i %i %i", rarr, rarr, ri)
-
-            free(6)
+            asmAALoad()
         end, function() -- 30
-            --aaload
-            local oobException = classByName("java.lang.ArrayIndexOutOfBoundsException")
-            local con = findMethod(oobException, "<init>(I)V")
-
-            local rarr = peek(1)
-            local ri = peek(0)
-            local rlen, rexc, rcon, rpexc, rpi = alloc(5)
-            emit("gettable %i %i k(4)", rlen, rarr)
-            emit("lt 1 %i %i", ri, rlen)
-            emit("")                                    -- Placeholder for jump.
-
-            local p1 = asmPC
-            asmNewInstance(rexc, oobException)
-            asmGetRTInfo(rcon, info(con[1]))
-            emit("move %i %i", rpi, ri)
-            emit("move %i %i", rpexc, rexc)
-            emit("call %i 3 3", rcon)
-            asmRefillStackTrace(rexc)
-            asmThrow(rexc)
-            local p2 = asmPC
-            emitInsert(p1 - 1, "jmp %i", p2 - p1)           -- Insert calculated jump.
-            emit("add %i %i k(1)", ri, ri)
-            emit("gettable %i %i k(5)", rarr, rarr)
-            emit("gettable %i %i %i", rarr, rarr, ri)
-
-            free(6)
+            asmAALoad()
         end, function() -- 31
-            --aaload
-            local oobException = classByName("java.lang.ArrayIndexOutOfBoundsException")
-            local con = findMethod(oobException, "<init>(I)V")
-
-            local rarr = peek(1)
-            local ri = peek(0)
-            local rlen, rexc, rcon, rpexc, rpi = alloc(5)
-            emit("gettable %i %i k(4)", rlen, rarr)
-            emit("lt 1 %i %i", ri, rlen)
-            emit("")                                    -- Placeholder for jump.
-
-            local p1 = asmPC
-            asmNewInstance(rexc, oobException)
-            asmGetRTInfo(rcon, info(con[1]))
-            emit("move %i %i", rpi, ri)
-            emit("move %i %i", rpexc, rexc)
-            emit("call %i 3 3", rcon)
-            asmRefillStackTrace(rexc)
-            asmThrow(rexc)
-            local p2 = asmPC
-            emitInsert(p1 - 1, "jmp %i", p2 - p1)           -- Insert calculated jump.
-            emit("add %i %i k(1)", ri, ri)
-            emit("gettable %i %i k(5)", rarr, rarr)
-            emit("gettable %i %i %i", rarr, rarr, ri)
-
-            free(6)
+            asmAALoad()
         end, function() -- 32
-            --aaload
-            local oobException = classByName("java.lang.ArrayIndexOutOfBoundsException")
-            local con = findMethod(oobException, "<init>(I)V")
-
-            local rarr = peek(1)
-            local ri = peek(0)
-            local rlen, rexc, rcon, rpexc, rpi = alloc(5)
-            emit("gettable %i %i k(4)", rlen, rarr)
-            emit("lt 1 %i %i", ri, rlen)
-            emit("")                                    -- Placeholder for jump.
-
-            local p1 = asmPC
-            asmNewInstance(rexc, oobException)
-            asmGetRTInfo(rcon, info(con[1]))
-            emit("move %i %i", rpi, ri)
-            emit("move %i %i", rpexc, rexc)
-            emit("call %i 3 3", rcon)
-            asmRefillStackTrace(rexc)
-            asmThrow(rexc)
-            local p2 = asmPC
-            emitInsert(p1 - 1, "jmp %i", p2 - p1)           -- Insert calculated jump.
-            emit("add %i %i k(1)", ri, ri)
-            emit("gettable %i %i k(5)", rarr, rarr)
-            emit("gettable %i %i %i", rarr, rarr, ri)
-
-            free(6)
+            asmAALoad()
         end, function() -- 33
-            --aaload
-            local oobException = classByName("java.lang.ArrayIndexOutOfBoundsException")
-            local con = findMethod(oobException, "<init>(I)V")
-
-            local rarr = peek(1)
-            local ri = peek(0)
-            local rlen, rexc, rcon, rpexc, rpi = alloc(5)
-            emit("gettable %i %i k(4)", rlen, rarr)
-            emit("lt 1 %i %i", ri, rlen)
-            emit("")                                    -- Placeholder for jump.
-
-            local p1 = asmPC
-            asmNewInstance(rexc, oobException)
-            asmGetRTInfo(rcon, info(con[1]))
-            emit("move %i %i", rpi, ri)
-            emit("move %i %i", rpexc, rexc)
-            emit("call %i 3 3", rcon)
-            asmRefillStackTrace(rexc)
-            asmThrow(rexc)
-            local p2 = asmPC
-            emitInsert(p1 - 1, "jmp %i", p2 - p1)           -- Insert calculated jump.
-            emit("add %i %i k(1)", ri, ri)
-            emit("gettable %i %i k(5)", rarr, rarr)
-            emit("gettable %i %i %i", rarr, rarr, ri)
-
-            free(6)
+            asmAALoad()
         end, function() -- 34
-            --aaload
-            local oobException = classByName("java.lang.ArrayIndexOutOfBoundsException")
-            local con = findMethod(oobException, "<init>(I)V")
-
-            local rarr = peek(1)
-            local ri = peek(0)
-            local rlen, rexc, rcon, rpexc, rpi = alloc(5)
-            emit("gettable %i %i k(4)", rlen, rarr)
-            emit("lt 1 %i %i", ri, rlen)
-            emit("")                                    -- Placeholder for jump.
-
-            local p1 = asmPC
-            asmNewInstance(rexc, oobException)
-            asmGetRTInfo(rcon, info(con[1]))
-            emit("move %i %i", rpi, ri)
-            emit("move %i %i", rpexc, rexc)
-            emit("call %i 3 3", rcon)
-            asmRefillStackTrace(rexc)
-            asmThrow(rexc)
-            local p2 = asmPC
-            emitInsert(p1 - 1, "jmp %i", p2 - p1)           -- Insert calculated jump.
-            emit("add %i %i k(1)", ri, ri)
-            emit("gettable %i %i k(5)", rarr, rarr)
-            emit("gettable %i %i %i", rarr, rarr, ri)
-
-            free(6)
+            asmAALoad()
         end, function() -- 35
-            --aaload
-            local oobException = classByName("java.lang.ArrayIndexOutOfBoundsException")
-            local con = findMethod(oobException, "<init>(I)V")
-
-            local rarr = peek(1)
-            local ri = peek(0)
-            local rlen, rexc, rcon, rpexc, rpi = alloc(5)
-            emit("gettable %i %i k(4)", rlen, rarr)
-            emit("lt 1 %i %i", ri, rlen)
-            emit("")                                    -- Placeholder for jump.
-
-            local p1 = asmPC
-            asmNewInstance(rexc, oobException)
-            asmGetRTInfo(rcon, info(con[1]))
-            emit("move %i %i", rpi, ri)
-            emit("move %i %i", rpexc, rexc)
-            emit("call %i 3 3", rcon)
-            asmRefillStackTrace(rexc)
-            asmThrow(rexc)
-            local p2 = asmPC
-            emitInsert(p1 - 1, "jmp %i", p2 - p1)           -- Insert calculated jump.
-            emit("add %i %i k(1)", ri, ri)
-            emit("gettable %i %i k(5)", rarr, rarr)
-            emit("gettable %i %i %i", rarr, rarr, ri)
-
-            free(6)
+            asmAALoad()
         end, function() -- 36
             --stores
             --lvars[u1()] = pop()
@@ -817,228 +675,28 @@ local function compile(class, method, codeAttr, cp)
             emit("move 4 %i", r)
         end, function() -- 4F
             --aastore
-            local oobException = classByName("java.lang.ArrayIndexOutOfBoundsException")
-            local con = findMethod(oobException, "<init>(I)V")
-
-            local rarr = peek(2)
-            local ri = peek(1)
-            local rval = peek(0)
-            local rlen, rexc, rcon, rpexc, rpi = alloc(5)
-            emit("gettable %i %i k(4)", rlen, rarr)
-            emit("lt 1 %i %i", ri, rlen)
-            emit("")                                    -- Placeholder for jump.
-
-            local p1 = asmPC
-            asmNewInstance(rexc, oobException)
-            asmGetRTInfo(rcon, info(con[1]))
-            emit("move %i %i", rpi, ri)
-            emit("move %i %i", rpexc, rexc)
-            emit("call %i 3 3", rcon)
-            asmRefillStackTrace(rexc)
-            asmThrow(rexc)
-            local p2 = asmPC
-            emitInsert(p1 - 1, "jmp %i", p2 - p1)           -- Insert calculated jump.
-            emit("add %i %i k(1)", ri, ri)
-            emit("gettable %i %i k(5)", rarr, rarr)
-            emit("settable %i %i %i", rarr, ri, rval)
-
-            free(8)
+            asmAAStore()
         end, function() -- 50
             --aastore
-            local oobException = classByName("java.lang.ArrayIndexOutOfBoundsException")
-            local con = findMethod(oobException, "<init>(I)V")
-
-            local rarr = peek(2)
-            local ri = peek(1)
-            local rval = peek(0)
-            local rlen, rexc, rcon, rpexc, rpi = alloc(5)
-            emit("gettable %i %i k(4)", rlen, rarr)
-            emit("lt 1 %i %i", ri, rlen)
-            emit("")                                    -- Placeholder for jump.
-
-            local p1 = asmPC
-            asmNewInstance(rexc, oobException)
-            asmGetRTInfo(rcon, info(con[1]))
-            emit("move %i %i", rpi, ri)
-            emit("move %i %i", rpexc, rexc)
-            emit("call %i 3 3", rcon)
-            asmRefillStackTrace(rexc)
-            asmThrow(rexc)
-            local p2 = asmPC
-            emitInsert(p1 - 1, "jmp %i", p2 - p1)           -- Insert calculated jump.
-            emit("add %i %i k(1)", ri, ri)
-            emit("gettable %i %i k(5)", rarr, rarr)
-            emit("settable %i %i %i", rarr, ri, rval)
-
-            free(8)
+            asmAAStore()
         end, function() -- 51
             --aastore
-            local oobException = classByName("java.lang.ArrayIndexOutOfBoundsException")
-            local con = findMethod(oobException, "<init>(I)V")
-
-            local rarr = peek(2)
-            local ri = peek(1)
-            local rval = peek(0)
-            local rlen, rexc, rcon, rpexc, rpi = alloc(5)
-            emit("gettable %i %i k(4)", rlen, rarr)
-            emit("lt 1 %i %i", ri, rlen)
-            emit("")                                    -- Placeholder for jump.
-
-            local p1 = asmPC
-            asmNewInstance(rexc, oobException)
-            asmGetRTInfo(rcon, info(con[1]))
-            emit("move %i %i", rpi, ri)
-            emit("move %i %i", rpexc, rexc)
-            emit("call %i 3 3", rcon)
-            asmRefillStackTrace(rexc)
-            asmThrow(rexc)
-            local p2 = asmPC
-            emitInsert(p1 - 1, "jmp %i", p2 - p1)           -- Insert calculated jump.
-            emit("add %i %i k(1)", ri, ri)
-            emit("gettable %i %i k(5)", rarr, rarr)
-            emit("settable %i %i %i", rarr, ri, rval)
-
-            free(8)
+            asmAAStore()
         end, function() -- 52
             --aastore
-            local oobException = classByName("java.lang.ArrayIndexOutOfBoundsException")
-            local con = findMethod(oobException, "<init>(I)V")
-
-            local rarr = peek(2)
-            local ri = peek(1)
-            local rval = peek(0)
-            local rlen, rexc, rcon, rpexc, rpi = alloc(5)
-            emit("gettable %i %i k(4)", rlen, rarr)
-            emit("lt 1 %i %i", ri, rlen)
-            emit("")                                    -- Placeholder for jump.
-
-            local p1 = asmPC
-            asmNewInstance(rexc, oobException)
-            asmGetRTInfo(rcon, info(con[1]))
-            emit("move %i %i", rpi, ri)
-            emit("move %i %i", rpexc, rexc)
-            emit("call %i 3 3", rcon)
-            asmRefillStackTrace(rexc)
-            asmThrow(rexc)
-            local p2 = asmPC
-            emitInsert(p1 - 1, "jmp %i", p2 - p1)           -- Insert calculated jump.
-            emit("add %i %i k(1)", ri, ri)
-            emit("gettable %i %i k(5)", rarr, rarr)
-            emit("settable %i %i %i", rarr, ri, rval)
-
-            free(8)
+            asmAAStore()
         end, function() -- 53
             --aastore
-            local oobException = classByName("java.lang.ArrayIndexOutOfBoundsException")
-            local con = findMethod(oobException, "<init>(I)V")
-
-            local rarr = peek(2)
-            local ri = peek(1)
-            local rval = peek(0)
-            local rlen, rexc, rcon, rpexc, rpi = alloc(5)
-            emit("gettable %i %i k(4)", rlen, rarr)
-            emit("lt 1 %i %i", ri, rlen)
-            emit("")                                    -- Placeholder for jump.
-
-            local p1 = asmPC
-            asmNewInstance(rexc, oobException)
-            asmGetRTInfo(rcon, info(con[1]))
-            emit("move %i %i", rpi, ri)
-            emit("move %i %i", rpexc, rexc)
-            emit("call %i 3 3", rcon)
-            asmRefillStackTrace(rexc)
-            asmThrow(rexc)
-            local p2 = asmPC
-            emitInsert(p1 - 1, "jmp %i", p2 - p1)           -- Insert calculated jump.
-            emit("add %i %i k(1)", ri, ri)
-            emit("gettable %i %i k(5)", rarr, rarr)
-            emit("settable %i %i %i", rarr, ri, rval)
-
-            free(8)
+            asmAAStore()
         end, function() -- 54
             --aastore
-            local oobException = classByName("java.lang.ArrayIndexOutOfBoundsException")
-            local con = findMethod(oobException, "<init>(I)V")
-
-            local rarr = peek(2)
-            local ri = peek(1)
-            local rval = peek(0)
-            local rlen, rexc, rcon, rpexc, rpi = alloc(5)
-            emit("gettable %i %i k(4)", rlen, rarr)
-            emit("lt 1 %i %i", ri, rlen)
-            emit("")                                    -- Placeholder for jump.
-
-            local p1 = asmPC
-            asmNewInstance(rexc, oobException)
-            asmGetRTInfo(rcon, info(con[1]))
-            emit("move %i %i", rpi, ri)
-            emit("move %i %i", rpexc, rexc)
-            emit("call %i 3 3", rcon)
-            asmRefillStackTrace(rexc)
-            asmThrow(rexc)
-            local p2 = asmPC
-            emitInsert(p1 - 1, "jmp %i", p2 - p1)           -- Insert calculated jump.
-            emit("add %i %i k(1)", ri, ri)
-            emit("gettable %i %i k(5)", rarr, rarr)
-            emit("settable %i %i %i", rarr, ri, rval)
-
-            free(8)
+            asmAAStore()
         end, function() -- 55
             --aastore
-            local oobException = classByName("java.lang.ArrayIndexOutOfBoundsException")
-            local con = findMethod(oobException, "<init>(I)V")
-
-            local rarr = peek(2)
-            local ri = peek(1)
-            local rval = peek(0)
-            local rlen, rexc, rcon, rpexc, rpi = alloc(5)
-            emit("gettable %i %i k(4)", rlen, rarr)
-            emit("lt 1 %i %i", ri, rlen)
-            emit("")                                    -- Placeholder for jump.
-
-            local p1 = asmPC
-            asmNewInstance(rexc, oobException)
-            asmGetRTInfo(rcon, info(con[1]))
-            emit("move %i %i", rpi, ri)
-            emit("move %i %i", rpexc, rexc)
-            emit("call %i 3 3", rcon)
-            asmRefillStackTrace(rexc)
-            asmThrow(rexc)
-            local p2 = asmPC
-            emitInsert(p1 - 1, "jmp %i", p2 - p1)           -- Insert calculated jump.
-            emit("add %i %i k(1)", ri, ri)
-            emit("gettable %i %i k(5)", rarr, rarr)
-            emit("settable %i %i %i", rarr, ri, rval)
-
-            free(8)
+            asmAAStore()
         end, function() -- 56
             --aastore
-            local oobException = classByName("java.lang.ArrayIndexOutOfBoundsException")
-            local con = findMethod(oobException, "<init>(I)V")
-
-            local rarr = peek(2)
-            local ri = peek(1)
-            local rval = peek(0)
-            local rlen, rexc, rcon, rpexc, rpi = alloc(5)
-            emit("gettable %i %i k(4)", rlen, rarr)
-            emit("lt 1 %i %i", ri, rlen)
-            emit("")                                    -- Placeholder for jump.
-
-            local p1 = asmPC
-            asmNewInstance(rexc, oobException)
-            asmGetRTInfo(rcon, info(con[1]))
-            emit("move %i %i", rpi, ri)
-            emit("move %i %i", rpexc, rexc)
-            emit("call %i 3 3", rcon)
-            asmRefillStackTrace(rexc)
-            asmThrow(rexc)
-            local p2 = asmPC
-            emitInsert(p1 - 1, "jmp %i", p2 - p1)           -- Insert calculated jump.
-            emit("add %i %i k(1)", ri, ri)
-            emit("gettable %i %i k(5)", rarr, rarr)
-            emit("settable %i %i %i", rarr, ri, rval)
-
-            free(8)
+            asmAAStore()
         end, function() -- 57
             free()
         end, function() -- 58
