@@ -842,7 +842,7 @@ local function compile(class, method, codeAttr, cp)
             emit("gettable %i %i k(5)", rarr, rarr)
             emit("settable %i %i %i", rarr, ri, rval)
 
-            free(7)
+            free(8)
         end, function() -- 50
             --aastore
             local rarr, ri, rval = free(3)
@@ -871,7 +871,7 @@ local function compile(class, method, codeAttr, cp)
             emit("gettable %i %i k(5)", rarr, rarr)
             emit("settable %i %i %i", rarr, ri, rval)
 
-            free(7)
+            free(8)
         end, function() -- 51
             --aastore
             local oobException = classByName("java.lang.ArrayIndexOutOfBoundsException")
@@ -899,7 +899,7 @@ local function compile(class, method, codeAttr, cp)
             emit("gettable %i %i k(5)", rarr, rarr)
             emit("settable %i %i %i", rarr, ri, rval)
 
-            free(7)
+            free(8)
         end, function() -- 52
             --aastore
             local oobException = classByName("java.lang.ArrayIndexOutOfBoundsException")
@@ -927,7 +927,7 @@ local function compile(class, method, codeAttr, cp)
             emit("gettable %i %i k(5)", rarr, rarr)
             emit("settable %i %i %i", rarr, ri, rval)
 
-            free(7)
+            free(8)
         end, function() -- 53
             --aastore
             local oobException = classByName("java.lang.ArrayIndexOutOfBoundsException")
@@ -955,7 +955,7 @@ local function compile(class, method, codeAttr, cp)
             emit("gettable %i %i k(5)", rarr, rarr)
             emit("settable %i %i %i", rarr, ri, rval)
 
-            free(7)
+            free(8)
         end, function() -- 54
             --aastore
             local oobException = classByName("java.lang.ArrayIndexOutOfBoundsException")
@@ -983,7 +983,7 @@ local function compile(class, method, codeAttr, cp)
             emit("gettable %i %i k(5)", rarr, rarr)
             emit("settable %i %i %i", rarr, ri, rval)
 
-            free(7)
+            free(8)
         end, function() -- 55
             --aastore
             local oobException = classByName("java.lang.ArrayIndexOutOfBoundsException")
@@ -1011,7 +1011,7 @@ local function compile(class, method, codeAttr, cp)
             emit("gettable %i %i k(5)", rarr, rarr)
             emit("settable %i %i %i", rarr, ri, rval)
 
-            free(7)
+            free(8)
         end, function() -- 56
             --aastore
             local oobException = classByName("java.lang.ArrayIndexOutOfBoundsException")
@@ -1039,7 +1039,7 @@ local function compile(class, method, codeAttr, cp)
             emit("gettable %i %i k(5)", rarr, rarr)
             emit("settable %i %i %i", rarr, ri, rval)
 
-            free(7)
+            free(8)
         end, function() -- 57
             free()
         end, function() -- 58
