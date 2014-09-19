@@ -37,10 +37,11 @@ local function compile(class, method, codeAttr, cp)
         if err then
             error(err, 2)
         end
+        return asmPC
     end
 
     local function emit(str, ...)
-        emitWithComment(nil, str, ...)
+        return emitWithComment(nil, str, ...)
     end
 
     local function emitInsert(pc, str, ...)
@@ -50,6 +51,7 @@ local function compile(class, method, codeAttr, cp)
         if err then
             error(err, 2)
         end
+        return pc
     end
 
     local reg = codeAttr.max_locals
@@ -318,9 +320,8 @@ local function compile(class, method, codeAttr, cp)
         local rlen, rexc, rcon, rpexc, rpi = alloc(5)
         emit("gettable %i %i k(4)", rlen, rarr)
         emit("lt 1 %i %i", ri, rlen)
-        emit("")                                    -- Placeholder for jump.
+        local p1 = emit("")                                    -- Placeholder for jump.
 
-        local p1 = asmPC
         asmNewInstance(rexc, oobException)
         asmGetRTInfo(rcon, info(con[1]))
         emit("move %i %i", rpi, ri)
@@ -347,9 +348,8 @@ local function compile(class, method, codeAttr, cp)
         local rlen, rexc, rcon, rpexc, rpi = alloc(5)
         emit("gettable %i %i k(4)", rlen, rarr)
         emit("lt 1 %i %i", ri, rlen)
-        emit("")                                    -- Placeholder for jump.
+        local p1 = emit("")                                    -- Placeholder for jump.
 
-        local p1 = asmPC
         asmNewInstance(rexc, oobException)
         asmGetRTInfo(rcon, info(con[1]))
         emit("move %i %i", rpi, ri)
