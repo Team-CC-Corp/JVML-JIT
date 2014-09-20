@@ -1,8 +1,11 @@
 package java.lang;
 
 import java.io.PrintStream;
+import cc.terminal.SystemTerminal;
 
 public final class System {
+	public static SystemTerminal term = new SystemTerminal();
+
 	public static PrintStream out = new PrintStream();
 	public static PrintStream err = new PrintStream();
 
