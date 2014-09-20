@@ -889,12 +889,16 @@ local function compile(class, method, codeAttr, cp)
             local r1 = peek(1)
             local r2 = peek(0)
             emit("div %i %i %i", r1, r1, r2)
+            emit("mod %i %i %s", r2, r1, k(1))      -- Floor the value.
+            emit("sub %i %i %i", r1, r1, r2)
             free(1)
         end, function() -- 6D
             --div
             local r1 = peek(1)
             local r2 = peek(0)
             emit("div %i %i %i", r1, r1, r2)
+            emit("mod %i %i %s", r2, r1, k(1))      -- Floor the value.
+            emit("sub %i %i %i", r1, r1, r2)
             free(1)
         end, function() -- 6E
             --div
