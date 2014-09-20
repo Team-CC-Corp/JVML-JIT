@@ -1737,42 +1737,43 @@ local function compile(class, method, codeAttr, cp)
         inst = u1()
     end
 
-    for i = 1, #asm do
-        local inst = asm[i]
-        if inst:sub(1, 4) == "#jmp" then
-            local _, _, sjoffset, sjmpLOffset = inst:find("^#jmp ([+-]?%d+) ([+-]?%d+)")
-
-            -- Java instruction to jump to
-            local jpc
-            if sjoffset and sjmpLOffset then
-                local joffset, jmpLOffset = tonumber(sjoffset), tonumber(sjmpLOffset)
-                jpc = pcMapLJ[i - jmpLOffset] + joffset
-            else
-                local _, _, sjpc = inst:find("^#jmp %((%d+)%)")
-                jpc = tonumber(sjpc)
-            end
-
-            -- Lua instruction to jump to
-            local lpc = pcMapJL[jpc]
-            -- Lua offset
-            local loffset = lpc - i - 1
-            asm[i] = "jmp " .. loffset .. "\n"
-        end
-    end
-
     debugH.write(class.name .. "." .. method.name .. "\n")
     debugH.write("Length: " .. (asmPC - 1) .. "\n")
     debugH.write("Locals: " .. codeAttr.max_locals .. "\n")
     for i = 1, #asm do
+        local inst = asm[i]
+        local ok, err = pcall(function()
+            if inst:sub(1, 4) == "#jmp" then
+                local _, _, sjoffset, sjmpLOffset = inst:find("^#jmp ([+-]?%d+) ([+-]?%d+)")
+
+                -- Java instruction to jump to
+                local jpc
+                if sjoffset and sjmpLOffset then
+                    local joffset, jmpLOffset = tonumber(sjoffset), tonumber(sjmpLOffset)
+                    jpc = pcMapLJ[i - jmpLOffset] + joffset
+                else
+                    local _, _, sjpc = inst:find("^#jmp %((%d+)%)")
+                    jpc = tonumber(sjpc)
+                end
+
+                -- Lua instruction to jump to
+                local lpc = pcMapJL[jpc]
+                -- Lua offset
+                local loffset = lpc - i - 1
+                asm[i] = "jmp " .. loffset .. "\n"
+            end
+        end)
+
+        if not ok then
+            debugH.flush()
+            error("Invalid #jmp: " .. inst .. "\nCause: " .. err)
+        end
+
         if pcMapLJ[i] then
             debugH.write(string.format("[%i] %X:\n", pcMapLJ[i], code[pcMapLJ[i]]))
         end
-        debugH.write(string.format("\t[%i] %s", i, asm[i]:gsub("\n$", function()
-            if comments[i] then
-                return comments[i] .. "\n"
-            else
-                return "\n"
-            end
+        debugH.write(string.format("\t[%i] %s", i, inst:gsub("\n$", function()
+            return (comments[i] or "") .. "\n"
         end)))
     end
     debugH.write("\n")
@@ -1783,7 +1784,8 @@ local function compile(class, method, codeAttr, cp)
     local p = LAT.Lua51.Parser:new()
     local file = p:Parse(".options 0 " .. (codeAttr.max_locals + 1) .. table.concat(asm), class.name .. "." .. method.name.."/bytecode")
     --file:StripDebugInfo()
-    local bc = file:Compile()
+    local ok, bc = pcall(file.Compile, file)
+    assert(ok, class.name .. "." .. method.name:sub(1, method.name:find("%(") - 1) .. " failed to compile: \n" .. bc)
     local f = loadstring(bc)
     --print(table.concat(asm))
 
