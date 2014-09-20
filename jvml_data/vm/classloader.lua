@@ -593,6 +593,7 @@ function loadJavaClass(fh)
             if bit.band(newField.access_flags, FIELD_ACC.STATIC) > 0 then
                 table.insert(Class.static_field_info, newField)
                 Class.fieldIndexByName[newField.name] = #Class.static_field_info
+                Class.fields[#Class.static_field_info] = PRIMITIVE_WRAPPERS[newField.descriptor] and 0 or nil
             else
                 table.insert(Class.field_info, newField)
                 Class.fieldIndexByName[newField.name] = #Class.field_info

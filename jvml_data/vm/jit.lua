@@ -135,6 +135,7 @@ local function compile(class, method, codeAttr, cp)
     local constants = {}
     local topConstant = 1
     local function k(c)
+        c = c == nil and "nil" or c
         local kBracket = "k(" .. c .. ")"
         if constants[c] or topConstant < 255 then
             if not constants[c] then
@@ -158,7 +159,13 @@ local function compile(class, method, codeAttr, cp)
         asmGetRTInfo(rclass, info(class))
         asmGetRTInfo(rmethods, info(class.methods))
         emit("newtable %i %i 0", robj, customObjectSize or 3)
-        emit("newtable %i %i 0", rfields, #class.fields)
+        emit("newtable %i %i 0", rfields, #class.field_info)
+        for i = 1, #class.field_info do
+            local fi = class.field_info[i]
+            if bit.band(fi.access_flags, FIELD_ACC.STATIC) == 0 then
+                emit("settable %i %s %s", rfields, k(i), PRIMITIVE_WRAPPERS[fi.descriptor] and k(0) or k(nil))
+            end
+        end
         emit("settable %i %s %i", robj, k(1), rclass)
         emit("settable %i %s %i", robj, k(2), rfields)
         emit("settable %i %s %i", robj, k(3), rmethods)
