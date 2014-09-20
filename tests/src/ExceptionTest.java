@@ -7,5 +7,12 @@ public class ExceptionTest {
 			e.printStackTrace();
 			System.out.println("Caught");
 		}
+		try {
+			Object a = null;
+			System.out.println(a.toString());
+		} catch (NullPointerException e) {
+			e.printStackTrace();
+			System.out.println("Caught null pointer");
+		}
 	}
 }
