@@ -170,6 +170,8 @@ function loadJavaClass(fh)
     local cn
     local cp = {}
     local i = 0
+
+    cp.jitStrings = { }
     
     local u1 = fh.read--function() i=i+1 print("at ",i-1) return fh.read() end
     local function u2()

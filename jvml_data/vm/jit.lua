@@ -103,6 +103,15 @@ local function compile(class, method, codeAttr, cp)
         return p
     end
 
+    local function loadStringConst(str)
+        local ret = cp.jitStrings[str]
+        if not ret then
+            cp.jitStrings[str] = toJString(str)
+            return cp.jitStrings[str]
+        end
+        return ret
+    end
+
     local _pc = 0
     local function u1()
         _pc = _pc+1
@@ -528,11 +537,8 @@ local function compile(class, method, codeAttr, cp)
                 local r = alloc()
                 asmGetRTInfo(r, info(getJClass(cp[s.name_index].bytes:gsub("/", "."))))
             else
-                local rtoJString, rStr = alloc(2)
-                asmGetRTInfo(rtoJString, info(toJString))
-                asmGetRTInfo(rStr, info(cp[s.string_index].bytes))
-                emit("call %i 2 2", rtoJString)
-                free()
+                local rStr = alloc()
+                asmGetRTInfo(rStr, info(loadStringConst(cp[s.string_index].bytes)))
             end
         end, function() -- 13
             --ldc_w
@@ -544,11 +550,8 @@ local function compile(class, method, codeAttr, cp)
                 local r = alloc()
                 asmGetRTInfo(r, info(getJClass(cp[s.name_index].bytes:gsub("/", "."))))
             else
-                local rtoJString, rStr = alloc(2)
-                asmGetRTInfo(rtoJString, info(toJString))
-                asmGetRTInfo(rStr, info(cp[s.string_index].bytes))
-                emit("call %i 2 2", rtoJString)
-                free()
+                local rStr = alloc()
+                asmGetRTInfo(rStr, info(loadStringConst(cp[s.string_index].bytes)))
             end
         end, function() -- 14
             --ldc2_w
