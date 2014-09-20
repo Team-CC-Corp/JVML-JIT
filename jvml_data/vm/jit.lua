@@ -418,6 +418,49 @@ local function compile(class, method, codeAttr, cp)
         free(8)
     end
 
+    local function asmDivCheck()
+        local r1 = peek(1)
+        local r2 = peek(0)
+
+        local arithException = classByName("java.lang.ArithmeticException")
+        local con = findMethod(arithException, "<init>(Ljava/lang/String;)V")
+
+        local rexc, rcon, rpexc, rmsg = alloc(4)
+
+        emit("eq 0 %i %s", r2, k(0))            -- Check for / by zero.
+        local p1 = emit("")
+        asmNewInstance(rexc, arithException)
+        asmGetRTInfo(rmsg, info(toJString("/ by zero")))
+        asmGetRTInfo(rcon, info(con[1]))
+        emit("move %i %i", rpexc, rexc)
+        emit("call %i 3 3", rcon)
+        asmRefillStackTrace(rexc)
+        asmThrow(rexc)
+        local p2 = asmPC
+        emitInsert(p1 - 1, "jmp %i", p2 - p1)   -- Insert calculated jump.
+
+        return r1, r2
+    end
+
+    local function asmIntDiv()
+        local r1, r2 = asmDivCheck()
+        emit("div %i %i %i", r1, r1, r2)
+        emit("mod %i %i %s", r2, r1, k(1))      -- Floor the value.
+        emit("sub %i %i %i", r1, r1, r2)
+        free(5)
+    end
+
+    local function asmFloatDiv()
+        local r1, r2 = asmDivCheck()
+        emit("div %i %i %i", r1, r1, r2)
+        free(5)
+    end
+
+    local function asmMod()
+        local r1, r2 = asmDivCheck()
+        emit("mod %i %i %i", r1, r1, r2)
+    end
+
     local inst
 
     local oplookup = {
@@ -893,56 +936,28 @@ local function compile(class, method, codeAttr, cp)
             free(1)
         end, function() -- 6C
             --div
-            local r1 = peek(1)
-            local r2 = peek(0)
-            emit("div %i %i %i", r1, r1, r2)
-            emit("mod %i %i %s", r2, r1, k(1))      -- Floor the value.
-            emit("sub %i %i %i", r1, r1, r2)
-            free(1)
+            asmIntDiv()
         end, function() -- 6D
             --div
-            local r1 = peek(1)
-            local r2 = peek(0)
-            emit("div %i %i %i", r1, r1, r2)
-            emit("mod %i %i %s", r2, r1, k(1))      -- Floor the value.
-            emit("sub %i %i %i", r1, r1, r2)
-            free(1)
+            asmIntDiv()
         end, function() -- 6E
             --div
-            local r1 = peek(1)
-            local r2 = peek(0)
-            emit("div %i %i %i", r1, r1, r2)
-            free(1)
+            asmFloatDiv()
         end, function() -- 6F
             --div
-            local r1 = peek(1)
-            local r2 = peek(0)
-            emit("div %i %i %i", r1, r1, r2)
-            free(1)
+            asmFloatDiv()
         end, function() -- 70
             --rem
-            local r1 = peek(1)
-            local r2 = peek(0)
-            emit("mod %i %i %i", r1, r1, r2)
-            free(1)
+            asmMod()
         end, function() -- 71
             --rem
-            local r1 = peek(1)
-            local r2 = peek(0)
-            emit("mod %i %i %i", r1, r1, r2)
-            free(1)
+            asmMod()
         end, function() -- 72
             --rem
-            local r1 = peek(1)
-            local r2 = peek(0)
-            emit("mod %i %i %i", r1, r1, r2)
-            free(1)
+            asmMod()
         end, function() -- 73
             --rem
-            local r1 = peek(1)
-            local r2 = peek(0)
-            emit("mod %i %i %i", r1, r1, r2)
-            free(1)
+            asmMod()
         end, function() -- 74
             --neg
             local r1 = peek(0)

@@ -10,9 +10,25 @@ public class ExceptionTest {
 		try {
 			Object a = null;
 			System.out.println(a.toString());
-		} catch (NullPointerException e) {
+		} catch(NullPointerException e) {
 			e.printStackTrace();
 			System.out.println("Caught null pointer");
+		}
+		try {
+			int x = 5;
+			int y = 0;
+			int z = x/y;
+		} catch(ArithmeticException e) {
+			e.printStackTrace();
+			System.out.println("Caught / by zero");
+		}
+		try {
+			int x = 5;
+			int y = 0;
+			int z = x%y;
+		} catch(ArithmeticException e) {
+			e.printStackTrace();
+			System.out.println("Caught / by zero");
 		}
 	}
 }
