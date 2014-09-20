@@ -132,8 +132,25 @@ local function compile(class, method, codeAttr, cp)
         return u - 4294967296
     end
 
+    local constants = {}
+    local topConstant = 1
+    local function k(c)
+        local kBracket = "k(" .. c .. ")"
+        if constants[c] or topConstant < 255 then
+            if not constants[c] then
+                constants[c] = true
+                topConstant = topConstant + 1
+            end
+            return kBracket
+        else
+            local rc = alloc()
+            emitWithComment("Automatically generated loadk", "loadk %i " .. kBracket, rc)
+            return string.format("%i", free())
+        end
+    end
+
     local function asmGetRTInfo(r, i)
-        emit("gettable %i 0 k(%i) ", r, i)
+        emit("gettable %i 0 %s ", r, k(i))
     end
 
     local function asmNewInstance(robj, class, customObjectSize)
@@ -142,9 +159,9 @@ local function compile(class, method, codeAttr, cp)
         asmGetRTInfo(rmethods, info(class.methods))
         emit("newtable %i %i 0", robj, customObjectSize or 3)
         emit("newtable %i %i 0", rfields, #class.fields)
-        emit("settable %i k(1) %i", robj, rclass)
-        emit("settable %i k(2) %i", robj, rfields)
-        emit("settable %i k(3) %i", robj, rmethods)
+        emit("settable %i %s %i", robj, k(1), rclass)
+        emit("settable %i %s %i", robj, k(2), rfields)
+        emit("settable %i %s %i", robj, k(3), rmethods)
         free(3)
     end
 
@@ -152,8 +169,8 @@ local function compile(class, method, codeAttr, cp)
         local rarray = alloc()
         emit("newtable %i 0 0", rarray)
         asmNewInstance(robj, class, 5)
-        emit("settable %i k(4) %i", robj, rlength)
-        emit("settable %i k(5) %i", robj, rarray)
+        emit("settable %i %s %i", robj, k(4), rlength)
+        emit("settable %i %s %i", robj, k(5), rarray)
         free()
     end
 
@@ -161,16 +178,16 @@ local function compile(class, method, codeAttr, cp)
         local rarray, ri = alloc(2)
 
         emit("newtable %i 0 0", rarray)
-        emit("loadk %i k(1)", ri)
+        emit("loadk %i %s", ri, k(1))
         emit("le 0 %i %i", ri, rlength)
         emit("jmp 3")
-        emit("settable %i %i k(0)", rarray, ri) -- all primitives are represented by integers and default to 0
-        emit("add %i %i k(1)", ri, ri)
+        emit("settable %i %i %s", rarray, ri, k(0)) -- all primitives are represented by integers and default to 0
+        emit("add %i %i %s", ri, ri, k(1))
         emit("jmp -5")
 
         asmNewInstance(robj, class, 5)
-        emit("settable %i k(4) %i", robj, rlength)
-        emit("settable %i k(5) %i", robj, rarray)
+        emit("settable %i %s %i", robj, k(4), rlength)
+        emit("settable %i %s %i", robj, k(5), rarray)
         free(2)
     end
 
@@ -193,7 +210,7 @@ local function compile(class, method, codeAttr, cp)
     -- Expects method at register rmt followed by args.
     -- Result is stored in rmt + 1.
     local function asmInvokeMethod(rmt, argslen, results)
-        emit("gettable %i %i k(1)", rmt, rmt)
+        emit("gettable %i %i %s", rmt, rmt, k(1))
         emit("call %i %i %i", rmt, argslen + 1, results + 1)
     end
 
@@ -310,6 +327,28 @@ local function compile(class, method, codeAttr, cp)
         free(2)
     end
 
+    local function asmCheckNullPointer(robj)
+        local npException = classByName("java.lang.NullPointerException")
+        local con = findMethod(npException, "<init>()V")
+
+        emit("test %i 1", robj)
+        local jmpPC1 = emit("")
+        
+        local rexc, rcon, rexcDup = alloc(3)
+        asmNewInstance(rexc, npException)
+        asmGetRTInfo(rcon, info(con[1]))
+        emit("move %i %i", rexcDup, rexc)
+        emit("call %i 2 1", rcon)
+        free(2)
+        asmRefillStackTrace(rexc)
+        asmThrow(rexc)
+
+        local jmpPC2 = asmPC
+        emitInsert(jmpPC1 - 1, "jmp %i", jmpPC2 - jmpPC1)
+
+        free(1)
+    end
+
     local function asmAALoad()
         --aaload
         local oobException = classByName("java.lang.ArrayIndexOutOfBoundsException")
@@ -317,8 +356,11 @@ local function compile(class, method, codeAttr, cp)
 
         local rarr = peek(1)
         local ri = peek(0)
+
+        asmCheckNullPointer(rarr)
+
         local rlen, rexc, rcon, rpexc, rpi = alloc(5)
-        emit("gettable %i %i k(4)", rlen, rarr)
+        emit("gettable %i %i %s", rlen, rarr, k(4))
         emit("lt 1 %i %i", ri, rlen)
         local p1 = emit("")                                    -- Placeholder for jump.
 
@@ -331,8 +373,8 @@ local function compile(class, method, codeAttr, cp)
         asmThrow(rexc)
         local p2 = asmPC
         emitInsert(p1 - 1, "jmp %i", p2 - p1)           -- Insert calculated jump.
-        emit("add %i %i k(1)", ri, ri)
-        emit("gettable %i %i k(5)", rarr, rarr)
+        emit("add %i %i %s", ri, ri, k(1))
+        emit("gettable %i %i %s", rarr, rarr, k(5))
         emit("gettable %i %i %i", rarr, rarr, ri)
 
         free(6)
@@ -345,8 +387,11 @@ local function compile(class, method, codeAttr, cp)
         local rarr = peek(2)
         local ri = peek(1)
         local rval = peek(0)
+
+        asmCheckNullPointer(rarr)
+
         local rlen, rexc, rcon, rpexc, rpi = alloc(5)
-        emit("gettable %i %i k(4)", rlen, rarr)
+        emit("gettable %i %i %s", rlen, rarr, k(4))
         emit("lt 1 %i %i", ri, rlen)
         local p1 = emit("")                                    -- Placeholder for jump.
 
@@ -359,8 +404,8 @@ local function compile(class, method, codeAttr, cp)
         asmThrow(rexc)
         local p2 = asmPC
         emitInsert(p1 - 1, "jmp %i", p2 - p1)           -- Insert calculated jump.
-        emit("add %i %i k(1)", ri, ri)
-        emit("gettable %i %i k(5)", rarr, rarr)
+        emit("add %i %i %s", ri, ri, k(1))
+        emit("gettable %i %i %s", rarr, rarr, k(5))
         emit("settable %i %i %i", rarr, ri, rval)
 
         free(8)
@@ -397,13 +442,13 @@ local function compile(class, method, codeAttr, cp)
         end, function() -- 09
             local r = alloc()
             emit("newtable %i 2 0", r)          -- r = { nil, nil }
-            emit("settable %i k(1) k(0)", r)    -- r[1] = 0
-            emit("settable %i k(2) k(0)", r)    -- r[2] = 0
+            emit("settable %i %s %s", r, k(1), k(0))    -- r[1] = 0
+            emit("settable %i %s %s", r, k(2), k(0))    -- r[2] = 0
         end, function() -- 0A
             local r = alloc()
             emit("newtable %i 2 0", r)          -- r = { nil, nil }
-            emit("settable %i k(1) k(0)", r)    -- r[1] = 0
-            emit("settable %i k(2) k(1)", r)    -- r[2] = 1
+            emit("settable %i %s %s", r, k(1), k(0))    -- r[1] = 0
+            emit("settable %i %s %s", r, k(2), k(1))    -- r[2] = 1
         end, function() -- 0B
             local r = alloc()
             emit("loadk %i k(0)", r)
@@ -890,19 +935,19 @@ local function compile(class, method, codeAttr, cp)
         end, function() -- 74
             --neg
             local r1 = peek(0)
-            emit("mul %i %i k(-1)", r1, r1)
+            emit("mul %i %i %s", r1, r1, k(-1))
         end, function() -- 75
             --neg
             local r1 = peek(0)
-            emit("mul %i %i k(-1)", r1, r1)
+            emit("mul %i %i %s", r1, r1, k(-1))
         end, function() -- 76
             --neg
             local r1 = peek(0)
-            emit("mul %i %i k(-1)", r1, r1)
+            emit("mul %i %i %s", r1, r1, k(-1))
         end, function() -- 77
             --neg
             local r1 = peek(0)
-            emit("mul %i %i k(-1)", r1, r1)
+            emit("mul %i %i %s", r1, r1, k(-1))
         end, function() -- 78
             --shl
             local r1 = peek(1)
@@ -1027,7 +1072,7 @@ local function compile(class, method, codeAttr, cp)
             --iinc
             local idx = u1() + 1
             local c = u1ToSignedByte(u1())
-            emit("add %i %i k(%i)", idx, idx, c)
+            emit("add %i %i %s", idx, idx, k(c))
         end, function() -- 85
             --i2l
             --push(asLong(bigInt.toBigInt(pop()[2])))
@@ -1126,33 +1171,51 @@ local function compile(class, method, codeAttr, cp)
         end, function() -- 99
             --ifeq
             local joffset = u2ToSignedShort(u2())
-            emit("eq 1 %i k(0)", free())
-            emit("#jmp %i %i", joffset, 1)
+            local k = alloc()
+            emit("loadk %i k(0)", k)
+            free()
+            emit("eq 1 %i %i", free(), k)
+            emit("#jmp %i %i", joffset, 2)
         end, function() -- 9A
             --ifne
             local joffset = u2ToSignedShort(u2())
-            emit("eq 0 %i k(0)", free())
-            emit("#jmp %i %i", joffset, 1)
+            local k = alloc()
+            emit("loadk %i k(0)", k)
+            free()
+            emit("eq 0 %i %i", free(), k)
+            emit("#jmp %i %i", joffset, 2)
         end, function() -- 9B
             --iflt
             local joffset = u2ToSignedShort(u2())
-            emit("lt 1 %i k(0)", free())
-            emit("#jmp %i %i", joffset, 1)
+            local k = alloc()
+            emit("loadk %i k(0)", k)
+            free()
+            emit("lt 1 %i %i", free(), k)
+            emit("#jmp %i %i", joffset, 2)
         end, function() -- 9C
             --ifge
             local joffset = u2ToSignedShort(u2())
-            emit("lt 0 %i k(0)", free())
-            emit("#jmp %i %i", joffset, 1)
+            local k = alloc()
+            emit("loadk %i k(0)", k)
+            free()
+            emit("lt 0 %i %i", free(), k)
+            emit("#jmp %i %i", joffset, 2)
         end, function() -- 9D
             --ifgt
             local joffset = u2ToSignedShort(u2())
-            emit("le 0 %i k(0)", free())
-            emit("#jmp %i %i", joffset, 1)
+            local k = alloc()
+            emit("loadk %i k(0)", k)
+            free()
+            emit("le 0 %i %i", free(), k)
+            emit("#jmp %i %i", joffset, 2)
         end, function() -- 9E
             --ifle
             local joffset = u2ToSignedShort(u2())
-            emit("le 1 %i k(0)", free())
-            emit("#jmp %i %i", joffset, 1)
+            local k = alloc()
+            emit("loadk %i k(0)", k)
+            free()
+            emit("le 1 %i %i", free(), k)
+            emit("#jmp %i %i", joffset, 2)
         end, function() -- 9F
             --if_icmpeq
             local joffset = u2ToSignedShort(u2())
@@ -1229,11 +1292,14 @@ local function compile(class, method, codeAttr, cp)
 
             for i = 1, noffsets do
                 local offset = s4()     -- offset to jump to if rkey == match
-                emit("eq 1 k(%i) %i", low + i - 1, rkey)
-                emit("#jmp %i %i", offset, (i - 1) * 2 + 1)
+                local k = alloc()
+                emit("loadk %i k(%i)", k, low + i - 1)
+                emit("eq 1 %i %i", k, rkey)
+                emit("#jmp %i %i", offset, (i - 1) * 3 + 2)
+                free()
             end
 
-            emit("#jmp %i %i", default, noffsets * 2)
+            emit("#jmp %i %i", default, noffsets * 3)
         end, function() -- AB
             local rkey = free()
 
@@ -1247,11 +1313,14 @@ local function compile(class, method, codeAttr, cp)
             for i = 1, npairs do
                 local match = s4()      -- try to match this to the key
                 local offset = s4()     -- offset to jump to if rkey == match
-                emit("eq 1 k(%i) %i", match, rkey)
-                emit("#jmp %i %i", offset, (i - 1) * 2 + 1)
+                local k = alloc()
+                emit("loadk %i k(%i)", k, match)
+                emit("eq 1 %i %i", k, rkey)
+                emit("#jmp %i %i", offset, (i - 1) * 3 + 2)
+                free()
             end
 
-            emit("#jmp %i %i", default, npairs * 2)
+            emit("#jmp %i %i", default, npairs * 3)
         end, function() -- AC
             asmPopStackTrace()
             emit("return %i 2", free())
@@ -1278,7 +1347,7 @@ local function compile(class, method, codeAttr, cp)
             local fi = class.fieldIndexByName[name]
             local r = alloc()
             asmGetRTInfo(r, info(class.fields))
-            emitWithComment(class.name.."."..name, "gettable %i %i k(%i)", r, r, fi)
+            emitWithComment(class.name.."."..name, "gettable %i %i %s", r, r, k(fi))
         end, function() -- B3
             --putstatic
             local fr = cp[u2()]
@@ -1288,7 +1357,7 @@ local function compile(class, method, codeAttr, cp)
             local value = peek(0)
             local r = alloc()
             asmGetRTInfo(r, info(class.fields))
-            emitWithComment(class.name.."."..name, "settable %i k(%i) %i", r, fi, value)
+            emitWithComment(class.name.."."..name, "settable %i %s %i", r, k(fi), value)
             free(2)
         end, function() -- B4
             --getfield
@@ -1297,8 +1366,11 @@ local function compile(class, method, codeAttr, cp)
             local class = resolveClass(cp[fr.class_index])
             local fi = class.fieldIndexByName[name]
             local r = peek(0)
-            emit("gettable %i %i k(2)", r, r)
-            emitWithComment(class.name.."."..name, "gettable %i %i k(%i)", r, r, fi)
+
+            asmCheckNullPointer(r)
+
+            emit("gettable %i %i %s", r, r, k(2))
+            emitWithComment(class.name.."."..name, "gettable %i %i %s", r, r, k(fi))
         end, function() -- B5
             --putfield
             local fr = cp[u2()]
@@ -1307,9 +1379,12 @@ local function compile(class, method, codeAttr, cp)
             local fi = class.fieldIndexByName[name]
             local robj = peek(1)
             local rval = peek(0)
+
+            asmCheckNullPointer(robj)
+
             local rfields = alloc()
-            emit("gettable %i %i k(2)", rfields, robj)
-            emitWithComment(class.name.."."..name, "settable %i k(%i) %i", rfields, fi, rval)
+            emit("gettable %i %i %s", rfields, robj, k(2))
+            emitWithComment(class.name.."."..name, "settable %i %s %i", rfields, k(fi), rval)
             free(3)
         end, function() -- B6
             --invokevirtual
@@ -1320,6 +1395,7 @@ local function compile(class, method, codeAttr, cp)
             local argslen = #mt.desc
 
             asmSetStackTraceLineNumber(getCurrentLineNumber() or 0)
+            asmCheckNullPointer(peek(argslen - 1))
 
             -- Need 1 extra register for last argument.
             alloc()
@@ -1336,10 +1412,10 @@ local function compile(class, method, codeAttr, cp)
 
             asmGetRTInfo(methodTableEntry, info(mIndex))
             -- Get the methods table from the object
-            emit("gettable %i %i k(3)", rmt, objIndex)
+            emit("gettable %i %i %s", rmt, objIndex, k(3))
             emit("gettable %i %i %i", rmt, rmt, methodTableEntry)
             free(1)
-            emit("gettable %i %i k(1)", rmt, rmt)
+            emit("gettable %i %i %s", rmt, rmt, k(1))
             -- Invoke the method. Result is right after the method.
             emitWithComment(cl.name.."."..name, "call %i %i 3", rmt, argslen + 1)
 
@@ -1365,6 +1441,7 @@ local function compile(class, method, codeAttr, cp)
             local argslen = #mt.desc
 
             asmSetStackTraceLineNumber(getCurrentLineNumber() or 0)
+            --asmCheckNullPointer(peek(argslen - 1))        -- in no case should invokespecial need null checking
 
             -- Need 1 extra register for last argument. 
             alloc()
@@ -1379,7 +1456,7 @@ local function compile(class, method, codeAttr, cp)
             asmGetRTInfo(rmt, info(mt))
 
             -- Invoke the method. Result is right after the method.
-            emit("gettable %i %i k(1)", rmt, rmt)
+            emit("gettable %i %i %s", rmt, rmt, k(1))
             emitWithComment(cl.name.."."..name, "call %i %i 3", rmt, argslen + 1)
 
             -- Free down to ret, exception
@@ -1418,7 +1495,7 @@ local function compile(class, method, codeAttr, cp)
             asmGetRTInfo(rmt, info(mt))
 
             -- Invoke the method. Result is right after the method.
-            emit("gettable %i %i k(1)", rmt, rmt)
+            emit("gettable %i %i %s", rmt, rmt, k(1))
             emitWithComment(cl.name.."."..name, "call %i %i 3", rmt, argslen + 1)
 
             -- Free down to ret, exception
@@ -1449,6 +1526,7 @@ local function compile(class, method, codeAttr, cp)
             local argslen = #mt.desc
 
             asmSetStackTraceLineNumber(getCurrentLineNumber() or 0)
+            asmCheckNullPointer(peek(argslen - 1))
 
             -- Need 1 extra register for last argument.
             alloc()
@@ -1465,14 +1543,14 @@ local function compile(class, method, codeAttr, cp)
             -- find the method
             local find, rcl, rname = alloc(3)
             asmGetRTInfo(find, info(findMethod))
-            emit("gettable %i %i k(1)", rcl, obj)
+            emit("gettable %i %i %s", rcl, obj, k(1))
             asmGetRTInfo(rname, info(name))
             emit("call %i 3 2", find)
             emit("move %i %i", rmt, find)
             free(3)
 
             -- Invoke the method. Result is right after the method.
-            emit("gettable %i %i k(1)", rmt, rmt)
+            emit("gettable %i %i %s", rmt, rmt, k(1))
             emitWithComment(cl.name.."."..name, "call %i %i 3", rmt, argslen + 1)
 
             -- Free down to ret, exception
@@ -1521,7 +1599,7 @@ local function compile(class, method, codeAttr, cp)
         end, function() -- BE
             --arraylength
             local r = peek(0)
-            emit("gettable %i %i k(4)", r, r)
+            emit("gettable %i %i %s", r, r, k(4))
         end, function() -- BF
             local rexception = peek(0)
             asmRefillStackTrace(rexception)
@@ -1700,42 +1778,43 @@ local function compile(class, method, codeAttr, cp)
         inst = u1()
     end
 
-    for i = 1, #asm do
-        local inst = asm[i]
-        if inst:sub(1, 4) == "#jmp" then
-            local _, _, sjoffset, sjmpLOffset = inst:find("^#jmp ([+-]?%d+) ([+-]?%d+)")
-
-            -- Java instruction to jump to
-            local jpc
-            if sjoffset and sjmpLOffset then
-                local joffset, jmpLOffset = tonumber(sjoffset), tonumber(sjmpLOffset)
-                jpc = pcMapLJ[i - jmpLOffset] + joffset
-            else
-                local _, _, sjpc = inst:find("^#jmp %((%d+)%)")
-                jpc = tonumber(sjpc)
-            end
-
-            -- Lua instruction to jump to
-            local lpc = pcMapJL[jpc]
-            -- Lua offset
-            local loffset = lpc - i - 1
-            asm[i] = "jmp " .. loffset .. "\n"
-        end
-    end
-
     debugH.write(class.name .. "." .. method.name .. "\n")
     debugH.write("Length: " .. (asmPC - 1) .. "\n")
     debugH.write("Locals: " .. codeAttr.max_locals .. "\n")
     for i = 1, #asm do
+        local inst = asm[i]
+        local ok, err = pcall(function()
+            if inst:sub(1, 4) == "#jmp" then
+                local _, _, sjoffset, sjmpLOffset = inst:find("^#jmp ([+-]?%d+) ([+-]?%d+)")
+
+                -- Java instruction to jump to
+                local jpc
+                if sjoffset and sjmpLOffset then
+                    local joffset, jmpLOffset = tonumber(sjoffset), tonumber(sjmpLOffset)
+                    jpc = pcMapLJ[i - jmpLOffset] + joffset
+                else
+                    local _, _, sjpc = inst:find("^#jmp %((%d+)%)")
+                    jpc = tonumber(sjpc)
+                end
+
+                -- Lua instruction to jump to
+                local lpc = pcMapJL[jpc]
+                -- Lua offset
+                local loffset = lpc - i - 1
+                asm[i] = "jmp " .. loffset .. "\n"
+            end
+        end)
+
+        if not ok then
+            debugH.flush()
+            error("Invalid #jmp: " .. inst .. "\nCause: " .. err)
+        end
+
         if pcMapLJ[i] then
             debugH.write(string.format("[%i] %X:\n", pcMapLJ[i], code[pcMapLJ[i]]))
         end
-        debugH.write(string.format("\t[%i] %s", i, asm[i]:gsub("\n$", function()
-            if comments[i] then
-                return comments[i] .. "\n"
-            else
-                return "\n"
-            end
+        debugH.write(string.format("\t[%i] %s", i, inst:gsub("\n$", function()
+            return (comments[i] or "") .. "\n"
         end)))
     end
     debugH.write("\n")
@@ -1746,7 +1825,8 @@ local function compile(class, method, codeAttr, cp)
     local p = LAT.Lua51.Parser:new()
     local file = p:Parse(".options 0 " .. (codeAttr.max_locals + 1) .. table.concat(asm), class.name .. "." .. method.name.."/bytecode")
     --file:StripDebugInfo()
-    local bc = file:Compile()
+    local ok, bc = pcall(file.Compile, file)
+    assert(ok, class.name .. "." .. method.name:sub(1, method.name:find("%(") - 1) .. " failed to compile: \n" .. bc)
     local f = loadstring(bc)
     --print(table.concat(asm))
 
