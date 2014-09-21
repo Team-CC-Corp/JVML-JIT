@@ -50,4 +50,5 @@ for i,v in ipairs(testsToRun) do
     	print(v, " Succeded\n")
     	term.setTextColor(colors.white)
     end
+    sleep(0)
 end
