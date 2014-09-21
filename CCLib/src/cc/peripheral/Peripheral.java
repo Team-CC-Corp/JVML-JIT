@@ -2,8 +2,11 @@ package cc.peripheral;
 
 public class Peripheral {
 	public final String id;
-	public Peripheral(String id) {
+	public Peripheral(String id) throws PeripheralNotFoundException {
 		this.id = id;
+		if (!isPresent()) {
+			throw new PeripheralNotFoundException(id);
+		}
 	}
 
 	native public Object[] call(String method, Object... arguments);
