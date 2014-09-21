@@ -1,7 +1,15 @@
 package cc.terminal;
 
 public interface Terminal {
-	public void write(String text);
+	public void write(char c);
+	public default void write(char[] c) {
+		for (char ch : c) {
+			write(ch);
+		}
+	}
+	public default void write(String text) {
+		write(text.toCharArray());
+	}
 
 	public void clearLine();
 	public default void clear() {

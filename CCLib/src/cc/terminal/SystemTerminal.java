@@ -5,9 +5,11 @@ public class SystemTerminal implements Terminal {
 		System.load("cc/native/SystemTerminal.lua");
 	}
 
+	@Override public native void write(char c);
 	@Override public native void write(String text);
 
 	@Override public native void clearLine();
+	@Override public native void clear();
 
 	@Override public native int getCursorX();
 	@Override public native int getCursorY();

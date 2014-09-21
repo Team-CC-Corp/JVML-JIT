@@ -12,6 +12,16 @@ public class MonitorTerminal extends Peripheral implements Terminal {
 	}
 
 	@Override
+	public void write(char c) {
+		write(new String(new char[] {c}));
+	}
+
+	@Override
+	public void write(char[] c) {
+		write(new String(c));
+	}
+
+	@Override
 	public void write(String text) {
 		call("write", text);
 	}

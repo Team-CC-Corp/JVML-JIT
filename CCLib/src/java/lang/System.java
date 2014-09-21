@@ -1,13 +1,19 @@
 package java.lang;
 
 import java.io.PrintStream;
+import cc.terminal.TerminalOutputStream;
 import cc.terminal.SystemTerminal;
 
 public final class System {
-	public static SystemTerminal term = new SystemTerminal();
+	public static SystemTerminal term;
+	public static PrintStream out;
+	public static PrintStream err;
 
-	public static PrintStream out = new PrintStream();
-	public static PrintStream err = new PrintStream();
+	static {
+		term = new SystemTerminal();
+		out = new PrintStream(new TerminalOutputStream(term));
+		err = new PrintStream(new TerminalOutputStream(term));
+	}
 
 	native public static void load(String nativeName);
 

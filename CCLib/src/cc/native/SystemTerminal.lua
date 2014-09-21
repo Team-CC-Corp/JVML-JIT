@@ -1,11 +1,19 @@
 natives["cc.terminal.SystemTerminal"] = natives["cc.terminal.SystemTerminal"] or {}
 
+natives["cc.terminal.SystemTerminal"]["write(C)V"] = function(this, c)
+	term.write(string.char(c))
+end
+
 natives["cc.terminal.SystemTerminal"]["write(Ljava/lang/String;)V"] = function(this, text)
 	term.write(toLString(text))
 end
 
 natives["cc.terminal.SystemTerminal"]["clearLine()V"] = function(this)
 	term.clearLine()
+end
+
+natives["cc.terminal.SystemTerminal"]["clear()V"] = function(this)
+	term.clear();
 end
 
 natives["cc.terminal.SystemTerminal"]["getCursorX()I"] = function(this)
