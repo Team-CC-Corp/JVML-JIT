@@ -23,6 +23,10 @@ public class Byte extends Number {
         return ByteCache.cache[(int)b + offset];
     }
 
+    public static String toString(byte b) {
+        return Integer.toString((int)b);
+    }
+
     public Byte(byte value) {
         this.value = value;
     }
