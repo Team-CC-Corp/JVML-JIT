@@ -1256,10 +1256,20 @@ local function compile(class, method, codeAttr, cp)
             --d2f
         end, function() -- 91
             --i2b
+            local r = peek(0)
+            emit("add %i %i %s", r, r, k(128))
+            emit("mod %i %i %s", r, r, k(256))
+            emit("sub %i %i %s", r, r, k(128))
         end, function() -- 92
             --i2c
+            local r = peek(0)
+            emit("mod %i %i %s", r, r, k(65536))
         end, function() -- 93
             --i2s
+            local r = peek(0)
+            emit("add %i %i %s", r, r, k(32768))
+            emit("mod %i %i %s", r, r, k(65536))
+            emit("sub %i %i %s", r, r, k(32768))
         end, function() -- 94
             --lcmp
             local a, b = pop()[2], pop()[2]
