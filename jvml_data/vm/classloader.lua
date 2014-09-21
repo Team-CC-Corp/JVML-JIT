@@ -574,21 +574,24 @@ function loadJavaClass(fh)
         if cp[super_class] then -- Object.class won't
             super = cp[cp[super_class].name_index].bytes:gsub("/",".")
         end
-        local Class = createClass(super, cn)
+
+        -- interfaces
+        local interfaces = {}
+        local interfaces_count = u2()
+        for i=1, interfaces_count do
+            local iname = u2()
+            interfaces[i] = classByName(cp[cp[iname].name_index].bytes:gsub("/","."))
+        end
+
+        local Class = createClass(cn, super, interfaces)
         if not Class then
             return false
         end
 
         --start processing the data
-        Class.name = cn
         Class.acc = access_flags
 
-        Class.interfaces_count = u2()
-        Class.interfaces = {}
-        for i=1, Class.interfaces_count do
-            local iname = u2()
-            Class.interfaces[i] = classByName(cp[cp[iname].name_index].bytes:gsub("/","."))
-        end
+
         local fields_count = u2()
         for i=1, fields_count do
             local newField = field_info()
@@ -650,45 +653,6 @@ function loadJavaClass(fh)
                 table.insert(Class.methods, m)
             end
         end
---        for index=1, methods_count do
---            local i = index + initialCount - subtractor
---
---            local m = method_info()
---            for i2,v in ipairs(Class.methods) do
---                --print(v.name)
---                if v.name == m.name then
---                    i = i2
---                    subtractor = subtractor + 1
---                end
---            end
---
---            Class.methods[i] = m
---            --find code attrib
---            local ca
---            for _, v in pairs(m.attributes) do
---                --print(v.name)
---                if v.code then ca = v end
---            end
---
---            table.insert(doAfter, function()
---                if ca then
---                    m[1] = createCodeFunction(Class, m, ca, cp)
---                elseif bit.band(m.acc,METHOD_ACC.NATIVE) == METHOD_ACC.NATIVE then
---                    if not natives[cn] then natives[cn] = {} end
---                    m[1] = function(...)
---                        pushStackTrace(Class.name, m.name:gsub("L.-/(%a+);", "%1;"))
---                        if not (natives[cn] and natives[cn][m.name]) then
---                            error("Native not implemented: " .. Class.name .. "." .. m.name, 0)
---                        end
---                        local ret, exception = natives[cn][m.name](...)
---                        popStackTrace()
---                        return ret, exception
---                    end
---                else
---                    --print(m.name," doesn't have code")
---                end
---            end)
---        end
 
         for i, v in pairs(doAfter) do
             v()

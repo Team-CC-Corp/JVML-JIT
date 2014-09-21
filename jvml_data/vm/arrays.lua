@@ -2,12 +2,9 @@ local arrayClasses = {}
 
 function getArrayClass(name)
 	if not arrayClasses[name] then
-		local Class = createClass("java.lang.Object", name)
+		local Class = createClass(name, "java.lang.Object")
 		Class.name = name
         Class.acc = 0 -- TODO: Figure out exactly what to assign to this
-
-        Class.interfaces_count = 0
-        Class.interfaces = {}
 
         arrayClasses[name] = Class
 	end
