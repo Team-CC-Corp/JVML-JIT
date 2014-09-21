@@ -285,7 +285,16 @@ function loadJavaClass(fh)
     end
 
     local function parse_long(high_bytes,low_bytes)
-        return high_bytes * 4294967296 + low_bytes
+        -- Check sign
+        if high_bytes > 2147483647 then
+            -- Negative value
+            high_bytes = 2147483647 - (high_bytes - 2147483648)
+            low_bytes = 4294967296 - low_bytes
+            return bigint(high_bytes) * -4294967296 - low_bytes
+        else
+            -- Positive value
+            return bigint(high_bytes) * 4294967296 + low_bytes
+        end
     end
 
     local function parse_double(high_bytes,low_bytes)
@@ -327,7 +336,6 @@ function loadJavaClass(fh)
             cp_intfloat_info(c)
             c.bytes = parse_float(c.bytes)
         elseif ct == CONSTANT.Long then
-            print("warning: longs are not supported")
             cp_longdouble_info(c)
             c.bytes = parse_long(c.high_bytes,c.low_bytes)
         elseif ct == CONSTANT.Double then

@@ -209,7 +209,7 @@ local function compile(class, method, codeAttr, cp)
 
     local function asmPrintReg(r)
         local rprint, rparam = alloc(2)
-        emit("getglobal %i 'print'", rprint)
+        asmGetRTInfo(rprint, info(print))
         emit("move %i %i", rparam, r)
         emit("call %i 2 1", rprint)
         free(2)
@@ -217,7 +217,7 @@ local function compile(class, method, codeAttr, cp)
 
     local function asmPrintString(str)
         local rprint, rparam = alloc(2)
-        emit("getglobal %i 'print'", rprint)
+        asmGetRTInfo(rprint, info(print))
         emit("loadk %i '%s'", rparam, str)
         emit("call %i 2 1", rprint)
         free(2)
@@ -451,6 +451,37 @@ local function compile(class, method, codeAttr, cp)
         return r1, r2
     end
 
+    local function asmLongDivCheck()
+        local r1 = peek(1)
+        local r2 = peek(0)
+
+        local arithException = classByName("java.lang.ArithmeticException")
+        local con = findMethod(arithException, "<init>(Ljava/lang/String;)V")
+
+        local req, rp2, rzero = alloc(3)        -- Check for / by zero.
+        asmGetRTInfo(req, info(bigintEQ))
+        emit("move %i %i", rp2, r2)
+        asmGetRTInfo(rzero, info(bigint(0)))
+        emit("call %i 3 2", req)
+        free(2)
+
+        local rexc, rcon, rpexc, rmsg = alloc(4)
+
+        emit("test %i 0", req)                  -- Check result.
+        local p1 = emit("")
+        asmNewInstance(rexc, arithException)
+        asmGetRTInfo(rmsg, info(toJString("/ by zero")))
+        asmGetRTInfo(rcon, info(con[1]))
+        emit("move %i %i", rpexc, rexc)
+        emit("call %i 3 3", rcon)
+        asmRefillStackTrace(rexc)
+        asmThrow(rexc)
+        local p2 = asmPC
+        emitInsert(p1 - 1, "jmp %i", p2 - p1)   -- Insert calculated jump.
+
+        return r1, r2
+    end
+
     local function asmIntDiv()
         local r1, r2 = asmDivCheck()
         emit("div %i %i %i", r1, r1, r2)
@@ -500,14 +531,10 @@ local function compile(class, method, codeAttr, cp)
             emit("loadk %i k(5)", r)
         end, function() -- 09
             local r = alloc()
-            emit("newtable %i 2 0", r)          -- r = { nil, nil }
-            emit("settable %i %s %s", r, k(1), k(0))    -- r[1] = 0
-            emit("settable %i %s %s", r, k(2), k(0))    -- r[2] = 0
+            asmGetRTInfo(r, info(bigint(0)))
         end, function() -- 0A
             local r = alloc()
-            emit("newtable %i 2 0", r)          -- r = { nil, nil }
-            emit("settable %i %s %s", r, k(1), k(0))    -- r[1] = 0
-            emit("settable %i %s %s", r, k(2), k(1))    -- r[2] = 1
+            asmGetRTInfo(r, info(bigint(1)))
         end, function() -- 0B
             local r = alloc()
             emit("loadk %i k(0)", r)
@@ -846,37 +873,27 @@ local function compile(class, method, codeAttr, cp)
             free(1)
         end, function() -- 61
             --ladd
-
-            -- {high, low} + {high, low}
-            --[[local r1 = peek(1)
-            local r2 = peek(0)
-            local r1h, r1l, r2h, r2l = alloc(4)
-
-            emit("gettable %i %i k(1)", r1h, r1)        -- r1h = r1[1]
-            emit("gettable %i %i k(2)", r1l, r1)        -- r1l = r1[2]
-            emit("gettable %i %i k(1)", r2h, r2)        -- r2h = r2[1]
-            emit("gettable %i %i k(2)", r2l, r2)        -- r2l = r2[2]
-
-            emit("add %i %i %i", r1l, r1l, r2l)         -- r1l = r1l + r2l
-            emit("lt 0 %i k(2147483648)", r1l)          -- if r1l >= 2^31 then jmp 2
-            emit("jmp 2")
-
-            emit("add %i %i %i", r1h, r1h, r2h)         -- r1h = r1h + r2h
-            emit("jmp 2")
-
-            -- overflow
-            emit("add %i %i k(1)", r1h, r1h)            -- r1h = r1h + 1
-            emit("sub %i %i k(2147483648)", r1l, r1l)   -- r1l = r1l - 2^31
-
-            free(5)
-
-            emit("settable %i k(1) %i", r1, r1h)        -- r1[1] = r1h
-            emit("settable %i k(2) %i", r1, r1l)        -- r1[2] = r1l]]
-
             local r1 = peek(1)
             local r2 = peek(0)
-            emit("add %i %i %i", r1, r1, r2)
-            free(1)
+            alloc()
+            local radd = r1
+            emit("move %i %i", r2 + 1, r1)
+            r1 = r2 + 1
+            asmGetRTInfo(radd, info(bigintAdd))
+            emit("call %i 3 2", radd)
+            emit("move %i %i", r1, radd)            -- Over/underflow.
+            asmGetRTInfo(radd, info(bigintAdd))
+            asmGetRTInfo(r2, info(bigint("9223372036854775808")))
+            emit("call %i 3 2", radd)               -- Align to range 0 to 2^64-1
+            emit("move %i %i", r2, radd)
+            asmGetRTInfo(radd, info(bigintMod))
+            asmGetRTInfo(r1, info(bigint("18446744073709551616")))
+            emit("call %i 3 2", radd)               -- Wrap value.
+            emit("move %i %i", r2, radd)
+            asmGetRTInfo(radd, info(bigintSub))
+            asmGetRTInfo(r1, info(bigint("9223372036854775808")))
+            emit("call %i 3 2", radd)               -- Align to range -2^63 to 2^63-1
+            free(2)
         end, function() -- 62
             --add
             local r1 = peek(1)
@@ -899,8 +916,27 @@ local function compile(class, method, codeAttr, cp)
             --sub
             local r1 = peek(1)
             local r2 = peek(0)
-            emit("sub %i %i %i", r1, r1, r2)
-            free(1)
+            alloc()
+            local rsub = r1
+            local rdiv = r1
+            emit("move %i %i", r2 + 1, r2)
+            emit("move %i %i", r2, r1)
+            r1 = r2 + 1
+            asmGetRTInfo(rsub, info(bigintSub))
+            emit("call %i 3 2", rsub)
+            emit("move %i %i", r1, rsub)            -- Over/underflow.
+            asmGetRTInfo(rsub, info(bigintAdd))
+            asmGetRTInfo(r2, info(bigint("9223372036854775808")))
+            emit("call %i 3 2", rsub)               -- Align to range 0 to 2^64-1
+            emit("move %i %i", r2, rsub)
+            asmGetRTInfo(rsub, info(bigintMod))
+            asmGetRTInfo(r1, info(bigint("18446744073709551616")))
+            emit("call %i 3 2", rsub)               -- Wrap value.
+            emit("move %i %i", r2, rsub)
+            asmGetRTInfo(rsub, info(bigintSub))
+            asmGetRTInfo(r1, info(bigint("9223372036854775808")))
+            emit("call %i 3 2", rsub)               -- Align to range -2^63 to 2^63-1
+            free(2)
         end, function() -- 66
             --sub
             local r1 = peek(1)
@@ -923,8 +959,25 @@ local function compile(class, method, codeAttr, cp)
             --mul
             local r1 = peek(1)
             local r2 = peek(0)
-            emit("mul %i %i %i", r1, r1, r2)
-            free(1)
+            alloc()
+            local rmul = r1
+            emit("move %i %i", r2 + 1, r1)
+            r1 = r2 + 1
+            asmGetRTInfo(rmul, info(bigintMul))
+            emit("call %i 3 2", rmul)
+            emit("move %i %i", r1, rmul)            -- Over/underflow.
+            asmGetRTInfo(rmul, info(bigintAdd))
+            asmGetRTInfo(r2, info(bigint("9223372036854775808")))
+            emit("call %i 3 2", rmul)               -- Align to range 0 to 2^64-1
+            emit("move %i %i", r2, rmul)
+            asmGetRTInfo(rmul, info(bigintMod))
+            asmGetRTInfo(r1, info(bigint("18446744073709551616")))
+            emit("call %i 3 2", rmul)               -- Wrap value.
+            emit("move %i %i", r2, rmul)
+            asmGetRTInfo(rmul, info(bigintSub))
+            asmGetRTInfo(r1, info(bigint("9223372036854775808")))
+            emit("call %i 3 2", rmul)               -- Align to range -2^63 to 2^63-1
+            free(2)
         end, function() -- 6A
             --mul
             local r1 = peek(1)
@@ -942,7 +995,16 @@ local function compile(class, method, codeAttr, cp)
             asmIntDiv()
         end, function() -- 6D
             --div
-            asmIntDiv()
+            local r1, r2 = asmLongDivCheck()
+            free(5)
+            alloc()
+            local rdiv = r1
+            emit("move %i %i", r2 + 1, r2)
+            emit("move %i %i", r2, r1)
+            asmGetRTInfo(rdiv, info(bigintDiv))
+            emit("call %i 3 2", rdiv)
+            free(2)
+            --asmPrintReg(rdiv)
         end, function() -- 6E
             --div
             asmFloatDiv()
@@ -954,7 +1016,8 @@ local function compile(class, method, codeAttr, cp)
             asmMod()
         end, function() -- 71
             --rem
-            asmMod()
+            asmLongDivCheck()
+
         end, function() -- 72
             --rem
             asmMod()
@@ -1104,49 +1167,94 @@ local function compile(class, method, codeAttr, cp)
             emit("add %i %i %s", idx, idx, k(c))
         end, function() -- 85
             --i2l
-            --push(asLong(bigInt.toBigInt(pop()[2])))
+            local rconv = peek(0)
+            local r = alloc()
+            emit("move %i %i", r, rconv)
+            asmGetRTInfo(rconv, info(bigint))
+            emit("call %i 2 2", rconv)
+            free()
         end, function() -- 86
             --i2f
-            --push(asFloat(pop()[2]))
         end, function() -- 87
             --i2d
-            --push(asDouble(pop()[2]))
         end, function() -- 88
             --l2i
-            --push(asInt(bigInt.fromBigInt(pop()[2])))
+            local rconv = peek(0)
+            local r1, r2 = alloc(2)
+            emit("move %i %i", r1, rconv)           -- Over/underflow.
+            asmGetRTInfo(rconv, info(bigintAdd))
+            asmGetRTInfo(r2, info(bigint("2147483648")))
+            emit("call %i 3 2", rconv)              -- Align to range 0 to 2^32-1
+            emit("move %i %i", r1, rconv)
+            asmGetRTInfo(rconv, info(bigintMod))
+            asmGetRTInfo(r2, info(bigint("4294967296")))
+            emit("call %i 3 2", rconv)              -- Wrap value.
+            emit("move %i %i", r1, rconv)
+            asmGetRTInfo(rconv, info(bigintSub))
+            asmGetRTInfo(r2, info(bigint("2147483648")))
+            emit("call %i 3 2", rconv)              -- Align to range -2^31 to 2^31-1
+            emit("move %i %i", r1, rconv)
+            asmGetRTInfo(rconv, info(bigintToDouble))
+            emit("call %i 2 2", rconv)
+            free(2)
         end, function() -- 89
             --l2f
-            --push(asFloat(bigInt.fromBigInt(pop()[2])))
+            local rconv = peek(0)
+            local r = alloc()
+            emit("move %i %i", r, rconv)
+            asmGetRTInfo(rconv, info(bigintToDouble))
+            emit("call %i 2 2", rconv)
+            free()
         end, function() -- 8A
             --l2d
-            --push(asDouble(bigInt.fromBigInt(pop()[2])))
+            local rconv = peek(0)
+            local r = alloc()
+            emit("move %i %i", r, rconv)
+            asmGetRTInfo(rconv, info(bigintToDouble))
+            emit("call %i 2 2", rconv)
+            free()
         end, function() -- 8B
             --f2i
-            --push(asInt(math.floor(pop()[2])))
+            local rconv = peek(0)
+            local r = alloc()
+            emit("move %i %i", r, rconv)
+            asmGetRTInfo(rconv, info(math.floor))
+            emit("call %i 2 2", rconv)
+            free()
         end, function() -- 8C
             --f2l
-            --push(asLong(bigInt.toBigInt(math.floor(pop()[2]))))
+            local rconv = peek(0)
+            local r = alloc()
+            emit("move %i %i", r, rconv)
+            asmGetRTInfo(rconv, info(bigint))
+            emit("call %i 2 2", rconv)
+            free()
         end, function() -- 8D
             --f2d
-            --push(asDouble(pop()[2]))
         end, function() -- 8E
             --d2i
-            --push(asInt(math.floor(pop()[2])))
+            local rconv = peek(0)
+            local r = alloc()
+            emit("move %i %i", r, rconv)
+            asmGetRTInfo(rconv, info(math.floor))
+            emit("call %i 2 2", rconv)
+            free()
         end, function() -- 8F
             --d2l
-            --push(asLong(bigInt.toBigInt(math.floor(pop()[2]))))
+            local rconv = peek(0)
+            local r = alloc()
+            emit("move %i %i", r, rconv)
+            asmGetRTInfo(rconv, info(bigint))
+            emit("call %i 2 2", rconv)
+            free()
         end, function() -- 90
             --d2f
-            --push(asFloat(pop()[2]))
         end, function() -- 91
             --i2b
-            --push(asByte(pop()[2]))
         end, function() -- 92
             --i2c
-            --push(asChar(string.char(pop()[2])))
         end, function() -- 93
             --i2s
-            --push(asShort(pop()[2]))
         end, function() -- 94
             --lcmp
             local a, b = pop()[2], pop()[2]
