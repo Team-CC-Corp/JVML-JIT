@@ -21,6 +21,9 @@ local function compile(class, method, codeAttr, cp)
         end
     end
 
+    -- Forward declarations
+    local getCurrentLineNumber
+
     local code = codeAttr.code
     local asm = { }
 
@@ -93,6 +96,7 @@ local function compile(class, method, codeAttr, cp)
     local rti = { }
     local reverseRTI = { }
     local function info(obj)
+        if not obj then error("Bad argument. Index expected, got nil\nAt: " .. class.name .. "." .. method.name .. ":" .. getCurrentLineNumber(), 2) end
         local i = reverseRTI[obj]
         if i then
             return i
@@ -314,7 +318,8 @@ local function compile(class, method, codeAttr, cp)
         asmThrow(rexception)
     end
 
-    local function getCurrentLineNumber()
+    -- was forward declared
+    function getCurrentLineNumber()
         local ln
         if lineNumberAttribute then
             local len = lineNumberAttribute.line_number_table_length
