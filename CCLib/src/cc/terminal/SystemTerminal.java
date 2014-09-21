@@ -1,6 +1,6 @@
 package cc.terminal;
 
-public class SystemTerminal extends Terminal {
+public class SystemTerminal implements Terminal {
 	static {
 		System.load("cc/native/SystemTerminal.lua");
 	}

@@ -3,57 +3,66 @@ package cc.terminal;
 import cc.peripheral.PeripheralNotFoundException;
 import cc.peripheral.Peripheral;
 
-public class MonitorTerminal extends Terminal {
-	private final Peripheral monitor;
-
-	public MonitorTerminal(String side) throws PeripheralNotFoundException {
-		monitor = new Peripheral(side);
-		if (!monitor.isPresent() || !monitor.getType().equals("monitor")) {
-			throw new PeripheralNotFoundException(side, "monitor");
+public class MonitorTerminal extends Peripheral implements Terminal {
+	public MonitorTerminal(String id) throws PeripheralNotFoundException {
+		super(id);
+		if (!getType().equals("monitor")) {
+			throw new PeripheralNotFoundException(id, "monitor");
 		}
 	}
 
+	@Override
 	public void write(String text) {
-		monitor.call("write", text);
+		call("write", text);
 	}
 
+	@Override
 	public void clearLine() {
-		monitor.call("clearLine");
+		call("clearLine");
 	}
 
+	@Override
 	public int getCursorX() {
-		return (Integer)monitor.call("getCursorPos")[0];
+		return (Integer)call("getCursorPos")[0];
 	}
 
+	@Override
 	public int getCursorY() {
-		return (Integer)monitor.call("getCursorPos")[1];
+		return (Integer)call("getCursorPos")[1];
 	}
 
+	@Override
 	public void setCursor(int x, int y) {
-		monitor.call("setCursorPos", x, y);
+		call("setCursorPos", x, y);
 	}
 
+	@Override
 	public boolean isColor() {
-		return (Boolean)monitor.call("isColor")[0];
+		return (Boolean)call("isColor")[0];
 	}
 
+	@Override
 	public int width() {
-		return (Integer)monitor.call("getSize")[0];
+		return (Integer)call("getSize")[0];
 	}
 
+	@Override
 	public int height() {
-		return (Integer)monitor.call("getSize")[1];
+		return (Integer)call("getSize")[1];
 	}
 
+	@Override
 	public void scroll(int n) {
-		monitor.call("scroll", n);
+		call("scroll", n);
 	}
 
+	@Override
 	public void setTextColor(Color c) {
-		monitor.call("setTextColor", c.intValue);
+		call("setTextColor", c.intValue);
 	}
 
+	@Override
 	public void setBackgroundColor(Color c) {
-		monitor.call("setBackgroundColor", c.intValue);
+		call("setBackgroundColor", c.intValue);
 	}
 }

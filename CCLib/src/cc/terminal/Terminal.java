@@ -1,10 +1,10 @@
 package cc.terminal;
 
-public abstract class Terminal {
-	public abstract void write(String text);
+public interface Terminal {
+	public void write(String text);
 
-	public abstract void clearLine();
-	public void clear() {
+	public void clearLine();
+	public default void clear() {
 		int x = getCursorX();
 		int y = getCursorX();
 
@@ -16,21 +16,35 @@ public abstract class Terminal {
 		setCursor(x, y);
 	}
 
-	public abstract int getCursorX();
-	public abstract int getCursorY();
-	public abstract void setCursor(int x, int y);
+	public int getCursorX();
+	public int getCursorY();
+	public void setCursor(int x, int y);
 
-	public abstract boolean isColor();
+	public boolean isColor();
 
-	public abstract int width();
-	public abstract int height();
+	public int width();
+	public int height();
 
-	public abstract void scroll(int n);
+	public void scroll(int n);
 
-	public abstract void setTextColor(Color c);
-	public abstract void setBackgroundColor(Color c);
-	public void setColor(Color textColor, Color backgroundColor) {
+	public void setTextColor(Color c);
+	public void setBackgroundColor(Color c);
+	public default void setColor(Color textColor, Color backgroundColor) {
 		setTextColor(textColor);
 		setBackgroundColor(backgroundColor);
+	}
+
+	public default int nextLine() {
+		return nextLine(getCursorX());
+	}
+
+	public default int nextLine(int x) {
+		if (getCursorY() == height() - 1) {
+			scroll(1);
+			setCursor(x, getCursorY());
+		} else {
+			setCursor(x, getCursorY() + 1);
+		}
+		return getCursorY();
 	}
 }

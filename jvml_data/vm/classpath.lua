@@ -17,29 +17,6 @@ function findMethod(c,name)
             return c.staticMethods[i], i
         end
     end
-    -- everything after this point is entirely in case of interfaces with default methods
-    if c.super then
-        local mt = findMethod(c.super, name)
-        if mt and bit.band(mt.acc,METHOD_ACC.STATIC) == METHOD_ACC.STATIC then
-            c.methodLookup[name] = {}
-            return nil
-        end
-        if mt then
-            c.methodLookup[name] = {mt}
-            return mt
-        end
-    end
-    for i=1, c.interfaces_count do
-        local mt = findMethod(c.interfaces[i], name)
-        if mt and bit.band(mt.acc,METHOD_ACC.STATIC) == METHOD_ACC.STATIC then
-            c.methodLookup[name] = {}
-            return nil
-        end
-        if mt then
-            c.methodLookup[name] = {mt}
-            return mt
-        end
-    end
 end
 
 function getObjectField(obj, name)
@@ -126,9 +103,45 @@ function classByName(cn)
     return class[assert(loadJavaClass(fh), "Cannot load class " .. cn)]
 end
 
+local function addInterfaceMethodsToTable(interface, tbl)
+    local new = {}
+    for i,v in ipairs(interface.interfaces) do
+        addInterfaceMethodsToTable(v, new)
+    end
+    for i,m in ipairs(interface.methods) do
+        local inserted = false
+        for i2,m2 in ipairs(new) do
+            if m.name == m2.name then
+                new[i2] = m
+                inserted = true
+                break
+            end
+        end
+        if not inserted then
+            table.insert(new, m)
+        end
+    end
+
+    for i,newM in ipairs(new) do
+        local found = false
+        for i2,m in ipairs(tbl) do
+            if m.name == newM.name then
+                found = true
+                if (not m[1]) and newM[1] then
+                    tbl[i2] = newM
+                end
+                break
+            end
+        end
+        if not found then
+            table.insert(tbl, newM)
+        end
+    end
+end
+
 -- TODO: Index numerically only
 -- cls = { name, fields, methods, super }
-function createClass(super_name, cn)
+function createClass(cn, super_name, interfaces)
     local cls = {}
     class[cn] = cls
     cls.name = cn
@@ -142,6 +155,9 @@ function createClass(super_name, cn)
 
     cls.static_field_info = {}
     cls.staticMethods = {}
+
+    cls.interfaces = interfaces or {}
+    cls.interfaces_count = #cls.interfaces
 
     cls.methodLookup = {}
     cls.instanceofCache = {}
@@ -159,6 +175,10 @@ function createClass(super_name, cn)
         for i,v in pairs(super.methods) do
             cls.methods[i] = v
             cls[3][i] = v
+        end
+
+        for i,interface in ipairs(cls.interfaces) do
+            addInterfaceMethodsToTable(interface, cls.methods)
         end
     end
     return cls
