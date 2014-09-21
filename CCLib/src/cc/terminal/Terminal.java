@@ -33,4 +33,18 @@ public interface Terminal {
 		setTextColor(textColor);
 		setBackgroundColor(backgroundColor);
 	}
+
+	public default int nextLine() {
+		return nextLine(getCursorX());
+	}
+
+	public default int nextLine(int x) {
+		if (getCursorY() == height() - 1) {
+			scroll(1);
+			setCursor(x, getCursorY());
+		} else {
+			setCursor(x, getCursorY() + 1);
+		}
+		return getCursorY();
+	}
 }
