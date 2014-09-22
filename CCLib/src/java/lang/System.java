@@ -3,6 +3,7 @@ package java.lang;
 import java.io.PrintStream;
 import cc.terminal.TerminalOutputStream;
 import cc.terminal.SystemTerminal;
+import cc.terminal.Color;
 
 public final class System {
 	public static SystemTerminal term;
@@ -12,7 +13,9 @@ public final class System {
 	static {
 		term = new SystemTerminal();
 		out = new PrintStream(new TerminalOutputStream(term), true);
-		err = new PrintStream(new TerminalOutputStream(term), true);
+		TerminalOutputStream errTerm = new TerminalOutputStream(term);
+		err = new PrintStream(errTerm, true);
+		errTerm.setTextColor(Color.RED);
 	}
 
 	native public static void load(String nativeName);

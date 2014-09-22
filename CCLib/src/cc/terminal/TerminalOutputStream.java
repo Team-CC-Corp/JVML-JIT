@@ -8,14 +8,33 @@ public class TerminalOutputStream extends OutputStream {
 
 	private ArrayList<StringBuilder> outBuffer;
 
+	private Color textColor = Color.WHITE;
+	private Color backgroundColor = Color.BLACK;
+
 	public TerminalOutputStream(Terminal t) {
 		terminal = t;
 		outBuffer = new ArrayList<>();
 		outBuffer.add(new StringBuilder());
 	}
 
+	public void setTextColor(Color c) {
+		textColor = c;
+	}
+
+	public void setBackgroundColor(Color c) {
+		backgroundColor = c;
+	}
+
+	public void setColor(Color text, Color bg) {
+		setTextColor(text);
+		setBackgroundColor(bg);
+	}
+
 	@Override
 	public void flush() {
+		terminal.setTextColor(textColor);
+		terminal.setBackgroundColor(backgroundColor);
+
 		for (int i = 0; i < outBuffer.size(); ++i) {
 			terminal.write(outBuffer.get(i).toString());
 			if (i != outBuffer.size() - 1) {
