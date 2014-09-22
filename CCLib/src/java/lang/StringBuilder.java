@@ -67,4 +67,8 @@ public class StringBuilder {
 		}
 		return new String(arr);
 	}
+
+	public int length() {
+		return string.size();
+	}
 }
