@@ -11,8 +11,8 @@ public final class System {
 
 	static {
 		term = new SystemTerminal();
-		out = new PrintStream(new TerminalOutputStream(term));
-		err = new PrintStream(new TerminalOutputStream(term));
+		out = new PrintStream(new TerminalOutputStream(term), true);
+		err = new PrintStream(new TerminalOutputStream(term), true);
 	}
 
 	native public static void load(String nativeName);
