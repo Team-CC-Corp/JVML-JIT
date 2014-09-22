@@ -114,7 +114,14 @@ if not options.g then
     end
 
     -- Make java arguments array
-    local jArray = vm.newArray(vm.getArrayClass("[Ljava.lang.String;"), #options.javaArgs)
+    local jArray
+    local co = coroutine.create(function() jArray = vm.newArray(vm.getArrayClass("[Ljava.lang.String;"), #options.javaArgs) end)
+    while true do
+        coroutine.resume(co)
+        if coroutine.status(co) == "dead" then
+            break
+        end
+    end
     for i,v in ipairs(options.javaArgs) do
         jArray[5][i] = vm.toJString(v)
     end
@@ -126,7 +133,27 @@ if not options.g then
         startTime = os.time()
     end
 
-    local ok, err, exc = pcall(m, jArray)
+    local ok, err, exc
+    local co1 = coroutine.create(function()
+        exc = m(jArray)
+    end)
+    local co2 = coroutine.create(function()
+        exc = m(jArray)
+    end)
+    while true do
+        if coroutine.status(co1) ~= "dead" then
+            coroutine.resume(co1)
+        end
+
+        if coroutine.status(co2) ~= "dead" then
+            coroutine.resume(co2)
+        end
+
+        if coroutine.status(co1) == "dead" and coroutine.status(co2) == "dead" then
+            break
+        end
+    end
+
     if not ok then
         printError(err)
         vm.printStackTrace(printError)
