@@ -103,6 +103,7 @@ dofile(fs.combine(vm.jcd, "jvml_data/vm/classpath.lua"))
 dofile(fs.combine(vm.jcd, "jvml_data/vm/jit.lua"))
 dofile(fs.combine(vm.jcd, "jvml_data/vm/classloader.lua"))
 dofile(fs.combine(vm.jcd, "jvml_data/vm/arrays.lua"))
+dofile(fs.combine(vm.jcd, "jvml_data/vm/annotations.lua"))
 
 ---------------------------------------------------------------------------------------------------------------
 -- Run program

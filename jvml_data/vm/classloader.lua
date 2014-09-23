@@ -366,6 +366,54 @@ function loadJavaClass(fh)
         end
     end
 
+    local annotation
+    local function element_value()
+        local value
+        local tag = string.char(u1())
+        if tag:find("^[BCDFIJSZ]") then
+            -- primitive
+            value = cp[u2()].bytes
+        elseif tag == "s" then
+            -- string
+            value = cp[cp[u2()].string_index].bytes
+        elseif tag == "e" then
+            -- enum
+            value.enum_const_value = {}
+            value.enum_const_value.type_name_index = u2()
+            value.enum_const_value.const_name_index = u2()
+        elseif tag == "c" then
+            -- class
+            value = getJClass(cp[cp[u2()].name_index].bytes:gsub("/", "."):gsub("^L", ""):gsub(";$", ""))
+        elseif tag == "@" then
+            -- annotation
+            value = annotation()
+        elseif tag == "[" then
+            -- array
+            local num_values = u2()
+            local arr = {}
+            for i=1, num_values do
+                arr[i] = element_value()
+            end
+            local class
+        end
+        return value
+    end
+
+    -- was forward declared
+    function annotation()
+        local annot = {}
+        annot.type_index = u2()
+        annot.num_element_value_pairs = u2()
+        annot.element_value_pairs = {}
+        for i=0,#annot.num_element_value_pairs - 1 do
+            annot.element_value_pairs[i] = {}
+            annot.element_value_pairs[i].element_name_index = u2()
+            annot.element_value_pairs[i].value = element_value()
+        end
+
+        return createAnnotation(annot, cp)
+    end
+
     local function attribute()
         local attrib = {}
         attrib.attribute_name_index = u2()
@@ -515,6 +563,14 @@ function loadJavaClass(fh)
                     end
                 end
             end
+        elseif an == "RuntimeVisibleAnnotations" then
+            attrib.num_annotations = u2()
+            attrib.annotations = {}
+            for i=0,attrib.num_annotations-1 do
+                attrib[i] = annotation()
+            end
+        elseif an == "AnnotationDefault" then
+            attrib.default_value = element_value()
         else
             --print("Unhandled Attrib: "..an)
             attrib.bytes = {}
