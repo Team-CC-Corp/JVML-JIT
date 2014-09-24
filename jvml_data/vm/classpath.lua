@@ -60,7 +60,7 @@ local function _jInstanceof(obj, class)
 end
 function jInstanceof(obj, class)
     if not obj then
-        return false
+        return 0
     end
     if not obj[1].instanceofCache[class] then
         obj[1].instanceofCache[class] = _jInstanceof(obj, class)
