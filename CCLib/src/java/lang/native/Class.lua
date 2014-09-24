@@ -118,18 +118,9 @@ natives["java.lang.Class"]["isInterface()Z"] = function(this)
 end
 
 natives["java.lang.Class"]["isAssignableFrom(Ljava/lang/Class;)Z"] = function(this, cls)
-    local class = classByName(toLString(getObjectField(this, "name")))
-    local tmp = class
-    while tmp do
-        if tmp.name == toLString(getObjectField(cls, "name")) then
-            break
-        end
-        if tmp == getJClass("java.lang.Object") then tmp = nil break end
-        tmp = getJClass(tmp.super.name)
-    end
-    if not tmp then return 0 else
-        return tmp.name == toLString(getObjectField(cls, "name")) and 1 or 0
-    end
+    local thisClass = classByName(toLString(getObjectField(this, "name")))
+    local otherClass = classByName(toLString(getObjectField(cls, "name")))
+    return isClassAssignableFromClass(thisClass, otherClass) and 1 or 0
 end
 
 natives["java.lang.Class"]["isInstance(Ljava/lang/Object;)Z"] = function(this, obj)
@@ -155,4 +146,10 @@ natives["java.lang.Class"]["newInstance()Ljava/lang/Object;"] = function(this)
     local obj = newInstance(class)
     findMethod(class, "<init>()V")[1](obj)
     return obj
+end
+
+natives["java.lang.Class"]["getAnnotation(Ljava/lang/Class;)Ljava/lang/annotation/Annotation;"] = function(this, annot)
+	local thisClass = classByName(toLString(getObjectField(this, "name")))
+	local annotClass = classByName(toLString(getObjectField(annot, "name")))
+	return findClassAnnotation(thisClass, annotClass)
 end

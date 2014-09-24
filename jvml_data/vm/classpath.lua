@@ -33,20 +33,35 @@ end
 
 local function implementsInterface(class, interface)
     if class.super and (class.super == interface or implementsInterface(class.super, interface)) then
-        return 1
+        return true
     end
     for i=1, class.interfaces_count do
         local v = class.interfaces[i]
         if v == interface or implementsInterface(v, interface) then
-            return 1
+            return true
         end
     end
-    return 0
+    return false
+end
+
+function isClassAssignableFromClass(cl1, cl2)
+    if bit.band(cl1.acc, CLASS_ACC.INTERFACE) == CLASS_ACC.INTERFACE then
+        return implementsInterface(cl2, cl1)
+    else
+        local oClass = cl2
+        while oClass do
+            if oClass == cl1 then
+                return true
+            end
+            oClass = oClass.super
+        end
+    end
+    return false
 end
 
 local function _jInstanceof(obj, class)
     if bit.band(class.acc, CLASS_ACC.INTERFACE) == CLASS_ACC.INTERFACE then
-        return implementsInterface(obj[1], class)
+        return implementsInterface(obj[1], class) and 1 or 0
     else
         local oClass = obj[1]
         while oClass do

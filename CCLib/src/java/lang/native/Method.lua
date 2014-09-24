@@ -11,7 +11,7 @@ natives["java.lang.reflect.Method"]["invoke(Ljava/lang/Object;[Ljava/lang/Object
 		local className = toLString(getObjectField(declaringClass, "name"))
 		class = classByName(className)
 	end
-	local mt = assert(findMethod(class, methodName), "Couldn't find method: " .. methodName)
+	local mt = assert(findMethod(class, methodName), "Couldn't find method: " .. methodName .. " in class: " .. class.name)
 
 	-- Check static
 	assert((target == nil) == (bit.band(mt.acc, METHOD_ACC.STATIC) > 0), "Mismatch in target or static invocation")
@@ -37,4 +37,63 @@ natives["java.lang.reflect.Method"]["invoke(Ljava/lang/Object;[Ljava/lang/Object
 		ret = wrapPrimitive(ret, retType.type)
 	end
 	return ret
+end
+
+natives["java.lang.reflect.Method"]["getAnnotation(Ljava/lang/Class;)Ljava/lang/annotation/Annotation;"] = function(this, annot)
+	local declaringClass = getObjectField(this, "declaringClass")
+	local thisClassName = toLString(getObjectField(declaringClass, "name"))
+	local thisClass = classByName(thisClassName)
+	local methodName = toLString(getObjectField(this, "name"))
+	local mt = assert(findMethod(thisClass, methodName), "Couldn't find method: " .. methodName)
+
+	local annotClassName = toLString(getObjectField(annot, "name"))
+	return findMethodAnnotation(mt, classByName(annotClassName))
+end
+
+natives["java.lang.reflect.Method"]["getParameterTypes()[Ljava/lang/Class;"] = function(this)
+	local methodName = toLString(getObjectField(this, "name"))
+	local declaringClass = getObjectField(this, "declaringClass")
+	local className = toLString(getObjectField(declaringClass, "name"))
+	local class = classByName(className)
+	local mt = assert(findMethod(class, methodName), "Couldn't find method: " .. methodName)
+
+	local arr = newArray(getArrayClass("[java.lang.Class;"), #mt.desc - 1)
+	for i=1, #mt.desc-1 do -- last is return value, first is target
+		local class
+		local type = mt.desc[i].type
+		if type:find("^L") then
+			class = getJClass(type:gsub("^L", ""):gsub(";$", ""):gsub("/", "."))
+		elseif type:find("^[") then
+			class = getJClass(type:gsub("/", "."))
+		elseif type:find("^B") then
+			class = getJClass("byte")
+		elseif type:find("^C") then
+			class = getJClass("char")
+		elseif type:find("^D") then
+			class = getJClass("double")
+		elseif type:find("^F") then
+			class = getJClass("float")
+		elseif type:find("^I") then
+			class = getJClass("int")
+		elseif type:find("^J") then
+			class = getJClass("long")
+		elseif type:find("^S") then
+			class = getJClass("short")
+		elseif type:find("^Z") then
+			class = getJClass("boolean")
+		end
+
+		arr[5][i] = class
+	end
+	return arr
+end
+
+natives["java.lang.reflect.Method"]["getParameterCount()I"] = function(this)
+	local methodName = toLString(getObjectField(this, "name"))
+	local declaringClass = getObjectField(this, "declaringClass")
+	local className = toLString(getObjectField(declaringClass, "name"))
+	local class = classByName(className)
+	local mt = assert(findMethod(class, methodName), "Couldn't find method: " .. methodName)
+
+	return #mt.desc - 1
 end
