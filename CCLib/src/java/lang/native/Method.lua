@@ -38,3 +38,60 @@ natives["java.lang.reflect.Method"]["invoke(Ljava/lang/Object;[Ljava/lang/Object
 	end
 	return ret
 end
+
+natives["java.lang.reflect.Method"]["getAnnotation(Ljava/lang/Class;)Ljava/lang/annotation/Annotation;"] = function(this, annot)
+	local declaringClass = getObjectField(this, "declaringClass")
+	local thisClassName = toLString(getObjectField(declaringClass, "name"))
+	local thisClass = classByName(thisClassName)
+	local methodName = toLString(getObjectField(this, "name"))
+	local mt = assert(findMethod(thisClass, methodName), "Couldn't find method: " .. methodName)
+
+	local annotClassName = toLString(getObjectField(annot, "name"))
+	return findMethodAnnotation(mt, classByName(annotClassName))
+end
+
+natives["java.lang.reflect.Method"]["getParameterTypes()[Ljava/lang/Class;"] = function(this)
+	local methodName = toLString(getObjectField(this, "name"))
+	local declaringClass = getObjectField(this, "declaringClass")
+	local className = toLString(getObjectField(declaringClass, "name"))
+	local class = classByName(className)
+	local mt = assert(findMethod(class, methodName), "Couldn't find method: " .. methodName)
+
+	local nstatic = ((bit.band(mt.acc, METHOD_ACC.STATIC) > 0) and 1 or 2)
+	local arr = newArray(getArrayClass("[java.lang.Class;"), #mt.desc - nstatic)
+	for i=nstatic, #mt.desc-1 do -- last is return value, first is target
+		local class
+		local type = mt.desc[i].type
+		if type:find("^L") then--BCDFIJSZ
+			class = getJClass(type:gsub("^L(.*);$", "%1"):gsub("/", "."))
+		elseif type:find("^B") then
+			class = getJClass("byte")
+		elseif type:find("^C") then
+			class = getJClass("char")
+		elseif type:find("^D") then
+			class = getJClass("double")
+		elseif type:find("^F") then
+			class = getJClass("float")
+		elseif type:find("^I") then
+			class = getJClass("int")
+		elseif type:find("^J") then
+			class = getJClass("long")
+		elseif type:find("^S") then
+			class = getJClass("short")
+		elseif type:find("^Z") then
+			class = getJClass("boolean")
+		end
+
+		arr[5][i - 1] = class
+	end
+	return arr
+end
+
+natives["java.lang.reflect.Method"]["getParameterCount()I"] = function(this)
+	local methodName = toLString(getObjectField(this, "name"))
+	local declaringClass = getObjectField(this, "declaringClass")
+	local className = toLString(getObjectField(declaringClass, "name"))
+	local class = classByName(className)
+	local mt = assert(findMethod(class, methodName), "Couldn't find method: " .. methodName)
+	return #mt.desc - ((bit.band(mt.acc, METHOD_ACC.STATIC) > 0) and 1 or 2)
+end

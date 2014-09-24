@@ -20,30 +20,59 @@ function createAnnotation(annot, cls)
 
     for i,v in ipairs(proxyClass.methods) do
     	if not v[1] then
-	    	print(v.name)
-	    end
-    end
-    for i,v in ipairs(proxyClass.methods) do
-    	if not v[1] then
 	    	proxyClass.methods[i] = deepCopy(v)
 	    	local m = proxyClass.methods[i]
-	    	local value
-	    	for i2,v2 in ipairs(annot.element_value_pairs) do
-	    		if m.name:find("^"..v2.name) then
-	    			value = v2.value
-	    			break
-	    		end
-	    	end
-	    	print(m.name)
-	    	if not value then
-	    		value = m.attrByName.AnnotationDefault.default_value
-	    	end
 
-	    	m[1] = function()
-	    		return value
-		    end
+	    	if m.name == "hashCode()I" then
+	    		local pn = proxyNum
+	    		m[1] = function()
+	    			return pn
+		    	end
+			elseif m.name == "annotationType()Ljava/lang/Class;" then
+				getJClass(cls.name)
+			else
+		    	local value
+		    	for i2,v2 in ipairs(annot.element_value_pairs) do
+		    		if m.name:find("^"..v2.name) then
+		    			value = v2.value
+		    			break
+		    		end
+		    	end
+
+		    	if not value then
+		    		value = m.attrByName.AnnotationDefault.default_value
+		    	end
+
+		    	m[1] = function()
+		    		return value
+			    end
+			end
 		end
     end
 
-    
+    return newInstance(proxyClass)
+end
+
+function findClassAnnotation(cls, annot)
+	if not cls.attrByName.RuntimeVisibleAnnotations then
+		return
+	end
+	for i=0, cls.attrByName.RuntimeVisibleAnnotations.num_annotations - 1 do
+		local an = cls.attrByName.RuntimeVisibleAnnotations.annotations[i]
+		if an[1] == annot then
+			return an
+		end
+	end
+end
+
+function findMethodAnnotation(mt, annot)
+	if not mt.attrByName.RuntimeVisibleAnnotations then
+		return
+	end
+	for i=0, mt.attrByName.RuntimeVisibleAnnotations.num_annotations - 1 do
+		local an = mt.attrByName.RuntimeVisibleAnnotations.annotations[i]
+		if an[1] == annot then
+			return an
+		end
+	end
 end

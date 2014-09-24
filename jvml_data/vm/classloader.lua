@@ -574,7 +574,7 @@ function loadJavaClass(fh)
             attrib.num_annotations = u2()
             attrib.annotations = {}
             for i=0,attrib.num_annotations-1 do
-                attrib[i] = annotation()
+                attrib.annotations[i] = annotation()
             end
         elseif an == "AnnotationDefault" then
             attrib.default_value = element_value()
@@ -731,8 +731,10 @@ function loadJavaClass(fh)
 
         Class.attributes_count = u2()
         Class.attributes = {}
+        Class.attrByName = {}
         for i=0, Class.attributes_count-1 do
             Class.attributes[i] = attribute()
+            Class.attrByName[Class.attributes[i].name] = Class.attributes[i]
         end
 
         local staticmr = findMethod(Class, "<clinit>()V")

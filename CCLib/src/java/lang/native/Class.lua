@@ -156,3 +156,9 @@ natives["java.lang.Class"]["newInstance()Ljava/lang/Object;"] = function(this)
     findMethod(class, "<init>()V")[1](obj)
     return obj
 end
+
+natives["java.lang.Class"]["getAnnotation(Ljava/lang/Class;)Ljava/lang/annotation/Annotation;"] = function(this, annot)
+	local thisClass = classByName(toLString(getObjectField(this, "name")))
+	local annotClass = classByName(toLString(getObjectField(annot, "name")))
+	return findClassAnnotation(thisClass, annotClass)
+end

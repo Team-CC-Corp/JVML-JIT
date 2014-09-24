@@ -1,6 +1,7 @@
 package java.lang;
 
 import java.lang.reflect.Method;
+import java.lang.annotation.Annotation;
 
 public final class Class<T> {
 	private String name;
@@ -41,4 +42,6 @@ public final class Class<T> {
     }
 
     native public static Class getPrimitiveClass(String name);
+
+    public native <A extends Annotation> A getAnnotation(Class<A> annotationClass);
 }
