@@ -367,7 +367,7 @@ function loadJavaClass(fh)
     end
 
     local annotation
-    local function element_value()
+    local function element_value(type)
         local value
         local tag = string.char(u1())
         if tag:find("^[BCDFIJSZ]") then
@@ -375,15 +375,14 @@ function loadJavaClass(fh)
             value = cp[u2()].bytes
         elseif tag == "s" then
             -- string
-            value = cp[cp[u2()].string_index].bytes
+            value = toJString(cp[u2()].bytes)
         elseif tag == "e" then
             -- enum
-            value.enum_const_value = {}
-            value.enum_const_value.type_name_index = u2()
-            value.enum_const_value.const_name_index = u2()
+            local cls = classByName(cp[u2()].bytes:gsub("/", "."):gsub("^L", ""):gsub(";$", ""))
+            value = cls.fieldIndexByName[cp[u2()].bytes]
         elseif tag == "c" then
             -- class
-            value = getJClass(cp[cp[u2()].name_index].bytes:gsub("/", "."):gsub("^L", ""):gsub(";$", ""))
+            value = getJClass(cp[u2()].bytes:gsub("/", "."):gsub("^L", ""):gsub(";$", ""))
         elseif tag == "@" then
             -- annotation
             value = annotation()
@@ -392,9 +391,11 @@ function loadJavaClass(fh)
             local num_values = u2()
             local arr = {}
             for i=1, num_values do
-                arr[i] = element_value()
+                arr[i] = element_value(type:sub(2))
             end
-            local class
+            local arrCls = getArrayClass(type)
+            value = newInstance(arrCls)
+            value[5] = arr
         end
         return value
     end
@@ -403,15 +404,21 @@ function loadJavaClass(fh)
     function annotation()
         local annot = {}
         annot.type_index = u2()
+        local cls = classByName(cp[annot.type_index].bytes:gsub("/", "."):gsub("^L", ""):gsub(";$", ""))
         annot.num_element_value_pairs = u2()
         annot.element_value_pairs = {}
-        for i=0,#annot.num_element_value_pairs - 1 do
+        for i=1,annot.num_element_value_pairs do
             annot.element_value_pairs[i] = {}
-            annot.element_value_pairs[i].element_name_index = u2()
-            annot.element_value_pairs[i].value = element_value()
+            annot.element_value_pairs[i].name = cp[u2()].bytes
+            local mt
+            for i2,v in ipairs(cls.methods) do
+                if v.name:find("^"..annot.element_value_pairs[i].name) then
+                    mt = v
+                end
+            end
+            annot.element_value_pairs[i].value = element_value((mt.desc[#mt.desc].type..";"):gsub("/", "."))
         end
-
-        return createAnnotation(annot, cp)
+        return createAnnotation(annot, cls)
     end
 
     local function attribute()
