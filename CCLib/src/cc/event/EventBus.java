@@ -29,7 +29,7 @@ public class EventBus {
 		for (Handler h : handlers) {
 			Class<?>[] params = h.m.getParameterTypes();
 			if (params[0].isAssignableFrom(cls)) {
-				h.m.invoke(o, h.o);
+				h.m.invoke(h.o, o);
 			}
 		}
 	}

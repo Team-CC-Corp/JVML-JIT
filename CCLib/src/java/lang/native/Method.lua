@@ -11,7 +11,7 @@ natives["java.lang.reflect.Method"]["invoke(Ljava/lang/Object;[Ljava/lang/Object
 		local className = toLString(getObjectField(declaringClass, "name"))
 		class = classByName(className)
 	end
-	local mt = assert(findMethod(class, methodName), "Couldn't find method: " .. methodName)
+	local mt = assert(findMethod(class, methodName), "Couldn't find method: " .. methodName .. " in class: " .. class.name)
 
 	-- Check static
 	assert((target == nil) == (bit.band(mt.acc, METHOD_ACC.STATIC) > 0), "Mismatch in target or static invocation")
@@ -57,13 +57,14 @@ natives["java.lang.reflect.Method"]["getParameterTypes()[Ljava/lang/Class;"] = f
 	local class = classByName(className)
 	local mt = assert(findMethod(class, methodName), "Couldn't find method: " .. methodName)
 
-	local nstatic = ((bit.band(mt.acc, METHOD_ACC.STATIC) > 0) and 1 or 2)
-	local arr = newArray(getArrayClass("[java.lang.Class;"), #mt.desc - nstatic)
-	for i=nstatic, #mt.desc-1 do -- last is return value, first is target
+	local arr = newArray(getArrayClass("[java.lang.Class;"), #mt.desc - 1)
+	for i=1, #mt.desc-1 do -- last is return value, first is target
 		local class
 		local type = mt.desc[i].type
-		if type:find("^L") then--BCDFIJSZ
-			class = getJClass(type:gsub("^L(.*);$", "%1"):gsub("/", "."))
+		if type:find("^L") then
+			class = getJClass(type:gsub("^L", ""):gsub(";$", ""):gsub("/", "."))
+		elseif type:find("^[") then
+			class = getJClass(type:gsub("/", "."))
 		elseif type:find("^B") then
 			class = getJClass("byte")
 		elseif type:find("^C") then
@@ -82,7 +83,7 @@ natives["java.lang.reflect.Method"]["getParameterTypes()[Ljava/lang/Class;"] = f
 			class = getJClass("boolean")
 		end
 
-		arr[5][i - 1] = class
+		arr[5][i] = class
 	end
 	return arr
 end
@@ -93,5 +94,6 @@ natives["java.lang.reflect.Method"]["getParameterCount()I"] = function(this)
 	local className = toLString(getObjectField(declaringClass, "name"))
 	local class = classByName(className)
 	local mt = assert(findMethod(class, methodName), "Couldn't find method: " .. methodName)
-	return #mt.desc - ((bit.band(mt.acc, METHOD_ACC.STATIC) > 0) and 1 or 2)
+
+	return #mt.desc - 1
 end

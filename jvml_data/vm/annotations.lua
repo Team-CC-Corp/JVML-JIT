@@ -17,6 +17,7 @@ function createAnnotation(annot, cls)
 	local proxyClass = createClass("$"..proxyNum.."proxy", "java.lang.Object", {cls})
 	proxyClass.attributes_count = 0
     proxyClass.attributes = {}
+    proxyClass.acc = 0 -- TODO: Figure out exactly what to assign to this
 
     for i,v in ipairs(proxyClass.methods) do
     	if not v[1] then
@@ -59,7 +60,7 @@ function findClassAnnotation(cls, annot)
 	end
 	for i=0, cls.attrByName.RuntimeVisibleAnnotations.num_annotations - 1 do
 		local an = cls.attrByName.RuntimeVisibleAnnotations.annotations[i]
-		if an[1] == annot then
+		if isClassAssignableFromClass(annot, an[1]) then
 			return an
 		end
 	end
@@ -71,7 +72,7 @@ function findMethodAnnotation(mt, annot)
 	end
 	for i=0, mt.attrByName.RuntimeVisibleAnnotations.num_annotations - 1 do
 		local an = mt.attrByName.RuntimeVisibleAnnotations.annotations[i]
-		if an[1] == annot then
+		if isClassAssignableFromClass(annot, an[1]) then
 			return an
 		end
 	end
