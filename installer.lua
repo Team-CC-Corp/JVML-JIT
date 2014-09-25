@@ -32,7 +32,9 @@ assert(githubApiJSON and
 print("Got JSON")
 local zipResponse = http.get(githubApiJSON[1].assets[1].browser_download_url)
 assert(githubApiResponse.getResponseCode() == 200, "Failed zip response")
+print("Reading zip...")
 local zipStr = zipResponse.readAll()
+print("Zip scanned. Unarchiving...")
 
 local i = 0
 local zfs = zip.open({read=function()
