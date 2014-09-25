@@ -1,7 +1,7 @@
 -- use build.xml to import the zip and json libraries directly
 
-local zip = {}
-local json = {}
+local zip = setmetatable({}, {__index=getfenv()})
+local json = setmetatable({}, {__index=getfenv()})
 
 do
 	local function zip_api_make()
