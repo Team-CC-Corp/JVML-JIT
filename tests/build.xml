@@ -4,9 +4,14 @@
 	</target>
 
 	<target name="compile">
-		<mkdir dir="build"/>
-		<javac bootclasspath="../CCLib/build/classes" srcdir="src" destdir="build" debug="on" debuglevel="lines,vars,source"/>
+		<mkdir dir="build/classes"/>
+		<javac bootclasspath="../CCLib/build/jar/cc_rt.jar" srcdir="src" destdir="build/classes" debug="on" debuglevel="lines,vars,source"/>
 	</target>
 
-	<target name="main" depends="compile"></target>
+	<target name="jar" depends="compile">
+		<mkdir dir="build/jar"/>
+		<jar destfile="build/jar/tests.jar" basedir="build/classes" />
+	</target>
+
+	<target name="main" depends="jar"></target>
 </project>

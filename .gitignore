@@ -1,4 +1,5 @@
 CCLib/build
+tests/build
 *.class
 debug
 Debug.java

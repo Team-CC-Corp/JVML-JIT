@@ -1,10 +1,10 @@
 --This will load class files and will register them--
 natives = {["java.lang.Object"]={
     ["registerNatives()V"] = function()
-        local path = resolvePath("java/lang/native")
-        for i,v in ipairs(fs.list(path)) do
+        local path = "java/lang/native"
+        for i,v in ipairs(classpath.list(path)) do
             if v:sub(1,1) ~= "." then
-                dofile(fs.combine(path, v))
+                classpath.dofile(fs.combine(path, v))
             end
         end
     end

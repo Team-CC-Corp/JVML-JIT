@@ -1,0 +1,235 @@
+local function assert(condition, errMsg, level)
+	if condition then return condition end
+	if type(level) ~= "number" then
+		level = 2
+	elseif level <= 0 then
+		level = 0
+	else
+		level = level + 1
+	end
+	error(errMsg or "Assertion failed!", level)
+end
+
+function open(fileHandle)
+	local obj = {}
+	local data = {}
+	local cursor = 1
+	local endOfCentralDirectoryRecord
+	local centralDirectoryHeaders = {}
+
+	local function ux(x)
+		local n = 0
+		for i=1, x do
+			n = n + data[cursor] * 2^((i-1) * 8)
+			cursor = cursor + 1
+		end
+		return n
+	end
+
+	local function u1()
+		return ux(1)
+	end
+
+	local function u2()
+		return ux(2)
+	end
+
+	local function u4()
+		return ux(4)
+	end
+
+	local function str(len)
+		local s = ""
+		for i=1,len or 1 do
+			s = s .. string.char(u1())
+		end
+		return s
+	end
+
+	local function dataDescriptor()
+		local dataDescriptor = {}
+		local header = u4() -- optional header
+		if header == 0x08074b50 then
+			dataDescriptor.CRC_32 = u4()
+		else
+			dataDescriptor.CRC_32 = header
+		end
+		dataDescriptor.compressedSize = u4()
+		dataDescriptor.unCompressedSize = u4()
+	end
+
+	local function parseFileHeader() -- 0x04034b50
+		local fileHeader = {}
+		assert(u4() == 0x04034b50, "Invalid local file header")
+		fileHeader.version = u2()
+		fileHeader.generalPurposeBitFlag = u2()
+		fileHeader.compressionMethod = u2()
+		fileHeader.fileLastModificationTime = u2()
+		fileHeader.fileLastModificationDate = u2()
+		fileHeader.CRC_32 = u4()
+		fileHeader.compressedSize = u4()
+		fileHeader.unCompressedSize = u4()
+		fileHeader.fileNameLength = u2()
+		fileHeader.extraFieldLength = u2()
+		fileHeader.fileName = str(fileHeader.fileNameLength)
+		fileHeader.extraField = str(fileHeader.extraFieldLength)
+
+		fileHeader.compressedData = str(fileHeader.compressedSize)
+
+		if bit.band(fileHeader.generalPurposeBitFlag, 8) > 0 then
+			fileHeader.dataDescriptor = dataDescriptor()
+		end
+
+		return fileHeader
+	end
+
+	local function parseCentralDirectoryHeader()
+		local header = {}
+		header.versionMadeBy = u2()
+		header.versionNeededToExtract = u2()
+		header.generalPurposeBitFlag = u2()
+		header.compressionMethod = u2()
+		header.fileLastModificationTime = u2()
+		header.fileLastModificationDate = u2()
+		header.CRC_32 = u4()
+		header.compressedSize = u4()
+		header.unCompressedSize = u4()
+		header.fileNameLength = u2()
+		header.extraFieldLength = u2()
+		header.commentLength = u2()
+		header.diskNumber = u2()
+		header.internalFileAttributes = u2()
+		header.externalFileAttributes = u4()
+		header.offset = u4()
+		header.fileName = str(header.fileNameLength)
+		header.extraField = str(header.extraFieldLength)
+		header.comment = str(header.commentLength)
+		return header
+	end
+
+	local function parseEndOfCentralDirectoryRecord()
+		local record = {}
+		record.numberOfThisDisk = u2()
+		record.centralDirectoryDisk = u2()
+		record.numRecordsOnThisDisk = u2()
+		record.numRecords = u2()
+		record.sizeOfCentralDirectory = u4()
+		record.offsetOfCentralDirectory = u4()
+		record.commentLength = u2()
+		record.comment = str(record.commentLength)
+		return record
+	end
+
+	local function findCentralDirectoryHeader(path)
+		path = fs.combine(path, "")
+		for i,v in ipairs(centralDirectoryHeaders) do
+			if fs.combine(v.fileName, "") == path then
+				return v
+			end
+		end
+	end
+
+	for b in fileHandle.read do
+		table.insert(data, b)
+	end
+
+	cursor = #data - 3
+	repeat
+		local header = u4()
+		cursor = cursor - 5
+	until header == 0x06054b50
+	cursor = cursor + 5
+
+	endOfCentralDirectoryRecord = parseEndOfCentralDirectoryRecord()
+
+	cursor = endOfCentralDirectoryRecord.offsetOfCentralDirectory + 1
+	while u4() == 0x02014b50 do
+		table.insert(centralDirectoryHeaders, parseCentralDirectoryHeader())
+	end
+
+	local zfs = {}
+
+	function zfs.exists(path)
+		return findCentralDirectoryHeader(fs.combine(path, "")) and true or false
+	end
+
+	function zfs.isDir(path)
+		assert(type(path) == "string", "Expected string, got " .. type(path), 2)
+		if path == "" or path == "/" then
+			return true
+		end
+		local header = findCentralDirectoryHeader(path)
+		return (header ~= nil) and header.fileName:sub(-1) == "/"
+	end
+
+	function zfs.list(path)
+		path = fs.combine(path, "")
+		assert(not zfs.exists(path) or zfs.isDir(path), "Not a directory", 2)
+		local list = {}
+		for i,v in ipairs(centralDirectoryHeaders) do
+			local vpath = fs.combine(v.fileName, "")
+			if path ~= vpath then
+				if vpath:sub(1, #path) == path and not fs.combine(vpath:sub(#path + 1), ""):find("/.") then
+					table.insert(list, fs.combine(vpath:sub(#path + 1), ""))
+				end
+			end
+		end
+		return list
+	end
+
+	function zfs.open(path, mode)
+		assert(mode == "r" or mode == "rb", "Invalid open mode: " .. tostring(mode), 2)
+		if not zfs.exists(path) then
+			return
+		end
+
+		local outData = {}
+		local cdHeader = findCentralDirectoryHeader(fs.combine(path, ""))
+		cursor = cdHeader.offset + 1
+		local localFileHeader = parseFileHeader()
+		assert(localFileHeader.compressionMethod == 8, "Invalid compression method", 2)
+		local compressedDataCursor = 1
+		deflate.inflate{input=function()
+			if compressedDataCursor > localFileHeader.compressedSize then
+				return
+			end
+			compressedDataCursor = compressedDataCursor + 1
+			return localFileHeader.compressedData:sub(compressedDataCursor-1,compressedDataCursor-1)
+		end, output=function(byte)
+			if mode == "rb" then
+				table.insert(outData, byte)
+			elseif mode == "r" then
+				table.insert(outData, string.char(byte))
+			end
+		end}
+
+		local fh = {}
+		if mode == "rb" then
+			function fh.read()
+				return table.remove(outData, 1)
+			end
+		elseif mode == "r" then
+			function fh.readLine()
+				local s = ""
+				for c in function() return table.remove(outData, 1) end do
+					if c == "\n" then
+						break
+					end
+					s = s .. c
+				end
+				return s
+			end
+
+			function fh.readAll()
+				local s = table.concat(outData)
+				outData = {}
+				return s
+			end
+		end
+		function fh.close()
+			outData = {}
+		end
+		return fh
+	end
+	return zfs
+end

@@ -83,15 +83,6 @@ function jInstanceof(obj, class)
     return obj[1].instanceofCache[class]
 end
 
-function resolvePath(name)
-    for sPath in string.gmatch(jcp, "[^:]+") do
-        local fullPath = fs.combine(sPath, name)
-        if fs.exists(fullPath) then
-            return fullPath
-        end
-    end
-end
-
 local jClasses = {}
 function getJClass(name)
     if not jClasses[name] then
@@ -109,13 +100,8 @@ function classByName(cn)
     end
     local cd = cn:gsub("%.","/")
 
-    local fullPath = resolvePath(cd..".class")
-    if not fullPath then
-        error("Cannot find class ".. cn, 0)
-    end
-
-    local fh = assert(fs.open(fullPath,"rb"), "File not found: " .. fullPath)
-    return class[assert(loadJavaClass(fh), "Cannot load class " .. cn)]
+    local fh = assert(classpath.open(cd..".class", "rb"), "Class not found: " .. cn, 2)
+    return class[assert(loadJavaClass(fh), "Cannot load class " .. cn, 2)]
 end
 
 local function addInterfaceMethodsToTable(interface, tbl)
