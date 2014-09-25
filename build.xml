@@ -1,0 +1,59 @@
+<project name="JVML_JIT_RELEASE" default="main">
+	<loadresource property="zip.contents">
+		<file file="lib/zip"/>
+	</loadresource>
+	<loadresource property="json.contents">
+		<file file="lib/json"/>
+	</loadresource>
+	<property name="release.contents" value="release/jvml" />
+
+
+	<target name="clean">
+		<ant dir="CCLib" target="clean" />
+		<ant dir="tests" target="clean" />
+		<delete dir="release" />
+	</target>
+
+	<target name="compile">
+		<ant dir="CCLib" target="compile" />
+		<ant dir="tests" target="compile" />
+	</target>
+
+	<target name="jar">
+		<ant dir="CCLib" target="jar" />
+		<ant dir="tests" target="jar" />
+	</target>
+
+	<target name="make_zip" depends="jar">
+		<mkdir dir="${release.contents}" />
+		<copy todir="${release.contents}/lib">
+			<fileset dir="lib" />
+		</copy>
+		<copy todir="${release.contents}/jvml_data">
+			<fileset dir="jvml_data" />
+		</copy>
+		<copy todir="${release.contents}/lasm">
+			<fileset dir="lasm" />
+		</copy>
+		<copy todir="${release.contents}/bin" file="bin/jvml" />
+		<copy todir="${release.contents}/CCLib/build/jar">
+			<fileset dir="CCLib/build/jar" />
+		</copy>
+		<zip destfile="release/jvml.zip" basedir="${release.contents}" />
+	</target>
+
+	<target name="create_installer" depends="make_zip">
+		<copy file="installer.lua" tofile="release/installer.lua" overwrite="true">
+            <filterchain>
+            	<replacetokens>
+            		<token key="ZIP" value="${zip.contents}"/>
+            		<token key="JSON" value="${json.contents}"/>
+                </replacetokens>
+            </filterchain>
+        </copy>
+	</target>
+
+	<target name="main" depends="create_installer">
+		
+	</target>
+</project>
