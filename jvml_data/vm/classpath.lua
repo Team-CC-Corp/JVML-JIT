@@ -60,7 +60,9 @@ end
 function classpath.list(path)
     local list = {}
     forEach(function(sPath)
-        local addList = fs.list(fs.combine(sPath, path))
+        local fullPath = fs.combine(sPath, path)
+        if not fs.isDir(fullPath) then return end
+        local addList = fs.list(fullPath)
         for i,v in ipairs(addList) do
             table.insert(list, v)
         end

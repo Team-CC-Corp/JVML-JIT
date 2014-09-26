@@ -27,7 +27,7 @@ end
 local oldTime = os.time()
 local function sleepCheckin()
 	local newTime = os.time()
-	if newTime - oldTime >= (0.020 * 2) then
+	if newTime - oldTime >= (0.020 * 1.5) then
 		oldTime = newTime
 		sleep(0)
 	end
