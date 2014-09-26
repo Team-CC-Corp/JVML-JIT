@@ -39,7 +39,7 @@ print("Zip scanned. Unarchiving...")
 local i = 0
 local zfs = zip.open({read=function()
 	i = i + 1
-	return zipStr:sub(i,i)
+	return zipStr:byte(i,i)
 end})
 
 local function copyFilesFromDir(dir)

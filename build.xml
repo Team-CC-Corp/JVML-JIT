@@ -39,7 +39,7 @@
 		<copy todir="${release.contents}/CCLib/build/jar">
 			<fileset dir="CCLib/build/jar" />
 		</copy>
-		<zip destfile="release/jvml.zip" basedir="${release.contents}" />
+		<zip zip64Mode="never" destfile="release/jvml.zip" basedir="${release.contents}" />
 	</target>
 
 	<target name="create_installer" depends="make_zip">
