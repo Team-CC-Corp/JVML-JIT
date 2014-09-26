@@ -47,7 +47,7 @@ if options.jar then
     table.insert(options.classpath, options.mainclass)
 end
 for i,v in ipairs(options.classpath) do
-    options.classpath[i] = shell.resolve(v)
+    options.classpath[i] = "/"..shell.resolve(v)
 end
 local vm = setmetatable({
     jcd = jcd,
