@@ -1,0 +1,38 @@
+local lookup_V2C = {}
+for ixChar = 65, 90 do lookup_V2C[ixChar - 65] = string.char(ixChar) end
+for ixChar = 97, 122 do lookup_V2C[ixChar - 71] = string.char(ixChar) end
+for ixChar = 48, 57 do lookup_V2C[ixChar + 4] = string.char(ixChar) end
+lookup_V2C[62] = "+"
+lookup_V2C[63] = "/"
+local lookup_C2V = {}
+for key, value in pairs(lookup_V2C) do lookup_C2V[value] = key end
+lookup_C2V["="] = -1
+
+function decode(str)
+    local data = {}
+    for i=1,#str do
+        data[i] = lookup_C2V[str:sub(i,i)]
+    end
+    local result = {}
+    local oldTime = os.time()
+    for i=1, #str, 4 do
+        local newTime = os.time()
+        if newTime - oldTime >= (0.020 * 3) then
+            oldTime = newTime
+            sleep(0)
+        end
+        if data[i + 3] == -1 then
+            if data[i + 2] == -1 then
+                table.insert(result, bit.blshift(data[i], 2) + bit.brshift(data[i + 1], 4))
+            else
+                table.insert(result, bit.blshift(data[i], 2) + bit.brshift(data[i + 1], 4))
+                table.insert(result, bit.band(0xff, bit.blshift(data[i + 1], 4)) + bit.brshift(data[i + 2], 2))
+            end
+        else
+            table.insert(result, bit.blshift(data[i], 2) + bit.brshift(data[i + 1], 4))
+            table.insert(result, bit.band(0xff, bit.blshift(data[i + 1], 4)) + bit.brshift(data[i + 2], 2))
+            table.insert(result, bit.band(0xff, bit.blshift(data[i + 2], 6)) + data[i + 3])
+        end
+    end
+    return result
+end

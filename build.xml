@@ -5,7 +5,16 @@
 	<loadresource property="json.contents">
 		<file file="lib/json"/>
 	</loadresource>
+	<loadresource property="base64.contents">
+		<file file="lib/base64"/>
+	</loadresource>
 	<property name="release.contents" value="release/jvml" />
+	<condition property="is_windows">
+	    <os family="windows"/>
+	</condition>
+	<condition property="is_unix">
+		<os family="unix" />
+	</condition>
 
 
 	<target name="clean">
@@ -24,7 +33,7 @@
 		<ant dir="tests" target="jar" />
 	</target>
 
-	<target name="make_zip" depends="jar">
+	<target name="make_archive" depends="jar">
 		<mkdir dir="${release.contents}" />
 		<copy todir="${release.contents}/lib">
 			<fileset dir="lib" />
@@ -32,22 +41,42 @@
 		<copy todir="${release.contents}/jvml_data">
 			<fileset dir="jvml_data" />
 		</copy>
-		<copy todir="${release.contents}/lasm">
-			<fileset dir="lasm" />
+		<copy todir="${release.contents}/lasm/src/Lua51">
+			<fileset dir="lasm/src/Lua51" />
 		</copy>
+		<copy todir="${release.contents}/lasm" file="lasm/LAT.lua" />
 		<copy todir="${release.contents}/bin" file="bin/jvml" />
 		<copy todir="${release.contents}/CCLib/build/jar">
 			<fileset dir="CCLib/build/jar" />
 		</copy>
+		<copy todir="${release.contents}/bigint" file="bigint/bigint.lua" />
 		<zip zip64Mode="never" destfile="release/jvml.zip" basedir="${release.contents}" />
 	</target>
 
-	<target name="create_installer" depends="make_zip">
+	<target name="if_windows" if="is_windows" depends="make_archive">
+		<exec executable="certutil">
+			<arg value="-encode" />
+			<arg value="release/jvml.zip" />
+			<arg value="release/jvml.zip.base64" />
+		</exec>
+	</target>
+
+	<target name="if_unix" if="is_unix" depends="make_archive">
+		<exec executable="base64">
+			<arg value="-i" />
+			<arg value="release/jvml.zip" />
+			<arg value="-o" />
+			<arg value="release/jvml.zip.base64" />
+		</exec>
+	</target>
+
+	<target name="create_installer" depends="if_unix, if_windows">
 		<copy file="installer.lua" tofile="release/installer.lua" overwrite="true">
             <filterchain>
             	<replacetokens>
             		<token key="ZIP" value="${zip.contents}"/>
             		<token key="JSON" value="${json.contents}"/>
+            		<token key="BASE64" value="${base64.contents}"/>
                 </replacetokens>
             </filterchain>
         </copy>
