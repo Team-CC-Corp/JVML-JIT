@@ -19,7 +19,7 @@ end
 
 -- Begin installation
 
-local githubApiResponse = http.get("https://api.github.com/repos/Yevano/JVML-JIT/releases")
+local githubApiResponse = assert(http.get("https://api.github.com/repos/Yevano/JVML-JIT/releases"))
 assert(githubApiResponse.getResponseCode() == 200, "Failed github response")
 print("Got github response")
 local githubApiJSON = json.decode(githubApiResponse.readAll())
@@ -27,11 +27,11 @@ assert(githubApiJSON and
 	githubApiJSON[1] and
 	githubApiJSON[1].assets and
 	githubApiJSON[1].assets[1] and
-	githubApiJSON[1].assets[1].browser_download_url,
+	githubApiJSON[1].assets[1].url,
 	"Malformed response")
 print("Got JSON")
-local zipResponse = http.get(githubApiJSON[1].assets[1].browser_download_url)
-assert(githubApiResponse.getResponseCode() == 200, "Failed zip response")
+local zipResponse = assert(http.get(githubApiJSON[1].assets[1].url, {["Accept"]="application/octet-stream"}))
+assert(zipResponse.getResponseCode() == 200 or zipResponse.getResponseCode() == 302, "Failed zip response")
 print("Reading zip...")
 local zipStr = zipResponse.readAll()
 print("Zip scanned. Unarchiving...")
