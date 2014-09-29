@@ -868,6 +868,26 @@ end
 -- BEGIN ZIP
 --------------------------------------------------------------------------------------------------------
 
+local function noCompression(t)
+	local fIn
+	if type(t.input) == "function" then
+		fIn = t.input
+	elseif type(t.input) == "table" and t.input.read then
+		fIn = t.input.read
+	end
+
+	local fOut
+	if type(t.output) == "function" then
+		fOut = f.output
+	elseif type(t.output) == "table" and t.output.write then
+		fOut = f.output.write
+	end
+
+	for c in fIn do
+		fOut(c:byte())
+	end
+end
+
 local function assert(condition, errMsg, level)
 	if condition then return condition end
 	if type(level) ~= "number" then
@@ -1057,9 +1077,16 @@ function open(fileHandle)
 		local cdHeader = findCentralDirectoryHeader(fs.combine(path, ""))
 		cursor = cdHeader.offset + 1
 		local localFileHeader = parseFileHeader()
-		assert(localFileHeader.compressionMethod == 8, "Invalid compression method", 2)
+		assert(localFileHeader.compressionMethod == 8 or localFileHeader.compressionMethod == 0,
+			"Unsupported compression method", 2)
 		local compressedDataCursor = 1
-		inflate{input=function()
+		local decompressor
+		if localFileHeader.compressionMethod == 8 then
+			decompressor = inflate
+		elseif localFileHeader.compressionMethod == 0 then
+			decompressor = noCompression
+		end
+		decompressor{input=function()
 			if compressedDataCursor > localFileHeader.compressedSize then
 				return
 			end
