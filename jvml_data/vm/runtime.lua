@@ -212,3 +212,13 @@ function printStackTrace(printer)
     end
     (printer or print)(table.concat(reversedtable,"\n"))
 end
+
+
+local oldTime = os.time()
+function checkIn()
+    local newTime = os.time()
+    if newTime - oldTime >= (0.020 * 1.5) then
+        oldTime = newTime
+        sleep(0)
+    end
+end

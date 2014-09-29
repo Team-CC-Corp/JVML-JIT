@@ -1,4 +1,5 @@
 local function compile(class, method, codeAttr, cp)
+    checkIn()
     local function resolveClass(c)
         local cn = cp[c.name_index].bytes:gsub("/",".")
         return classByName(cn)
@@ -1911,6 +1912,7 @@ local function compile(class, method, codeAttr, cp)
     inst = u1()
     asmPushStackTrace()
     while inst do
+        checkIn()
         -- check the stack map
         if stackMapAttribute and stackMapAttribute.entries[entryIndex] then
             local entry = stackMapAttribute.entries[entryIndex]
