@@ -30,5 +30,12 @@ public class ExceptionTest {
 			e.printStackTrace();
 			System.out.println("Caught / by zero");
 		}
+		try {
+			Object o = (Integer)5;
+			String s = (String)o;
+		} catch(ClassCastException e) {
+			e.printStackTrace();
+			System.out.println("Caught invalid cast");
+		}
 	}
 }

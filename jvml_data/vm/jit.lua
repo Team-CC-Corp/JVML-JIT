@@ -1,4 +1,5 @@
 local function compile(class, method, codeAttr, cp)
+    checkIn()
     local function resolveClass(c)
         local cn = cp[c.name_index].bytes:gsub("/",".")
         return classByName(cn)
@@ -504,6 +505,10 @@ local function compile(class, method, codeAttr, cp)
     local function asmMod()
         local r1, r2 = asmDivCheck()
         emit("mod %i %i %i", r1, r1, r2)
+    end
+
+    local function jbInstanceof(...)
+        return jInstanceof(...) == 1
     end
 
     local inst
@@ -1760,16 +1765,28 @@ local function compile(class, method, codeAttr, cp)
             local c = resolveClass(cp[u2()])
             local r = peek(0)
             local rjInstanceof, robj, rclass = alloc(3)
+            local ccException = classByName("java.lang.ClassCastException")
+            local con = findMethod(ccException, "<init>(Ljava/lang/String;)V")
             emit("move %i %i", robj, r)
             asmGetRTInfo(rclass, info(c))
-            asmGetRTInfo(rjInstanceof, info(jInstanceof))
+            asmGetRTInfo(rjInstanceof, info(jbInstanceof))
             emit("call %i 3 2", rjInstanceof)
-            local rassert, rsuccess, rmsg = rjInstanceof, robj, rclass
-            emit("move %i %i", rsuccess, rjInstanceof)
-            asmGetRTInfo(rassert, info(assert))
-            asmGetRTInfo(rmsg, info("Failed to cast to "..c.name))
-            emit("call %i 3 1", rassert)
-            free(3)
+            free(2)
+
+            local rexc, rcon, rpexc, rmsg = alloc(4)
+
+            emit("test %i 1", rjInstanceof)         -- Check result.
+            local p1 = emit("")
+            asmNewInstance(rexc, ccException)
+            asmGetRTInfo(rmsg, info(toJString(" cannot be cast to " .. c.name)))
+            asmGetRTInfo(rcon, info(con[1]))
+            emit("move %i %i", rpexc, rexc)
+            emit("call %i 3 3", rcon)
+            asmRefillStackTrace(rexc)
+            asmThrow(rexc)
+            local p2 = asmPC
+            emitInsert(p1 - 1, "jmp %i", p2 - p1)   -- Insert calculated jump.
+            free(5)
         end, function() -- C1
             local c = resolveClass(cp[u2()])
             asmInstanceOf(c)
@@ -1911,6 +1928,7 @@ local function compile(class, method, codeAttr, cp)
     inst = u1()
     asmPushStackTrace()
     while inst do
+        checkIn()
         -- check the stack map
         if stackMapAttribute and stackMapAttribute.entries[entryIndex] then
             local entry = stackMapAttribute.entries[entryIndex]

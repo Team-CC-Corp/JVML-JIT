@@ -45,7 +45,7 @@ public interface List<E> extends Collection<E> {
 
 		@Override
 		public void remove() {
-			list.remove(i);
+			list.remove(i--);
 		}
     }
 

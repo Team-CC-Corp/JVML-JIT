@@ -1,0 +1,88 @@
+<project name="JVML_JIT_RELEASE" default="main">
+	<loadresource property="zip.contents">
+		<file file="lib/zip"/>
+	</loadresource>
+	<loadresource property="json.contents">
+		<file file="lib/json"/>
+	</loadresource>
+	<loadresource property="base64.contents">
+		<file file="lib/base64"/>
+	</loadresource>
+	<property name="release.contents" value="release/jvml" />
+	<condition property="is_windows">
+	    <os family="windows"/>
+	</condition>
+	<condition property="is_unix">
+		<os family="unix" />
+	</condition>
+
+
+	<target name="clean">
+		<ant dir="CCLib" target="clean" />
+		<ant dir="tests" target="clean" />
+		<delete dir="release" />
+	</target>
+
+	<target name="compile">
+		<ant dir="CCLib" target="compile" />
+		<ant dir="tests" target="compile" />
+	</target>
+
+	<target name="jar">
+		<ant dir="CCLib" target="jar" />
+		<ant dir="tests" target="jar" />
+	</target>
+
+	<target name="make_archive" depends="jar">
+		<mkdir dir="${release.contents}" />
+		<copy todir="${release.contents}/lib">
+			<fileset dir="lib" />
+		</copy>
+		<copy todir="${release.contents}/jvml_data">
+			<fileset dir="jvml_data" />
+		</copy>
+		<copy todir="${release.contents}/lasm/src/Lua51">
+			<fileset dir="lasm/src/Lua51" />
+		</copy>
+		<copy todir="${release.contents}/lasm" file="lasm/LAT.lua" />
+		<copy todir="${release.contents}/bin" file="bin/jvml" />
+		<copy todir="${release.contents}/CCLib/build/jar">
+			<fileset dir="CCLib/build/jar" />
+		</copy>
+		<copy todir="${release.contents}/bigint" file="bigint/bigint.lua" />
+		<zip zip64Mode="never" destfile="release/jvml.zip" basedir="${release.contents}" />
+	</target>
+
+	<target name="if_windows" if="is_windows" depends="make_archive">
+		<exec executable="certutil">
+			<arg value="-encode" />
+			<arg value="release/jvml.zip" />
+			<arg value="release/jvml.zip.base64" />
+		</exec>
+	</target>
+
+	<target name="if_unix" if="is_unix" depends="make_archive">
+		<exec executable="base64">
+			<arg value="-i" />
+			<arg value="release/jvml.zip" />
+			<arg value="-o" />
+			<arg value="release/jvml.zip.base64" />
+		</exec>
+	</target>
+
+	<target name="create_installer" depends="if_unix, if_windows">
+		<copy file="installer.lua" tofile="release/installer.lua" overwrite="true">
+            <filterchain>
+            	<replacetokens>
+            		<token key="ZIP" value="${zip.contents}"/>
+            		<token key="JSON" value="${json.contents}"/>
+            		<token key="BASE64" value="${base64.contents}"/>
+                </replacetokens>
+            </filterchain>
+        </copy>
+	</target>
+
+	<target name="main" depends="create_installer">
+		
+	</target>
+</project>

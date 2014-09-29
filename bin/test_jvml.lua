@@ -1,7 +1,9 @@
 local args = {...}
 local jcd = shell.resolve(fs.combine(fs.getDir(shell.getRunningProgram()), ".."))
+os.unloadAPI("deflate")
+os.unloadAPI("zip")
 local program = fs.combine(jcd, "bin/jvml")
-local tests = fs.combine(jcd, "tests/build")
+local tests = fs.combine(jcd, "tests/build/jar/tests.jar")
 
 shell.run(program, "-cp", tests, "-g", "-d")
 local vm = jvml.popVM()
@@ -12,7 +14,8 @@ if #args > 0 then
 	testsToRun = args
 else
 	testsToRun = {}
-	for i,v in ipairs(fs.list(tests)) do
+	local zfs = zip.open(assert(fs.open(fs.combine(jcd, "tests/build/jar/tests.jar"), "rb")))
+	for i,v in ipairs(zfs.list("")) do
 		if v:sub(-6) == ".class" and not v:find("^%.") then
 			table.insert(testsToRun, v:sub(1,-7))
 		end
