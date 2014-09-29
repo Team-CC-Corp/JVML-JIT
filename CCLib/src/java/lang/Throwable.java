@@ -1,7 +1,8 @@
 package java.lang;
 
 import java.io.PrintStream;
-import java.util.ArrayList;
+
+import jvml.util.ArrayList;
 
 public class Throwable {
     private static final String CAUSE_CAPTION = "Caused by: ";
@@ -32,6 +33,15 @@ public class Throwable {
 		detailMessage = (cause==null ? null : cause.toString());
 		this.cause = cause;
 	}
+	
+	public Throwable initCause(Throwable e) {
+	    if (cause == null) {
+	      cause = e;
+	      return this;
+	    } else {
+	      throw new IllegalStateException();
+	    }
+	  }
 
 	public String getMessage() {
         return detailMessage;
@@ -131,7 +141,7 @@ public class Throwable {
 
     public final void addSuppressed(Throwable exception) {
         if (suppressedExceptions == null) {
-            suppressedExceptions = new ArrayList<>();
+            suppressedExceptions = new ArrayList<Throwable>();
         }
         suppressedExceptions.add(exception);
     }

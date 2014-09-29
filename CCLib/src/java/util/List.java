@@ -1,119 +1,35 @@
+/* Copyright (c) 2008-2014, Avian Contributors
+
+   Permission to use, copy, modify, and/or distribute this software
+   for any purpose with or without fee is hereby granted, provided
+   that the above copyright notice and this permission notice appear
+   in all copies.
+
+   There is NO WARRANTY for this software.  See license.txt for
+   details. */
+
 package java.util;
 
-public interface List<E> extends Collection<E> {
-	public E get(int index);
-    public E set(int index, E element);
-    public void add(int index, E element);
-    public E remove(int index);
-    public List<E> subList(int fromIndex, int toIndex);
+public interface List<T> extends Collection<T> {
+  public T get(int index);
 
-    default public int lastIndexOf(E e) {
-    	for (int i = size()-1; i >= 0; --i) {
-    		if (get(i) == e) {
-    			return i;
-    		}
-    	}
-    	return -1;
-    }
+  public T set(int index, T value);
 
-    default public int indexOf(E e) {
-    	for (int i = 0; i < size(); ++i) {
-    		if (get(i) == e) {
-    			return i;
-    		}
-    	}
-    	return -1;
-    }
+  public T remove(int index);
 
-    public class UtilityIterator<T> implements Iterator<T> {
-    	protected int i = -1;
-    	protected List<T> list;
+  public boolean add(T element);
 
-    	public UtilityIterator(List<T> l) {
-    		list = l;
-    	}
+  public void add(int index, T element);
 
-    	@Override
-		public boolean hasNext() {
-			return i < list.size()-1;
-		}
+  public boolean addAll(int startIndex, Collection<? extends T> c);
 
-		@Override
-		public T next() {
-			return list.get(++i);
-		}
+  public int indexOf(Object value);
 
-		@Override
-		public void remove() {
-			list.remove(i);
-		}
-    }
+  public int lastIndexOf(Object value);
 
-    public class LIterator<U> extends UtilityIterator<U> implements ListIterator<U> {
-    	public LIterator(List<U> l) {
-    		super(l);
-    	}
+  public boolean isEmpty();
 
-    	public LIterator(List<U> l, int index) {
-    		super(l);
-    		i = index - 1;
-    	}
+  public ListIterator<T> listIterator(int index);
 
-    	@Override
-    	public void add(U e) {
-    		list.add(i + 1, e);
-    	}
-
-    	@Override
-		public boolean hasPrevious() {
-			return i > 0;
-		}
-
-    	@Override
-		public int nextIndex() {
-			return i + 1;
-		}
-
-    	@Override
-		public U previous() {
-			return list.get(--i);
-		}
-
-    	@Override
-		public int previousIndex() {
-			return i - 1;
-		}
-
-    	@Override
-		public void set(U e) {
-			list.set(i, e);
-		}
-    }
-
-    default public ListIterator<E> listIterator() {
-    	return new LIterator<E>(this);
-    }
-    
-    default public ListIterator<E> listIterator(int index) {
-    	return new LIterator<E>(this, index);
-    }
-
-
-
-    // Collection
-    @Override
-	default public boolean contains(E e) {
-		for (E item : this) {
-			if (item == e) {
-				return true;
-			}
-		}
-		return false;
-	}
-
-	//Iterable
-    @Override
-	default public Iterator<E> iterator() {
-		return new UtilityIterator<E>(this);
-	}
+  public ListIterator<T> listIterator();
 }

@@ -1,7 +1,8 @@
 package cc.event;
 
 import java.lang.reflect.Method;
-import java.util.ArrayList;
+
+import jvml.util.ArrayList;
 
 public class EventBus {
 	private class Handler {
@@ -14,7 +15,7 @@ public class EventBus {
 		}
 	}
 
-	private ArrayList<Handler> handlers = new ArrayList<>();
+	private ArrayList<Handler> handlers = new ArrayList<Handler>();
 
 	public void addEventHandler(Object o) {
 		for (Method m : o.getClass().getMethods()) {
@@ -26,7 +27,9 @@ public class EventBus {
 
 	public void post(Object o) {
 		Class<?> cls = o.getClass();
-		for (Handler h : handlers) {
+		int size = handlers.size();
+		for (int i = 0; i < size; i++) {
+			Handler h = handlers.get(i);
 			Class<?>[] params = h.m.getParameterTypes();
 			if (params[0].isAssignableFrom(cls)) {
 				h.m.invoke(h.o, o);

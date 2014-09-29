@@ -10,6 +10,7 @@ public class MonitorTerminal extends Peripheral implements Terminal {
 			throw new PeripheralNotFoundException(id, "monitor");
 		}
 	}
+	
 
 	@Override
 	public void write(char c) {
@@ -24,6 +25,18 @@ public class MonitorTerminal extends Peripheral implements Terminal {
 	@Override
 	public void write(String text) {
 		call("write", text);
+	}
+	
+	public void clear() {
+		int x = getCursorX();
+		int y = getCursorX();
+
+		for (int i = 0; i < height(); ++i) {
+			setCursor(x, i);
+			clearLine();
+		}
+
+		setCursor(x, y);
 	}
 
 	@Override
@@ -74,5 +87,24 @@ public class MonitorTerminal extends Peripheral implements Terminal {
 	@Override
 	public void setBackgroundColor(Color c) {
 		call("setBackgroundColor", c.intValue);
+	}
+	
+	public void setColor(Color textColor, Color backgroundColor) {
+		setTextColor(textColor);
+		setBackgroundColor(backgroundColor);
+	}
+
+	public int nextLine() {
+		return nextLine(getCursorX());
+	}
+
+	public int nextLine(int x) {
+		if (getCursorY() == height() - 1) {
+			scroll(1);
+			setCursor(x, getCursorY());
+		} else {
+			setCursor(x, getCursorY() + 1);
+		}
+		return getCursorY();
 	}
 }

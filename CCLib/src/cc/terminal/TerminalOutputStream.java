@@ -1,7 +1,8 @@
 package cc.terminal;
 
 import java.io.OutputStream;
-import java.util.ArrayList;
+
+import jvml.util.ArrayList;
 
 public class TerminalOutputStream extends OutputStream {
 	private final Terminal terminal;
@@ -13,7 +14,7 @@ public class TerminalOutputStream extends OutputStream {
 
 	public TerminalOutputStream(Terminal t) {
 		terminal = t;
-		outBuffer = new ArrayList<>();
+		outBuffer = new ArrayList<StringBuilder>();
 		outBuffer.add(new StringBuilder());
 	}
 

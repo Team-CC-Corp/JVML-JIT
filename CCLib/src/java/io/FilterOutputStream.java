@@ -1,3 +1,13 @@
+/* Copyright (c) 2008-2014, Avian Contributors
+
+   Permission to use, copy, modify, and/or distribute this software
+   for any purpose with or without fee is hereby granted, provided
+   that the above copyright notice and this permission notice appear
+   in all copies.
+
+   There is NO WARRANTY for this software.  See license.txt for
+   details. */
+
 package java.io;
 
 public class FilterOutputStream extends OutputStream {
@@ -7,30 +17,24 @@ public class FilterOutputStream extends OutputStream {
 		this.out = out;
 	}
 
-	@Override
 	public void close() throws IOException {
-		try(OutputStream ostream = out) {
-			flush();
-		}
+		out.close();
 	}
 
-	@Override
 	public void flush() throws IOException {
 		out.flush();
 	}
 
-	@Override
 	public void write(byte[] b) throws IOException {
 		out.write(b);
 	}
 
-	@Override
 	public void write(byte[] b, int off, int len) throws IOException {
 		out.write(b, off, len);
 	}
 
-	@Override
 	public void write(int b) throws IOException {
 		out.write(b);
 	}
+
 }
