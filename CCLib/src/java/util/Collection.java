@@ -1,69 +1,35 @@
+/* Copyright (c) 2008-2014, Avian Contributors
+
+   Permission to use, copy, modify, and/or distribute this software
+   for any purpose with or without fee is hereby granted, provided
+   that the above copyright notice and this permission notice appear
+   in all copies.
+
+   There is NO WARRANTY for this software.  See license.txt for
+   details. */
+
 package java.util;
 
-public interface Collection<E> extends Iterable<E> {
-	public boolean add(E e);
-	public void clear();
-	public boolean contains(E e);
-	public Iterator<E> iterator();
-	public boolean remove(E e);
-	public int size();
+public interface Collection<T> extends Iterable<T> {
+  public int size();
 
-	default public <T extends E> boolean retainAll(Collection<T> c) {
-		boolean ret = false;
-		Iterator<E> i = iterator();
-		while (i.hasNext()) {
-			E e = i.next();
-			if (!c.contains((T)e)) {
-				i.remove();
-				ret = true;
-			}
-		}
-		return ret;
-	}
+  public boolean isEmpty();
 
-	default public boolean containsAll(Collection<? extends E> c) {
-		for (E e : c) {
-			if (!this.contains(e)) {
-				return false;
-			}
-		}
-		return true;
-	}
+  public boolean contains(Object element);
 
-	default public boolean removeAll(Collection<? extends E> c) {
-		boolean ret = false;
-		for (E e : c) {
-			ret = ret || this.remove(e);
-		}
-		return ret;
-	}
+  public boolean containsAll(Collection<?> c);
 
-	default public boolean isEmpty() {
-		return size() == 0;
-	}
+  public boolean add(T element);
 
-	default public boolean addAll(Collection<? extends E> c) {
-		boolean ret = false;
-		for (E e : c) {
-			ret = ret || this.add(e);
-		}
-		return ret;
-	}
+  public boolean addAll(Collection<? extends T> collection);
 
-	default public Object[] toArray() {
-		Object[] arr = new Object[size()];
-		int i = 0;
-		for (E e : this) {
-			arr[i++] = e;
-		}
-		return arr;
-	}
+  public boolean remove(Object element);
 
-	default public <T>T[] toArray(T[] a) {
-		int i = 0;
-		for (E e : this) {
-			a[i++] = (T)e;
-		}
-		return a;
-	}
+  public boolean removeAll(Collection<?> c);
+
+  public Object[] toArray();
+
+  public <S> S[] toArray(S[] array);
+
+  public void clear();
 }

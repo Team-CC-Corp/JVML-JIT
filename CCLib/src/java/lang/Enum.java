@@ -36,4 +36,7 @@ public abstract class Enum<E extends Enum<E>> {
         throw new IllegalArgumentException(
             "No enum constant " + enumType.getName() + "." + name);
     }
+    
+    public native final Class<E> getDeclaringClass();
+    
 }
