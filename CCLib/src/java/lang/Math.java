@@ -83,6 +83,68 @@ public final class Math {
 	public static float signum(float f) {
 		return f > 0 ? +1.0f : f < 0 ? -1.0f : 0;
 	}
+	
+	/**
+     * Returns the double conversion of the most negative (closest to negative
+     * infinity) integer value which is greater than the argument.
+     * <p>
+     * Special cases:
+     * <ul>
+     * <li>{@code ceil(+0.0) = +0.0}</li>
+     * <li>{@code ceil(-0.0) = -0.0}</li>
+     * <li>{@code ceil((anything in range (-1,0)) = -0.0}</li>
+     * <li>{@code ceil(+infinity) = +infinity}</li>
+     * <li>{@code ceil(-infinity) = -infinity}</li>
+     * <li>{@code ceil(NaN) = NaN}</li>
+     * </ul>
+     * 
+     * @param d
+     *            the value whose closest integer value has to be computed.
+     * @return the ceiling of the argument.
+     */
+    public static native double ceil(double d);
+    
+    /**
+     * Returns the closest double approximation of the natural logarithm of the
+     * argument. The returned result is within 1 ulp (unit in the last place) of
+     * the real result.
+     * <p>
+     * Special cases:
+     * <ul>
+     * <li>{@code log(+0.0) = -infinity}</li>
+     * <li>{@code log(-0.0) = -infinity}</li>
+     * <li>{@code log((anything < 0) = NaN}</li>
+     * <li>{@code log(+infinity) = +infinity}</li>
+     * <li>{@code log(-infinity) = NaN}</li>
+     * <li>{@code log(NaN) = NaN}</li>
+     * </ul>
+     * 
+     * @param d
+     *            the value whose log has to be computed.
+     * @return the natural logarithm of the argument.
+     */
+    public static native double log(double d);
+    
+    /**
+     * Returns the closest double approximation of the square root of the
+     * argument.
+     * <p>
+     * Special cases:
+     * <ul>
+     * <li>{@code sqrt(+0.0) = +0.0}</li>
+     * <li>{@code sqrt(-0.0) = -0.0}</li>
+     * <li>{@code sqrt( (anything < 0) ) = NaN}</li>
+     * <li>{@code sqrt(+infinity) = +infinity}</li>
+     * <li>{@code sqrt(NaN) = NaN}</li>
+     * </ul>
+     * 
+     * @param d
+     *            the value whose square root has to be computed.
+     * @return the square root of the argument.
+     */
+    public static native double sqrt(double d);
+
+    public static native double pow(double v, double e);
 
 	/*
 	public static double random() {

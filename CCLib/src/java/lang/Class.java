@@ -33,6 +33,10 @@ public final class Class<T> {
 	native public boolean isInterface();
 
 	native public boolean isInstance(Object obj);
+	
+	public native boolean isPrimitive();
+	
+	public native boolean isArray();
 
 	native public boolean isAssignableFrom(Class<?> cls);
 
@@ -84,8 +88,6 @@ public final class Class<T> {
 	}
 
 	public native static Class forName(String name) throws ClassNotFoundException;
-
-	public native boolean isArray();
 
 	public native static Class<?> forName(String name, boolean initialize, ClassLoader loader) throws ClassNotFoundException;
 

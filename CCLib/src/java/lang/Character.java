@@ -149,6 +149,19 @@ public final class Character implements Comparable<Character> {
 	public static boolean isUpperCase(int c) {
 		return canCastToChar(c) && isUpperCase((char) c);
 	}
+	
+    /**
+     * Indicates whether the specified character is a Java space.
+     * 
+     * @param c
+     *            the character to check.
+     * @return {@code true} if {@code c} is a Java space; {@code false}
+     *         otherwise.
+     * @deprecated Use {@link #isWhitespace(char)}
+     */
+    public static boolean isSpace(char c) {
+        return c == '\n' || c == '\t' || c == '\f' || c == '\r' || c == ' ';
+    }
 
 	public static boolean isWhitespace(int c) {
 		return canCastToChar(c) && isWhitespace((char) c);

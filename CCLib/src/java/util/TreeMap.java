@@ -10,9 +10,6 @@
 
 package java.util;
 
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 
 public class TreeMap<K,V> implements SortedMap<K,V> {
   private final Comparator<K> comparator;

@@ -1,7 +1,9 @@
 package java.lang;
 
 public class Double extends Number {
-
+    
+    public static final double MAX_VALUE = 1.79769313486231570e+308;
+    public static final double MIN_VALUE = 5e-324;
 	public static final double NEGATIVE_INFINITY = -1.0 / 0.0;
 	public static final double POSITIVE_INFINITY = 1.0 / 0.0;
 	public static final double NaN = 0.0 / 0.0;

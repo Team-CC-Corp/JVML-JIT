@@ -286,6 +286,32 @@ public class Arrays {
     }
     return true;
   }
+  
+  /**
+   * Compares the two arrays.
+   *
+   * @param array1
+   *            the first {@code boolean} array.
+   * @param array2
+   *            the second {@code boolean} array.
+   * @return {@code true} if both arrays are {@code null} or if the arrays have the
+   *         same length and the elements at each index in the two arrays are
+   *         equal, {@code false} otherwise.
+   */
+  public static boolean equals(boolean[] array1, boolean[] array2) {
+      if (array1 == array2) {
+          return true;
+      }
+      if (array1 == null || array2 == null || array1.length != array2.length) {
+          return false;
+      }
+      for (int i = 0; i < array1.length; i++) {
+          if (array1[i] != array2[i]) {
+              return false;
+          }
+      }
+      return true;
+  }
 
   public static boolean equals(byte[] a, byte[] b) {
     if(a == b) {
@@ -496,6 +522,28 @@ public class Arrays {
       array[i] = value;
     }
   }
+  
+  /**
+   * Fills the specified range in the array with the specified element.
+   *
+   * @param array
+   *            the {@code char} array to fill.
+   * @param start
+   *            the first index to fill.
+   * @param end
+   *            the last + 1 index to fill.
+   * @param value
+   *            the {@code char} element.
+   * @throws IllegalArgumentException
+   *                if {@code start > end}.
+   * @throws ArrayIndexOutOfBoundsException
+   *                if {@code start < 0} or {@code end > array.length}.
+   */
+  public static void fill(char[] array, int start, int end, char value) {
+      for (int i = start; i < end; i++) {
+          array[i] = value;
+      }
+  }
 
   public static void fill(short[] array, short value) {
     for (int i=0;i<array.length;i++) {
@@ -611,4 +659,16 @@ public class Arrays {
     System.arraycopy(array, 0, result, 0, length);
     return result;
   }
+
+    /**
+     * Checks that the range described by {@code offset} and {@code count} 
+     * doesn't exceed {@code arrayLength}.
+     * 
+     * @hide
+     */
+    public static void checkOffsetAndCount(int arrayLength, int offset, int count) {
+//        if ((offset | count) < 0 || offset > arrayLength || arrayLength - offset < count) {
+//            throw new ArrayIndexOutOfBoundsException(arrayLength, offset, count);
+//        }
+    }
 }

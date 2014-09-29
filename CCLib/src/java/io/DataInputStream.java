@@ -104,7 +104,7 @@ public class DataInputStream extends InputStream implements DataInput {
 		throw new UnsupportedOperationException(); // FIXME
 	}
 
-	@Deprecated
+
 	public String readLine() throws IOException {
 		int c = read();
 		if (c < 0) {

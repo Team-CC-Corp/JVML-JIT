@@ -11,7 +11,7 @@
 package java.io;
 
 public interface Externalizable {
-	public void readExternal(ObjectInput in);
+	//public void readExternal(ObjectInput in);
 
-	public void writeExternal(ObjectOutput out);
+	//public void writeExternal(ObjectOutput out);
 }
