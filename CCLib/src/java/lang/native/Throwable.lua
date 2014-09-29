@@ -7,14 +7,14 @@ natives["java.lang.Throwable"]["fillInStackTrace()Ljava/lang/Throwable;"] = func
 	local StackTraceElement = classByName("java.lang.StackTraceElement")
 	for i=1,#lStackTrace-1 do
 		local v = lStackTrace[i]
-		stackTrace[5][i] = newInstance(StackTraceElement)
+		stackTrace[5][#lStackTrace - i] = newInstance(StackTraceElement)
 		local m = findMethod(StackTraceElement, "<init>(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;I)V")
 		
 		local lineNumber = v.lineNumber
 		if bit.band(m.acc,METHOD_ACC.NATIVE) == METHOD_ACC.NATIVE then
 			lineNumber = -2
 		end
-		m[1](stackTrace[5][i], toJString(v.className), toJString(v.methodName), toJString(v.fileName or ""), lineNumber or -1)
+		m[1](stackTrace[5][#lStackTrace - i], toJString(v.className), toJString(v.methodName), toJString(v.fileName or ""), lineNumber or -1)
 	end
 	setObjectField(this, "stackTrace", stackTrace)
 	return this
