@@ -77,8 +77,8 @@ public class Window<T extends Terminal> implements Terminal {
 
 	@Override
 	public void scroll(int n) {
-		for (int i = 0; i < lines.size() - 1; ++i) {
-			lines.set(i, lines.get(i + 1));
+		for (int i = 0; i < lines.size() - n; ++i) {
+			lines.set(i, lines.get(i + n));
 		}
 		lines.set(lines.size() - 1, new Line());
 	}
