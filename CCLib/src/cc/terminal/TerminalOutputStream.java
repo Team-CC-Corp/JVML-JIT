@@ -3,15 +3,16 @@ package cc.terminal;
 import java.io.OutputStream;
 import java.util.ArrayList;
 
-public class TerminalOutputStream extends OutputStream {
-	private final Terminal terminal;
+// Optional type parameter.
+public class TerminalOutputStream<T extends Terminal> extends OutputStream {
+	private final T terminal;
 
 	private ArrayList<StringBuilder> outBuffer;
 
 	private Color textColor = Color.WHITE;
 	private Color backgroundColor = Color.BLACK;
 
-	public TerminalOutputStream(Terminal t) {
+	public TerminalOutputStream(T t) {
 		terminal = t;
 		outBuffer = new ArrayList<>();
 		outBuffer.add(new StringBuilder());
