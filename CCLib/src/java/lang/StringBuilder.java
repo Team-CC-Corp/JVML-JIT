@@ -23,13 +23,16 @@ public class StringBuilder {
 		return this;
 	}
 
-	public StringBuilder append(String s) {
-		char[] c = s.toCharArray();
-		Character[] ch = new Character[c.length];
-		for (int i = 0; i < c.length; ++i) {
-			ch[i] = c[i];
+	public StringBuilder append(char[] arr) {
+		Character[] ch = new Character[arr.length];
+		for (int i = 0; i < arr.length; ++i) {
+			ch[i] = arr[i];
 		}
 		return append(ch);
+	}
+
+	public StringBuilder append(String s) {
+		return append(s.toCharArray());
 	}
 
 	public StringBuilder append(Object o) {
