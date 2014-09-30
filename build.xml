@@ -1,13 +1,4 @@
 <project name="JVML_JIT_RELEASE" default="main">
-	<loadresource property="zip.contents">
-		<file file="lib/zip"/>
-	</loadresource>
-	<loadresource property="json.contents">
-		<file file="lib/json"/>
-	</loadresource>
-	<loadresource property="base64.contents">
-		<file file="lib/base64"/>
-	</loadresource>
 	<property name="release.contents" value="release/jvml" />
 	<condition property="is_windows">
 	    <os family="windows"/>
@@ -37,6 +28,9 @@
 		<mkdir dir="${release.contents}" />
 		<copy todir="${release.contents}/lib">
 			<fileset dir="lib" />
+		</copy>
+		<copy todir="${release.contents}/grin/lib">
+			<fileset dir="grin/lib" />
 		</copy>
 		<copy todir="${release.contents}/jvml_data">
 			<fileset dir="jvml_data" />
@@ -70,13 +64,18 @@
 		</exec>
 	</target>
 
-	<target name="create_installer" depends="if_unix, if_windows">
+	<target name="grin">
+		<ant dir="grin" target="main" />
+	</target>
+
+	<target name="create_installer" depends="grin, if_unix, if_windows">
+		<loadresource property="grin.text">
+			<file file="grin/build/installer.lua"/>
+		</loadresource>
 		<copy file="installer.lua" tofile="release/installer.lua" overwrite="true">
             <filterchain>
             	<replacetokens>
-            		<token key="ZIP" value="${zip.contents}"/>
-            		<token key="JSON" value="${json.contents}"/>
-            		<token key="BASE64" value="${base64.contents}"/>
+            		<token key="GRIN" value="${grin.text}"/>
                 </replacetokens>
             </filterchain>
         </copy>

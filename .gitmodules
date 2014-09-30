@@ -1,3 +1,6 @@
 [submodule "lasm"]
 	path = lasm
 	url = https://github.com/Yevano/LuaAssemblyTools.git
+[submodule "grin"]
+	path = grin
+	url = https://github.com/ElvishJerricco/Grin.git
