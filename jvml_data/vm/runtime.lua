@@ -213,12 +213,40 @@ function printStackTrace(printer)
     (printer or print)(table.concat(reversedtable,"\n"))
 end
 
-
 local oldTime = os.time()
 function checkIn()
     local newTime = os.time()
     if newTime - oldTime >= (0.020 * 1.5) then
         oldTime = newTime
         sleep(0)
+    end
+end
+
+function startVM()
+    local lthreads = { }
+    local jthreads = { }
+
+    while true do
+        local i = 1
+        while i <= #lthreads do
+            local ok, err = coroutine.resume(lthreads[i])
+            if not ok then
+                
+            end
+            i = i + 1
+        end
+    end
+end
+
+function createThread(tobj)
+    lthreads[#lthreads + 1] = function()
+        local tm = findMethod(tobj, "run()V")
+        local ok, err, exc = pcall(tm[1])
+        if not ok then
+            printError(err)
+            vm.printStackTrace(printError)
+        elseif exc then
+            vm.findMethod(exc[1], "printStackTrace()V")[1](exc)
+        end
     end
 end

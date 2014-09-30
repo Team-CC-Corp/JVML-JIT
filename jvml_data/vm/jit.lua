@@ -1941,11 +1941,6 @@ local function compile(class, method, codeAttr, cp)
             end
         end
 
-        local ryield = alloc()
-        asmGetRTInfo(ryield, info(coroutine.yield))
-        emit("call %i 1 1", ryield)
-        free()
-
         -- compile the instruction
         pcMapLJ[asmPC] = pc()
         pcMapJL[pc()] = asmPC

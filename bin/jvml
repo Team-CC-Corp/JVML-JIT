@@ -121,14 +121,7 @@ if not options.g then
     end
 
     -- Make java arguments array
-    local jArray
-    local co = coroutine.create(function() jArray = vm.newArray(vm.getArrayClass("[Ljava.lang.String;"), #options.javaArgs) end)
-    while true do
-        coroutine.resume(co)
-        if coroutine.status(co) == "dead" then
-            break
-        end
-    end
+    local jArray = vm.newArray(vm.getArrayClass("[Ljava.lang.String;"), #options.javaArgs)
     for i,v in ipairs(options.javaArgs) do
         jArray[5][i] = vm.toJString(v)
     end
@@ -151,39 +144,21 @@ if not options.g then
     assert(mainclass, "Main class not found")
     local m = vm.findMethod(mainclass, "main([Ljava/lang/String;)V")[1]
 
+    local mtClass = classByName("jvml.application.AppMain")
+    local mainThread = vm.newInstance(mtClass)
+    local mainCtor = vm.findMethod(mtClass, "<init>()V")
+
+    mainCtor[1](mainThread, m, jArray)
+
+    createThread(mainThread)
+    startVM()
+
     -- Begin
     local startTime
     if options.time then
         startTime = os.time()
     end
 
-    local ok, err, exc
-    local co1 = coroutine.create(function()
-        exc = m(jArray)
-    end)
-    local co2 = coroutine.create(function()
-        exc = m(jArray)
-    end)
-    while true do
-        if coroutine.status(co1) ~= "dead" then
-            coroutine.resume(co1)
-        end
-
-        if coroutine.status(co2) ~= "dead" then
-            coroutine.resume(co2)
-        end
-
-        if coroutine.status(co1) == "dead" and coroutine.status(co2) == "dead" then
-            break
-        end
-    end
-
-    if not ok then
-        printError(err)
-        vm.printStackTrace(printError)
-    elseif exc then
-        vm.findMethod(exc[1], "printStackTrace()V")[1](exc)
-    end
     if options.time then
         local endTime = os.time()
         print("\nTime: ", endTime - startTime)
