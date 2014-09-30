@@ -1,6 +1,6 @@
-import java.lang.reflect.Method;
-
 package jvml.application;
+
+import java.lang.reflect.Method;
 
 public class AppMain extends Thread {
     public Method mainMethod;
@@ -13,6 +13,6 @@ public class AppMain extends Thread {
 
     @Override
     public void run() {
-        mainMethod.invoke(null, args)
+        mainMethod.invoke(null, new Object[] { args });
     }
 }

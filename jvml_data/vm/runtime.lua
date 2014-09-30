@@ -222,31 +222,47 @@ function checkIn()
     end
 end
 
+local lthreads = { }
+local jthreads = { }
+
 function startVM()
-    local lthreads = { }
-    local jthreads = { }
+    local function removeThread(i)
+        table.remove(lthreads, i)
+        table.remove(jthreads, i)
+    end
 
     while true do
         local i = 1
         while i <= #lthreads do
-            local ok, err = coroutine.resume(lthreads[i])
-            if not ok then
-                
+            local yieldData = { coroutine.resume(lthreads[i]) }
+            if not yieldData[1] then
+                print("Fatal: Lua thread died: " .. err)
+            end
+            if coroutine.status(lthreads[i]) == "dead" then
+                print("removing thread #" .. i)
+                removeThread(i)
+                i = i - 1
             end
             i = i + 1
+        end
+        if #lthreads == 0 then
+            return
         end
     end
 end
 
 function createThread(tobj)
-    lthreads[#lthreads + 1] = function()
-        local tm = findMethod(tobj, "run()V")
+    local i = #lthreads + 1
+    jthreads[i] = tobj
+    lthreads[i] = coroutine.create(function()
+        local tm = findMethod(tobj[1], "run()V")
         local ok, err, exc = pcall(tm[1])
         if not ok then
             printError(err)
-            vm.printStackTrace(printError)
+            printStackTrace(printError)
         elseif exc then
-            vm.findMethod(exc[1], "printStackTrace()V")[1](exc)
+            print("exception!")
+            findMethod(exc[1], "printStackTrace()V")[1](exc)
         end
-    end
+    end)
 end

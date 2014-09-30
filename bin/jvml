@@ -144,14 +144,14 @@ if not options.g then
     assert(mainclass, "Main class not found")
     local m = vm.findMethod(mainclass, "main([Ljava/lang/String;)V")[1]
 
-    local mtClass = classByName("jvml.application.AppMain")
+    local mtClass = vm.classByName("jvml.application.AppMain")
     local mainThread = vm.newInstance(mtClass)
     local mainCtor = vm.findMethod(mtClass, "<init>()V")
 
     mainCtor[1](mainThread, m, jArray)
 
-    createThread(mainThread)
-    startVM()
+    vm.createThread(mainThread)
+    vm.startVM()
 
     -- Begin
     local startTime
