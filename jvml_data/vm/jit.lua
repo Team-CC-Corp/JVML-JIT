@@ -148,19 +148,21 @@ local function compile(class, method, codeAttr, cp)
 
     local constants = {}
     local topConstant = 1
-    local function k(c)
-        c = c == nil and "nil" or c
+    local function k(c, ...)
+        if not c then return end
         local kBracket = "k(" .. c .. ")"
         if constants[c] or topConstant < 255 then
             if not constants[c] then
                 constants[c] = true
                 topConstant = topConstant + 1
             end
-            return kBracket
+            return kBracket, k(...)
         else
             local rc = alloc()
-            emitWithComment("Automatically generated loadk", "loadk %i " .. kBracket, rc)
-            return string.format("%i", free())
+            emitWithComment("Automatically generated loadk", "loadk %i %s", rc, kBracket)
+            local ret = {string.format("%i", rc), k(...)}
+            free()
+            return unpack(ret)
         end
     end
 
@@ -177,7 +179,7 @@ local function compile(class, method, codeAttr, cp)
         for i = 1, #class.field_info do
             local fi = class.field_info[i]
             if bit.band(fi.access_flags, FIELD_ACC.STATIC) == 0 then
-                emit("settable %i %s %s", rfields, k(i), PRIMITIVE_WRAPPERS[fi.descriptor] and k(0) or k(nil))
+                emit("settable %i %s %s", rfields, k(i, PRIMITIVE_WRAPPERS[fi.descriptor] and 0 or "nil"))
             end
         end
         emit("settable %i %s %i", robj, k(1), rclass)

@@ -1,5 +1,4 @@
-package cc;
-import java.io.*;
+package cc.event;
 
 public class Event {
     String type;

@@ -6,6 +6,12 @@ for i,v in ipairs(fs.list(libDir)) do
         os.loadAPI(fs.combine(libDir, v))
     end
 end
+local grinLibDir = fs.combine(jcd, "grin/lib")
+for i,v in ipairs(fs.list(grinLibDir)) do
+    if not v:find("^%.") and not _G[v] then
+        os.loadAPI(fs.combine(grinLibDir, v))
+    end
+end
 
 ---------------------------------------------------------------------------------------------------------------
 -- Parse arguments

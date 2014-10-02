@@ -23,73 +23,52 @@ natives["cc.Computer"]["getClock()F"] = function()
     return os.clock()
 end
 
-natives["cc.Computer"]["pullEvent()Lcc/Event;"] = function()
-    local typ, args
-    (function(t, arg0, ...)
-        typ = toJString(t)
-        args = { ... }
-        args.length = #args
-        args[1] = arg0
-    end)(os.pullEvent())
+local function createEvent(type, ... )
+    local jType = toJString(type)
 
-    if args[1] then
-        local v = args[1]
-        if type(v) == "string" then
-            args[1] = toJString(v)
-        elseif type(v) == "number" then
-            args[1] = wrapPrimitive(v, "D")
-        end
-        args.length = args.length + 1
+    local lArgs = { ... }
+    local jArgs = newArray(getArrayClass("[java.lang.Object;"), #lArgs)
+    for i,v in ipairs(lArgs) do
+        jArgs[5][i] = l2jType(v)
     end
 
-    for i = 2, args.length do
-        local v = args[i]
-        if type(v) == "string" then
-            args[i] = toJString(v)
-        elseif type(v) == "number" then
-            args[i] = wrapPrimitive(v, "D")
-        end
-    end
-
-    local eventClass = classByName("cc.Event")
-    local event = newInstance(eventClass)
-    local argsRef = newArray(getArrayClass("[java.lang.Object;"), #args)
-    argsRef[5] = args
-    findMethod(eventClass, "<init>(Ljava/lang/String;[Ljava/lang/Object;)V")[1](event, typ, argsRef)
+    local event = newInstance(classByName("cc.event.Event"))
+    findMethod(event[1], "<init>(Ljava/lang/String;[Ljava/lang/Object;)V")[1](event, jType, jArgs)
     return event
 end
 
-natives["cc.Computer"]["pullEvent(Ljava/lang/String;)Lcc/Event;"] = function(filter)
-    local typ, args
-    (function(t, arg0, ...)
-        typ = toJString(t)
-        args = { ... }
-        args.length = #args
-        args[1] = arg0
-    end)(os.pullEvent(toLString(filter)))
+natives["cc.Computer"]["pullEvent()Lcc/event/Event;"] = function()
+    return createEvent(os.pullEvent())
+end
 
-    if args[1] then
-        local v = args[1]
-        if type(v) == "string" then
-            args[1] = toJString(v)
-        elseif type(v) == "number" then
-            args[1] = wrapPrimitive(v, "D")
-        end
-        args.length = args.length + 1
+natives["cc.Computer"]["pullEvent(Ljava/lang/String;)Lcc/event/Event;"] = function(filter)
+    local lFilter = toLString(filter)
+    return createEvent(os.pullEvent(lFilter))
+end
+
+natives["cc.Computer"]["pullEventRaw()Lcc/event/Event;"] = function()
+    return createEvent(os.pullEventRaw())
+end
+
+natives["cc.Computer"]["pullEventRaw(Ljava/lang/String;)Lcc/event/Event;"] = function(filter)
+    local lFilter = toLString(filter)
+    return createEvent(os.pullEventRaw(lFilter))
+end
+
+natives["cc.Computer"]["queueEvent(Lcc/event/Event;)V"] = function(e)
+    local lArgs = {}
+    for i,v in ipairs(getObjectField(e, "args")[5]) do
+        lArgs[i] = j2lType(v)
     end
+    local lType = toLstring(getObjectField(e, "type"))
 
-    for i = 2, args.length do
-        local v = args[i]
-        if type(v) == "string" then
-            args[i] = toJString(v)
-        elseif type(v) == "number" then
-            args[i] = wrapPrimitive(v, "D")
-        end
-    end
+    os.queueEvent(lType, unpack(lArgs))
+end
 
-    local eventClass = classByName("cc.Event")
-    local event = newInstance(eventClass)
-    local argsRef = { #args, classByName("java.lang.Object"), args }
-    findMethod(eventClass, "<init>(Ljava/lang/String;[Ljava/lang/Object;)V")[1](event, typ, argsRef)
-    return event
+natives["cc.Computer"]["startTimer(D)I"] = function(t)
+    return os.startTimer(t)
+end
+
+natives["cc.Computer"]["setAlarm(D)I"] = function(t)
+    return os.setAlarm(t)
 end

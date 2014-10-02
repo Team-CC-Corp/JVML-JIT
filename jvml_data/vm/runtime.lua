@@ -266,3 +266,43 @@ function createThread(tobj)
         end
     end)
 end
+
+function l2jType(v)
+    local t = type(v)
+    if t == "number" then
+        if v == math.floor(v) then
+            return wrapPrimitive(v, "I")
+        else
+            return wrapPrimitive(v, "D")
+        end
+    elseif t == "boolean" then
+        return wrapPrimitive(v and 1 or 0, "Z")
+    elseif t == "string" then
+        return toJString(v)
+    else
+        error("Unsupported lua type for converting to java: "..t)
+    end
+end
+
+function j2lType(obj)
+    local n = obj[1].name
+    if n == "java.lang.Boolean" then
+        return getObjectField(obj, "value") ~= 0
+    elseif n == "java.lang.Byte" then
+        return getObjectField(obj, "value")
+    elseif n == "java.lang.Character" then
+        return string.char(getObjectField(obj, "value"))
+    elseif n == "java.lang.Double" then
+        return getObjectField(obj, "value")
+    elseif n == "java.lang.Float" then
+        return getObjectField(obj, "value")
+    elseif n == "java.lang.Integer" then
+        return getObjectField(obj, "value")
+    elseif n == "java.lang.Short" then
+        return getObjectField(obj, "value")
+    elseif n == "java.lang.String" then
+        return toLString(obj)
+    else
+        error("Unsupported java type for converting to lua: "..n)
+    end
+end
