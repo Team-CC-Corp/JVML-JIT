@@ -224,30 +224,58 @@ end
 
 local lthreads = { }
 local jthreads = { }
+local filters = { }
 
 function startVM()
     local function removeThread(i)
+        filters[lthreads[i]] = nil
         table.remove(lthreads, i)
         table.remove(jthreads, i)
     end
 
+    local eventData
     while true do
         local i = 1
         while i <= #lthreads do
-            local yieldData = { coroutine.resume(lthreads[i]) }
-            if not yieldData[1] then
-                print("Fatal: Lua thread died: " .. err)
+            local lthread = lthreads[i]
+            if filters[lthread] == -1 then
+                local ok, yieldData = coroutine.resume(lthread)
+                if not ok then
+                    print("Fatal: Lua thread died: " .. err)
+                    removeThread(i)
+                    if #lthreads == 0 then return end
+                    i = i - 1
+                elseif coroutine.status(lthread) == "dead" then
+                    removeThread(i)
+                    if #lthreads == 0 then return end
+                    i = i - 1
+                elseif yieldData then
+                    filters[lthread] = yieldData
+                end
             end
-            if coroutine.status(lthreads[i]) == "dead" then
-                print("removing thread #" .. i)
-                removeThread(i)
-                i = i - 1
+            if eventData then
+                if eventData[1] == "terminate" then
+                    error("JVM has been manually terminated.")
+                end
+                if eventData[1] == filters[lthread] then
+                    local ok, yieldData = coroutine.resume(lthread, unpack(eventData))
+                    if not ok then
+                        print("Fatal: Lua thread died: " .. err)
+                        removeThread(i)
+                        if #lthreads == 0 then return end
+                        i = i - 1
+                    elseif coroutine.status(lthread) == "dead" then
+                        removeThread(i)
+                        if #lthreads == 0 then return end
+                        i = i - 1
+                    elseif yieldData then
+                        filters[lthread] = yieldData
+                    end
+                end
             end
             i = i + 1
         end
-        if #lthreads == 0 then
-            return
-        end
+        eventData = { coroutine.yield() }
     end
 end
 
@@ -256,15 +284,17 @@ function createThread(tobj)
     jthreads[i] = tobj
     lthreads[i] = coroutine.create(function()
         local tm = findMethod(tobj[1], "run()V")
-        local ok, err, exc = pcall(tm[1])
+        local ok, err, exc = pcall(function()
+            tm[1](tobj)
+        end)
         if not ok then
             printError(err)
             printStackTrace(printError)
         elseif exc then
-            print("exception!")
             findMethod(exc[1], "printStackTrace()V")[1](exc)
         end
     end)
+    filters[lthreads[i]] = -1
 end
 
 function l2jType(v)

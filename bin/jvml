@@ -140,21 +140,22 @@ if not options.g then
         for l in man.readLine do
             local _, _, name = l:find("^Main%-Class: (%S+)")
             if name then
-                mainclass = vm.classByName(name)
+                mainclass = vm.getJClass(name)
                 break
             end
         end
     else
-        mainclass = vm.classByName(options.mainclass)
+        mainclass = vm.getJClass(options.mainclass)
     end
     assert(mainclass, "Main class not found")
-    local m = vm.findMethod(mainclass, "main([Ljava/lang/String;)V")[1]
-
     local mtClass = vm.classByName("jvml.application.AppMain")
     local mainThread = vm.newInstance(mtClass)
-    local mainCtor = vm.findMethod(mtClass, "<init>()V")
+    local mainCtor = vm.findMethod(mtClass, "<init>(Ljava/lang/reflect/Method;[Ljava/lang/String;)V")
 
-    mainCtor[1](mainThread, m, jArray)
+    local methodObj = vm.newInstance(vm.classByName("java.lang.reflect.Method"))
+    vm.setObjectField(methodObj, "name", vm.toJString("main([Ljava/lang/String;)V"))
+    vm.setObjectField(methodObj, "declaringClass", mainclass)
+    mainCtor[1](mainThread, methodObj, jArray)
 
     vm.createThread(mainThread)
     vm.startVM()
