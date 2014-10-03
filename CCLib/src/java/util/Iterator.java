@@ -1,7 +1,7 @@
 package java.util;
 
 public interface Iterator<E> {
-	public boolean hasNext();
-	public E next();
-	public void remove();
+    public boolean hasNext();
+    public E next();
+    public void remove();
 }
