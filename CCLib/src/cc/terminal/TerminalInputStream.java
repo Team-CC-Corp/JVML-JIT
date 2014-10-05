@@ -29,7 +29,7 @@ public class TerminalInputStream extends InputStream
     @Override
     public int read() throws IOException
     {
-        if (current != null && index == (current.length - 1))
+        if (current != null && index == current.length)
             current = null;
 
         if (current == null)

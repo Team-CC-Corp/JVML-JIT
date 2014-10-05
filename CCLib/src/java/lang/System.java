@@ -21,7 +21,7 @@ public final class System {
         TerminalOutputStream errTerm = new TerminalOutputStream(term);
         err = new PrintStream(errTerm, true);
         errTerm.setTextColor(Color.RED);
-        in = new BufferedInputStream(new TerminalInputStream());
+        in = new TerminalInputStream();
     }
 
     native public static void load(String nativeName);
