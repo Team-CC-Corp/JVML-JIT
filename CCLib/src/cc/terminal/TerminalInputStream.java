@@ -5,12 +5,9 @@ import cc.Computer;
 import java.io.IOException;
 import java.io.InputStream;
 
-/**
- * Created by sci4me on 10/5/14.
- */
 public class TerminalInputStream extends InputStream
 {
-    private String current;
+    private char[] current;
     private int index;
 
     private String replace;
@@ -32,18 +29,18 @@ public class TerminalInputStream extends InputStream
     @Override
     public int read() throws IOException
     {
-        if (current != null && index == (current.length() - 1))
+        if (current != null && index == (current.length - 1))
             current = null;
 
         if (current == null)
         {
             if (this.replace == null)
-                current = Computer.read();
+                current = Computer.read().toCharArray();
             else
-                current = Computer.read(replace);
+                current = Computer.read(replace).toCharArray();
         }
 
-        char c = current.toCharArray()[index];
+        char c = current[index];
         index++;
         return c;
     }
