@@ -22,9 +22,10 @@ public final class Computer
     public static native void queueEvent(Event e);
     public static native int startTimer(double t);
     public static native int setAlarm(double t);
-    
-    public static String getVersion() {return null;}
-    public static int getComputerID() {return 0;}
-    public static String getComputerLabel() {return null;}
-    public static void setComputerLabel(String label) {}
+    public static native String getVersion();
+    public static native int getComputerID();
+    public static native String getComputerLabel();
+    public static native void setComputerLabel(String label);
+    public static native String read();
+    public static native String read(String rep);
 }
