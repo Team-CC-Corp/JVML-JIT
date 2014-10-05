@@ -1,13 +1,19 @@
 package java.lang;
 
 public class String {
-    /** The value is used for character storage. */
+    /**
+     * The value is used for character storage.
+     */
     private char value[];
 
-    /** The offset is the first index of the storage that is used. */
+    /**
+     * The offset is the first index of the storage that is used.
+     */
     private int offset;
 
-    /** The count is the number of characters in the String. */
+    /**
+     * The count is the number of characters in the String.
+     */
     private int count;
 
     public String() {
@@ -21,7 +27,7 @@ public class String {
         this.offset = 0;
         this.count = size;
         char[] buf = new char[size];
-        for(int i = 0; i < value.length; i++) {
+        for (int i = 0; i < value.length; i++) {
             buf[i] = value[i];
         }
         this.value = buf;
@@ -45,9 +51,16 @@ public class String {
     }
 
     public void getChars(int srcBegin, int srcEnd, char dst[], int dstBegin) {
-        for(int i = srcBegin; i < srcEnd; i++) {
+        for (int i = srcBegin; i < srcEnd; i++) {
             dst[dstBegin + i - srcBegin] = value[i];
         }
+    }
+
+    public char charAt(int index) {
+        if ((index < 0) || (index >= value.length)) {
+            throw new StringIndexOutOfBoundsException(index);
+        }
+        return value[index];
     }
 
     @Override
@@ -55,9 +68,9 @@ public class String {
         if (this == anObject) {
             return true;
         }
-        
+
         if (anObject instanceof String) {
-            String anotherString = (String)anObject;
+            String anotherString = (String) anObject;
             int n = count;
             if (n == anotherString.count) {
                 char v1[] = value;

@@ -94,7 +94,7 @@ natives["cc.Computer"]["setComputerLabel(Ljava/lang/String;)V"] = function(s)
     os.setComputerLabel(toLString(s))
 end
 
-natives["cc.Computer"]["read()V"] = function()
+natives["cc.Computer"]["read()Ljava/lang/String;"] = function()
     return toJString(read())
 end
 
