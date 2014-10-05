@@ -82,7 +82,7 @@ public class BufferedInputStream extends FilterInputStream
     }
 
     @Override
-    public synchronized int read() throws IOException
+    public int read() throws IOException
     {
         if (pos >= count)
         {
@@ -112,7 +112,7 @@ public class BufferedInputStream extends FilterInputStream
         return cnt;
     }
 
-    public synchronized int read(byte b[], int off, int len)
+    public int read(byte b[], int off, int len)
             throws IOException
     {
         getBufIfOpen(); // Check for closed stream
@@ -141,13 +141,12 @@ public class BufferedInputStream extends FilterInputStream
         }
     }
 
-    public synchronized long skip(long n) throws IOException
+    public long skip(long n) throws IOException
     {
         getBufIfOpen(); // Check for closed stream
         if (n <= 0)
         {
             return 0;
-
         }
         long avail = count - pos;
 
@@ -170,7 +169,7 @@ public class BufferedInputStream extends FilterInputStream
         return skipped;
     }
 
-    public synchronized int available() throws IOException
+    public int available() throws IOException
     {
         int n = count - pos;
         int avail = getInIfOpen().available();
@@ -179,13 +178,13 @@ public class BufferedInputStream extends FilterInputStream
                 : n + avail;
     }
 
-    public synchronized void mark(int readlimit)
+    public void mark(int readlimit)
     {
         marklimit = readlimit;
         markpos = pos;
     }
 
-    public synchronized void reset() throws IOException
+    public void reset() throws IOException
     {
         getBufIfOpen(); // Cause exception if closed
         if (markpos < 0)

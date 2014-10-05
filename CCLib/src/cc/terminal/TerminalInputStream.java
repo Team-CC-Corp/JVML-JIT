@@ -38,6 +38,7 @@ public class TerminalInputStream extends InputStream
                 current = Computer.read().toCharArray();
             else
                 current = Computer.read(replace).toCharArray();
+            this.index = 0;
         }
 
         char c = current[index];
