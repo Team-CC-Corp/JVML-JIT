@@ -1,6 +1,5 @@
 package java.lang;
 
-import java.io.BufferedInputStream;
 import java.io.InputStream;
 import java.io.PrintStream;
 

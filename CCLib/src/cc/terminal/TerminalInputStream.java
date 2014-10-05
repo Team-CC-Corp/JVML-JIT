@@ -29,9 +29,9 @@ public class TerminalInputStream extends InputStream {
 
         if (current == null) {
             if (this.replace == null)
-                current = Computer.read().toCharArray();
+                current = (Computer.read() + "\n").toCharArray();
             else
-                current = Computer.read(replace).toCharArray();
+                current = (Computer.read(replace) + "\n").toCharArray();
             this.index = 0;
         }
 
