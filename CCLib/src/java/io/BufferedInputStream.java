@@ -1,7 +1,6 @@
 package java.io;
 
-public class BufferedInputStream extends FilterInputStream
-{
+public class BufferedInputStream extends FilterInputStream {
     private static int DEFAULT_BUFFER_SIZE = 8192;
     private static int MAX_BUFFER_SIZE = Integer.MAX_VALUE - 8;
 
@@ -11,8 +10,7 @@ public class BufferedInputStream extends FilterInputStream
     protected int markpos = -1;
     protected int marklimit;
 
-    private InputStream getInIfOpen() throws IOException
-    {
+    private InputStream getInIfOpen() throws IOException {
         InputStream input = in;
         if (input == null)
             throw new IOException("Stream closed");
@@ -20,38 +18,29 @@ public class BufferedInputStream extends FilterInputStream
 
     }
 
-    private byte[] getBufIfOpen() throws IOException
-    {
+    private byte[] getBufIfOpen() throws IOException {
         byte[] buffer = this.buffer;
         if (buffer == null)
             throw new IOException("Stream closed");
         return buffer;
     }
 
-    private void fill() throws IOException
-    {
+    private void fill() throws IOException {
         byte[] buffer = getBufIfOpen();
         if (markpos < 0)
             pos = 0;            /* no mark: throw away the buffer */
         else if (pos >= buffer.length)  /* no room left in buffer */
-            if (markpos > 0)
-            {  /* can throw away early part of the buffer */
+            if (markpos > 0) {  /* can throw away early part of the buffer */
                 int sz = pos - markpos;
                 System.arraycopy(buffer, markpos, buffer, 0, sz);
                 pos = sz;
                 markpos = 0;
-            }
-            else if (buffer.length >= marklimit)
-            {
+            } else if (buffer.length >= marklimit) {
                 markpos = -1;   /* buffer got too big, invalidate mark */
                 pos = 0;        /* drop buffer contents */
-            }
-            else if (buffer.length >= MAX_BUFFER_SIZE)
-            {
+            } else if (buffer.length >= MAX_BUFFER_SIZE) {
                 //out of memory
-            }
-            else
-            {            /* grow buffer */
+            } else {            /* grow buffer */
                 int nsz = (pos <= MAX_BUFFER_SIZE - pos) ?
                         pos * 2 : MAX_BUFFER_SIZE;
                 if (nsz > marklimit)
@@ -66,26 +55,21 @@ public class BufferedInputStream extends FilterInputStream
             count = n + pos;
     }
 
-    public BufferedInputStream(InputStream in)
-    {
+    public BufferedInputStream(InputStream in) {
         this(in, DEFAULT_BUFFER_SIZE);
     }
 
-    public BufferedInputStream(InputStream in, int size)
-    {
+    public BufferedInputStream(InputStream in, int size) {
         super(in);
-        if (size <= 0)
-        {
+        if (size <= 0) {
             throw new IllegalArgumentException("Buffer size <= 0");
         }
         buffer = new byte[size];
     }
 
     @Override
-    public int read() throws IOException
-    {
-        if (pos >= count)
-        {
+    public int read() throws IOException {
+        if (pos >= count) {
             fill();
             if (pos >= count)
                 return -1;
@@ -93,13 +77,10 @@ public class BufferedInputStream extends FilterInputStream
         return getBufIfOpen()[pos++] & 0xff;
     }
 
-    private int read1(byte[] b, int off, int len) throws IOException
-    {
+    private int read1(byte[] b, int off, int len) throws IOException {
         int avail = count - pos;
-        if (avail <= 0)
-        {
-            if (len >= getBufIfOpen().length && markpos < 0)
-            {
+        if (avail <= 0) {
+            if (len >= getBufIfOpen().length && markpos < 0) {
                 return getInIfOpen().read(b, off, len);
             }
             fill();
@@ -113,21 +94,16 @@ public class BufferedInputStream extends FilterInputStream
     }
 
     public int read(byte b[], int off, int len)
-            throws IOException
-    {
+            throws IOException {
         getBufIfOpen(); // Check for closed stream
-        if ((off | len | (off + len) | (b.length - (off + len))) < 0)
-        {
+        if ((off | len | (off + len) | (b.length - (off + len))) < 0) {
             throw new IndexOutOfBoundsException();
-        }
-        else if (len == 0)
-        {
+        } else if (len == 0) {
             return 0;
         }
 
         int n = 0;
-        for (; ; )
-        {
+        for (; ; ) {
             int nread = read1(b, off + n, len - n);
             if (nread <= 0)
                 return (n == 0) ? nread : n;
@@ -141,17 +117,14 @@ public class BufferedInputStream extends FilterInputStream
         }
     }
 
-    public long skip(long n) throws IOException
-    {
+    public long skip(long n) throws IOException {
         getBufIfOpen(); // Check for closed stream
-        if (n <= 0)
-        {
+        if (n <= 0) {
             return 0;
         }
         long avail = count - pos;
 
-        if (avail <= 0)
-        {
+        if (avail <= 0) {
             // If no mark position set then don't keep in buffer
             if (markpos < 0)
                 return getInIfOpen().skip(n);
@@ -169,8 +142,7 @@ public class BufferedInputStream extends FilterInputStream
         return skipped;
     }
 
-    public int available() throws IOException
-    {
+    public int available() throws IOException {
         int n = count - pos;
         int avail = getInIfOpen().available();
         return n > (Integer.MAX_VALUE - avail)
@@ -178,30 +150,25 @@ public class BufferedInputStream extends FilterInputStream
                 : n + avail;
     }
 
-    public void mark(int readlimit)
-    {
+    public void mark(int readlimit) {
         marklimit = readlimit;
         markpos = pos;
     }
 
-    public void reset() throws IOException
-    {
+    public void reset() throws IOException {
         getBufIfOpen(); // Cause exception if closed
         if (markpos < 0)
             throw new IOException("Resetting to invalid mark");
         pos = markpos;
     }
 
-    public boolean markSupported()
-    {
+    public boolean markSupported() {
         return true;
     }
 
-    public void close() throws IOException
-    {
+    public void close() throws IOException {
         this.buffer = null;
-        if (this.in != null)
-        {
+        if (this.in != null) {
             this.in.close();
             this.in = null;
         }

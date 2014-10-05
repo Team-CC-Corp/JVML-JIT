@@ -1,6 +1,5 @@
 package java.io;
 
-public interface Closeable
-{
+public interface Closeable {
     public void close() throws IOException;
 }

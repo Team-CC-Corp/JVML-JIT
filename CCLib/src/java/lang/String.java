@@ -1,7 +1,6 @@
 package java.lang;
 
-public class String
-{
+public class String {
     /**
      * The value is used for character storage.
      */
@@ -17,38 +16,32 @@ public class String
      */
     private int count;
 
-    public String()
-    {
+    public String() {
         this.offset = 0;
         this.count = 0;
         this.value = new char[0];
     }
 
-    public String(char value[])
-    {
+    public String(char value[]) {
         int size = value.length;
         this.offset = 0;
         this.count = size;
         char[] buf = new char[size];
-        for (int i = 0; i < value.length; i++)
-        {
+        for (int i = 0; i < value.length; i++) {
             buf[i] = value[i];
         }
         this.value = buf;
     }
 
-    String(int offset, int count, char value[])
-    {
+    String(int offset, int count, char value[]) {
         this.offset = offset;
         this.count = count;
         this.value = value;
     }
 
-    public String concat(String str)
-    {
+    public String concat(String str) {
         int otherLen = str.length();
-        if (otherLen == 0)
-        {
+        if (otherLen == 0) {
             return this;
         }
         char buf[] = new char[count + otherLen];
@@ -57,43 +50,34 @@ public class String
         return new String(0, count + otherLen, buf);
     }
 
-    public void getChars(int srcBegin, int srcEnd, char dst[], int dstBegin)
-    {
-        for (int i = srcBegin; i < srcEnd; i++)
-        {
+    public void getChars(int srcBegin, int srcEnd, char dst[], int dstBegin) {
+        for (int i = srcBegin; i < srcEnd; i++) {
             dst[dstBegin + i - srcBegin] = value[i];
         }
     }
 
-    public char charAt(int index)
-    {
-        if ((index < 0) || (index >= value.length))
-        {
+    public char charAt(int index) {
+        if ((index < 0) || (index >= value.length)) {
             throw new StringIndexOutOfBoundsException(index);
         }
         return value[index];
     }
 
     @Override
-    public boolean equals(Object anObject)
-    {
-        if (this == anObject)
-        {
+    public boolean equals(Object anObject) {
+        if (this == anObject) {
             return true;
         }
 
-        if (anObject instanceof String)
-        {
+        if (anObject instanceof String) {
             String anotherString = (String) anObject;
             int n = count;
-            if (n == anotherString.count)
-            {
+            if (n == anotherString.count) {
                 char v1[] = value;
                 char v2[] = anotherString.value;
                 int i = offset;
                 int j = anotherString.offset;
-                while (n-- != 0)
-                {
+                while (n-- != 0) {
                     if (v1[i++] != v2[j++])
                         return false;
                 }
@@ -103,22 +87,18 @@ public class String
         return false;
     }
 
-    public int length()
-    {
+    public int length() {
         return count;
     }
 
     @Override
-    public String toString()
-    {
+    public String toString() {
         return this;
     }
 
-    public char[] toCharArray()
-    {
+    public char[] toCharArray() {
         char[] arr = new char[count];
-        for (int i = 0; i < arr.length; ++i)
-        {
+        for (int i = 0; i < arr.length; ++i) {
             arr[i] = value[offset + i];
         }
         return arr;

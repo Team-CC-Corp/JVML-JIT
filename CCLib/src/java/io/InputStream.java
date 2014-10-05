@@ -39,8 +39,7 @@ package java.io;
  * @see java.io.OutputStream
  * @since JDK1.0
  */
-public abstract class InputStream implements Closeable
-{
+public abstract class InputStream implements Closeable {
 
     // MAX_SKIP_BUFFER_SIZE is used to determine the maximum buffer size to
     // use when skipping.
@@ -95,8 +94,7 @@ public abstract class InputStream implements Closeable
      * @throws NullPointerException if <code>b</code> is <code>null</code>.
      * @see java.io.InputStream#read(byte[], int, int)
      */
-    public int read(byte b[]) throws IOException
-    {
+    public int read(byte b[]) throws IOException {
         return read(b, 0, b.length);
     }
 
@@ -157,43 +155,31 @@ public abstract class InputStream implements Closeable
      *                                   <code>b.length - off</code>
      * @see java.io.InputStream#read()
      */
-    public int read(byte b[], int off, int len) throws IOException
-    {
-        if (b == null)
-        {
+    public int read(byte b[], int off, int len) throws IOException {
+        if (b == null) {
             throw new NullPointerException();
-        }
-        else if (off < 0 || len < 0 || len > b.length - off)
-        {
+        } else if (off < 0 || len < 0 || len > b.length - off) {
             throw new IndexOutOfBoundsException();
-        }
-        else if (len == 0)
-        {
+        } else if (len == 0) {
             return 0;
         }
 
         int c = read();
-        if (c == -1)
-        {
+        if (c == -1) {
             return -1;
         }
         b[off] = (byte) c;
 
         int i = 1;
-        try
-        {
-            for (; i < len; i++)
-            {
+        try {
+            for (; i < len; i++) {
                 c = read();
-                if (c == -1)
-                {
+                if (c == -1) {
                     break;
                 }
                 b[off + i] = (byte) c;
             }
-        }
-        catch (IOException ee)
-        {
+        } catch (IOException ee) {
         }
         return i;
     }
@@ -220,24 +206,20 @@ public abstract class InputStream implements Closeable
      * @throws IOException if the stream does not support seek,
      *                     or if some other I/O error occurs.
      */
-    public long skip(long n) throws IOException
-    {
+    public long skip(long n) throws IOException {
 
         long remaining = n;
         int nr;
 
-        if (n <= 0)
-        {
+        if (n <= 0) {
             return 0;
         }
 
         int size = (int) Math.min(MAX_SKIP_BUFFER_SIZE, remaining);
         byte[] skipBuffer = new byte[size];
-        while (remaining > 0)
-        {
+        while (remaining > 0) {
             nr = read(skipBuffer, 0, (int) Math.min(size, remaining));
-            if (nr < 0)
-            {
+            if (nr < 0) {
                 break;
             }
             remaining -= nr;
@@ -272,8 +254,7 @@ public abstract class InputStream implements Closeable
      * it reaches the end of the input stream.
      * @throws IOException if an I/O error occurs.
      */
-    public int available() throws IOException
-    {
+    public int available() throws IOException {
         return 0;
     }
 
@@ -286,8 +267,7 @@ public abstract class InputStream implements Closeable
      *
      * @throws IOException if an I/O error occurs.
      */
-    public void close() throws IOException
-    {
+    public void close() throws IOException {
     }
 
     /**
@@ -316,8 +296,7 @@ public abstract class InputStream implements Closeable
      *                  the mark position becomes invalid.
      * @see java.io.InputStream#reset()
      */
-    public synchronized void mark(int readlimit)
-    {
+    public synchronized void mark(int readlimit) {
     }
 
     /**
@@ -364,8 +343,7 @@ public abstract class InputStream implements Closeable
      * @see java.io.InputStream#mark(int)
      * @see java.io.IOException
      */
-    public synchronized void reset() throws IOException
-    {
+    public synchronized void reset() throws IOException {
         throw new IOException("mark/reset not supported");
     }
 
@@ -381,8 +359,7 @@ public abstract class InputStream implements Closeable
      * @see java.io.InputStream#mark(int)
      * @see java.io.InputStream#reset()
      */
-    public boolean markSupported()
-    {
+    public boolean markSupported() {
         return false;
     }
 

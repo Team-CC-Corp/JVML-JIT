@@ -26,5 +26,5 @@ public final class System {
 
     native public static void load(String nativeName);
 
-    public static native void arraycopy(Object src,  int  srcPos, Object dest, int destPos, int length);
+    public static native void arraycopy(Object src, int srcPos, Object dest, int destPos, int length);
 }
