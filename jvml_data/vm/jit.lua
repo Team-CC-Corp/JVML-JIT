@@ -1,4 +1,10 @@
+TIME_SPENT_EMITTING_ASSEMBLY = 0
+TIME_SPENT_COMPILING_LASM = 0
+
 local function compile(class, method, codeAttr, cp)
+    local startTime = os.time() / 0.02
+
+
     checkIn()
     local function resolveClass(c)
         local cn = cp[c.name_index].bytes:gsub("/",".")
@@ -1950,6 +1956,8 @@ local function compile(class, method, codeAttr, cp)
         inst = u1()
     end
 
+    local emitAssemblyTime = os.time() / 0.02
+
     debugH.write(class.name .. "." .. method.name .. "\n")
     debugH.write("Length: " .. (asmPC - 1) .. "\n")
     debugH.write("Locals: " .. codeAttr.max_locals .. "\n")
@@ -1993,6 +2001,8 @@ local function compile(class, method, codeAttr, cp)
     debugH.flush()
     --print(table.concat(asm))
 
+    local writeDebugTime = os.time() / 0.02
+
     --print("Loading and verifying bytecode for " .. name)
     local p = LAT.Lua51.Parser:new()
     local file = p:Parse(".options 0 " .. (codeAttr.max_locals + 1) .. table.concat(asm), class.name .. "." .. method.name.."/bytecode")
@@ -2001,6 +2011,13 @@ local function compile(class, method, codeAttr, cp)
     assert(ok, class.name .. "." .. method.name:sub(1, method.name:find("%(") - 1) .. " failed to compile: \n" .. bc)
     local f = loadstring(bc)
     --print(table.concat(asm))
+
+    local lasmCompileTime = os.time() / 0.02
+
+    debugH.write("Emit Assembly:\t" .. (emitAssemblyTime - startTime) .. "\n")
+    debugH.write("Compile LASM:\t" .. (lasmCompileTime - writeDebugTime) .. "\n\n")
+    TIME_SPENT_EMITTING_ASSEMBLY = TIME_SPENT_EMITTING_ASSEMBLY + (emitAssemblyTime - startTime)
+    TIME_SPENT_COMPILING_LASM = TIME_SPENT_COMPILING_LASM + (lasmCompileTime - writeDebugTime)
 
     return f, rti
     --popStackTrace()

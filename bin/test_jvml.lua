@@ -55,3 +55,6 @@ for i,v in ipairs(testsToRun) do
     end
     sleep(0)
 end
+
+print("Emit Time: ", vm.TIME_SPENT_EMITTING_ASSEMBLY)
+print("Compile Time: ", vm.TIME_SPENT_COMPILING_LASM)
