@@ -1,181 +1,184 @@
-local jcd = shell.resolve("/"..fs.combine(fs.getDir(shell.getRunningProgram()), ".."))
+xpcall(function(...)
+    local jcd = shell.resolve("/"..fs.combine(fs.getDir(shell.getRunningProgram()), ".."))
 
-local libDir = fs.combine(jcd, "lib")
-for i,v in ipairs(fs.list(libDir)) do
-    if not v:find("^%.") and not _G[v] then
-        os.loadAPI(fs.combine(libDir, v))
-    end
-end
-local grinLibDir = fs.combine(jcd, "grin/lib")
-for i,v in ipairs(fs.list(grinLibDir)) do
-    if not v:find("^%.") and not _G[v] then
-        os.loadAPI(fs.combine(grinLibDir, v))
-    end
-end
-
----------------------------------------------------------------------------------------------------------------
--- Parse arguments
----------------------------------------------------------------------------------------------------------------
-local parser = argparse.new()
-parser
-    :switch"debug"
-    :shortcut"d"
-parser
-    :switch"time"
-    :shortcut"t"
-parser
-    :switch"g"
-parser
-    :parameter"classpath"
-    :shortcut"cp"
-    :multi()
-parser
-    :parameter"output"
-    :shortcut"o"
-parser
-    :argument"mainclass"
-parser
-    :argument"javaArgs"
-    :count"*"
-parser
-    :switch"jar"
-parser:usage"Usage: jvml [args, ...] <main class> [java args, ...]"
-local options = parser:parse({classpath={"/" .. fs.combine(jcd, "CCLib/build/jar/cc_rt.jar"), "."},javaArgs={}}, ...)
-if not options then
-    return
-end
-
-
----------------------------------------------------------------------------------------------------------------
--- Load the VM
----------------------------------------------------------------------------------------------------------------
-if options.jar then
-    table.insert(options.classpath, options.mainclass)
-end
-for i,v in ipairs(options.classpath) do
-    options.classpath[i] = "/"..shell.resolve(v)
-end
-local vm = setmetatable({
-    jcd = jcd,
-    jcp = table.concat(options.classpath, ":"),
-}, {__index=getfenv()})
-
-local outputFile
-if options.output then
-    outputFile = assert(fs.open(options.output, "w"), "Failed to open " .. options.output)
-    vm.print = function(...)
-        print(...)
-        for i,v in ipairs({...}) do
-            outputFile.write(tostring(v))
+    local libDir = fs.combine(jcd, "lib")
+    for i,v in ipairs(fs.list(libDir)) do
+        if not v:find("^%.") and not _G[v] then
+            os.loadAPI(fs.combine(libDir, v))
         end
-        outputFile.write("\n")
-        outputFile.flush()
     end
-end
-
-vm.debugMode = options.debug
-if options.debug then
-    local handle = fs.open(fs.combine(jcd, 'debug'), 'w')
-    vm.debugH = handle
-else
-    vm.debugH = {write=function() end, flush=function() end, close=function() end}
-end
-
-local nloadfile = loadfile
-local function dofile(path, ...)
-    local f = assert(nloadfile(path))
-    setfenv(f, vm)
-    return f(...)
-end
-
-function vm.loadfile(path)
-    local h = fs.open(path, "r")
-    local f, err = loadstring(h.readAll(), fs.getName(path))
-    h.close()
-    setfenv(f, vm)
-    return f, err
-end
-
-do -- load LAT with jvml as virtually the root
-    local f = assert(nloadfile(fs.combine(vm.jcd, "lasm/LAT.lua")))
-    setfenv(f, setmetatable({
-        loadfile=function(path)
-            return vm.loadfile(fs.combine(vm.jcd, path))
+    local grinLibDir = fs.combine(jcd, "grin/lib")
+    for i,v in ipairs(fs.list(grinLibDir)) do
+        if not v:find("^%.") and not _G[v] then
+            os.loadAPI(fs.combine(grinLibDir, v))
         end
-    }, {
-        __index=vm,
-        __newindex=vm
-    }))
-    f()
-end
+    end
 
-dofile(fs.combine(vm.jcd, "bigint/bigint.lua"))
-dofile(fs.combine(vm.jcd, "jvml_data/vm/classpath.lua"))
-dofile(fs.combine(vm.jcd, "jvml_data/vm/runtime.lua"))
-dofile(fs.combine(vm.jcd, "jvml_data/vm/jit.lua"))
-dofile(fs.combine(vm.jcd, "jvml_data/vm/classloader.lua"))
-dofile(fs.combine(vm.jcd, "jvml_data/vm/arrays.lua"))
-dofile(fs.combine(vm.jcd, "jvml_data/vm/annotations.lua"))
-
----------------------------------------------------------------------------------------------------------------
--- Run program
----------------------------------------------------------------------------------------------------------------
-if not options.g then
-    if not options.mainclass then
-        parser:printUsage()
+    ---------------------------------------------------------------------------------------------------------------
+    -- Parse arguments
+    ---------------------------------------------------------------------------------------------------------------
+    local parser = argparse.new()
+    parser
+        :switch"debug"
+        :shortcut"d"
+    parser
+        :switch"time"
+        :shortcut"t"
+    parser
+        :switch"g"
+    parser
+        :parameter"classpath"
+        :shortcut"cp"
+        :multi()
+    parser
+        :parameter"output"
+        :shortcut"o"
+    parser
+        :argument"mainclass"
+    parser
+        :argument"javaArgs"
+        :count"*"
+    parser
+        :switch"jar"
+    parser:usage"Usage: jvml [args, ...] <main class> [java args, ...]"
+    local options = parser:parse({classpath={"/" .. fs.combine(jcd, "CCLib/build/jar/cc_rt.jar"), "."},javaArgs={}}, ...)
+    if not options then
         return
     end
 
-    -- Make java arguments array
-    local jArray = vm.newArray(vm.getArrayClass("[Ljava.lang.String;"), #options.javaArgs)
-    for i,v in ipairs(options.javaArgs) do
-        jArray[5][i] = vm.toJString(v)
-    end
 
-    local mainclass
+    ---------------------------------------------------------------------------------------------------------------
+    -- Load the VM
+    ---------------------------------------------------------------------------------------------------------------
     if options.jar then
-        local jarFs = zip.open(fs.open(shell.resolve(options.mainclass), "rb"))
-        assert(jarFs.exists("META-INF/MANIFEST.MF") and not jarFs.isDir("META-INF/MANIFEST.MF"), "No manifest found")
-        local man = jarFs.open("META-INF/MANIFEST.MF", "r")
-        for l in man.readLine do
-            local _, _, name = l:find("^Main%-Class: (%S+)")
-            if name then
-                mainclass = vm.getJClass(name)
-                break
-            end
-        end
-    else
-        mainclass = vm.getJClass(options.mainclass)
+        table.insert(options.classpath, options.mainclass)
     end
-    assert(mainclass, "Main class not found")
-    local mtClass = vm.classByName("jvml.application.AppMain")
-    local mainThread = vm.newInstance(mtClass)
-    local mainCtor = vm.findMethod(mtClass, "<init>(Ljava/lang/reflect/Method;[Ljava/lang/String;)V")
-
-    local methodObj = vm.newInstance(vm.classByName("java.lang.reflect.Method"))
-    vm.setObjectField(methodObj, "name", vm.toJString("main([Ljava/lang/String;)V"))
-    vm.setObjectField(methodObj, "declaringClass", mainclass)
-    mainCtor[1](mainThread, methodObj, jArray)
-
-    vm.createThread(mainThread)
-    vm.startVM()
-
-    -- Begin
-    local startTime
-    if options.time then
-        startTime = os.time()
+    for i,v in ipairs(options.classpath) do
+        options.classpath[i] = "/"..shell.resolve(v)
     end
+    local vm = setmetatable({
+        jcd = jcd,
+        jcp = table.concat(options.classpath, ":"),
+    }, {__index=getfenv()})
 
-    if options.time then
-        local endTime = os.time()
-        print("\nTime: ", endTime - startTime)
-    end
-
+    local outputFile
     if options.output then
-        outputFile.close()
+        outputFile = assert(fs.open(options.output, "w"), "Failed to open " .. options.output)
+        vm.print = function(...)
+            print(...)
+            for i,v in ipairs({...}) do
+                outputFile.write(tostring(v))
+            end
+            outputFile.write("\n")
+            outputFile.flush()
+        end
     end
-    vm.debugH.close()
-else
-    -- g flag means we're not running a program, we're letting someone attach to the vm
-    jvml.pushVM(vm)
-end
+
+    vm.debugMode = options.debug
+    if options.debug then
+        local handle = fs.open(fs.combine(jcd, 'debug'), 'w')
+        vm.debugH = handle
+    else
+        vm.debugH = {write=function() end, flush=function() end, close=function() end}
+    end
+
+    local nloadfile = loadfile
+    local function dofile(path, ...)
+        local f = assert(nloadfile(path))
+        setfenv(f, vm)
+        return f(...)
+    end
+
+    function vm.loadfile(path)
+        local h = fs.open(path, "r")
+        local f, err = loadstring(h.readAll(), fs.getName(path))
+        h.close()
+        setfenv(f, vm)
+        return f, err
+    end
+
+    do -- load LAT with jvml as virtually the root
+        local f = assert(nloadfile(fs.combine(vm.jcd, "lasm/LAT.lua")))
+        setfenv(f, setmetatable({
+            loadfile=function(path)
+                return vm.loadfile(fs.combine(vm.jcd, path))
+            end
+        }, {
+            __index=vm,
+            __newindex=vm
+        }))
+        f()
+    end
+
+    dofile(fs.combine(vm.jcd, "bigint/bigint.lua"))
+    dofile(fs.combine(vm.jcd, "jvml_data/vm/classpath.lua"))
+    dofile(fs.combine(vm.jcd, "jvml_data/vm/runtime.lua"))
+    dofile(fs.combine(vm.jcd, "jvml_data/vm/jit.lua"))
+    dofile(fs.combine(vm.jcd, "jvml_data/vm/classloader.lua"))
+    dofile(fs.combine(vm.jcd, "jvml_data/vm/arrays.lua"))
+    dofile(fs.combine(vm.jcd, "jvml_data/vm/annotations.lua"))
+
+    ---------------------------------------------------------------------------------------------------------------
+    -- Run program
+    ---------------------------------------------------------------------------------------------------------------
+    if not options.g then
+        if not options.mainclass then
+            parser:printUsage()
+            return
+        end
+
+        -- Make java arguments array
+        local jArray = vm.newArray(vm.getArrayClass("[Ljava.lang.String;"), #options.javaArgs)
+        for i,v in ipairs(options.javaArgs) do
+            jArray[5][i] = vm.toJString(v)
+        end
+
+        local mainclass
+        if options.jar then
+            local jarFs = zip.open(fs.open(shell.resolve(options.mainclass), "rb"))
+            assert(jarFs.exists("META-INF/MANIFEST.MF") and not jarFs.isDir("META-INF/MANIFEST.MF"), "No manifest found")
+            local man = jarFs.open("META-INF/MANIFEST.MF", "r")
+            for l in man.readLine do
+                local _, _, name = l:find("^Main%-Class: (%S+)")
+                if name then
+                    mainclass = vm.getJClass(name)
+                    break
+                end
+            end
+        else
+            mainclass = vm.getJClass(options.mainclass)
+        end
+        assert(mainclass, "Main class not found")
+        local mtClass = vm.classByName("jvml.application.AppMain")
+        local mainThread = vm.newInstance(mtClass)
+        local mainCtor = vm.findMethod(mtClass, "<init>(Ljava/lang/reflect/Method;[Ljava/lang/String;)V")
+
+        local methodObj = vm.newInstance(vm.classByName("java.lang.reflect.Method"))
+        vm.setObjectField(methodObj, "name", vm.toJString("main([Ljava/lang/String;)V"))
+        vm.setObjectField(methodObj, "declaringClass", mainclass)
+        mainCtor[1](mainThread, methodObj, jArray)
+
+        vm.createThread(mainThread)
+        vm.startVM()
+
+        -- Begin
+        local startTime
+        if options.time then
+            startTime = os.time()
+        end
+
+        if options.time then
+            local endTime = os.time()
+            print("\nTime: ", endTime - startTime)
+        end
+
+        if options.output then
+            outputFile.close()
+        end
+        vm.debugH.close()
+    else
+        -- g flag means we're not running a program, we're letting someone attach to the vm
+        jvml.pushVM(vm)
+    end
+end)(function()
+end, ...)

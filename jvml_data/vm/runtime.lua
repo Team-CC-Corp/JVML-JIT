@@ -1,4 +1,4 @@
-local stack_trace = {}
+local stackTraces = { }
 
 function findMethod(c,name)
     if not c then error("class expected, got nil",2) end
@@ -186,29 +186,36 @@ function createClass(cn, super_name, interfaces)
 end
 
 function pushStackTrace(className, methodName, fileName, lineNumber)
-    table.insert(stack_trace, {className=className, methodName=methodName, fileName=fileName, lineNumber=lineNumber})
+    if not currentThread then return end
+    table.insert(stackTraces[currentThread], {className=className, methodName=methodName, fileName=fileName, lineNumber=lineNumber})
 end
 
 function popStackTrace()
-    table.remove(stack_trace)
+    if not currentThread then return end
+    table.remove(stackTraces[currentThread])
 end
 
 function setStackTraceLineNumber(ln)
-    stack_trace[#stack_trace].lineNumber = ln
+    if not currentThread then return end
+    local stackTrace = stackTraces[currentThread]
+    stackTrace[#stackTrace].lineNumber = ln
 end
 
 function getStackTrace()
+    if not currentThread then return end
     local newTrace = {}
-    for i,v in ipairs(stack_trace) do
+    for i,v in ipairs(stackTraces[currentThread]) do
         newTrace[i] = {className=v.className, methodName=v.methodName, fileName=v.fileName, lineNumber=v.lineNumber}
     end
     return newTrace
 end
 
 function printStackTrace(printer)
+    if not currentThread then return end
+    local stackTrace = stackTraces[currentThread]
     local reversedtable = {}
-    for i,v in ipairs(stack_trace) do
-        reversedtable[#stack_trace - i + 1] = v.className .. "." .. v.methodName .. ":" .. (v.lineNumber or -1)
+    for i,v in ipairs(stackTrace) do
+        reversedtable[#stackTrace - i + 1] = v.className .. "." .. v.methodName .. ":" .. (v.lineNumber or -1)
     end
     (printer or print)(table.concat(reversedtable,"\n"))
 end
@@ -222,70 +229,97 @@ function checkIn()
     end
 end
 
+local currentThread
 local lthreads = { }
 local jthreads = { }
+local active = { }
 local filters = { }
+local events = { }
 
 function startVM()
     local function removeThread(i)
+        print("Removing thread #" .. i)
+        active[lthreads[i]] = nil
         filters[lthreads[i]] = nil
         table.remove(lthreads, i)
         table.remove(jthreads, i)
     end
 
-    local eventData
     while true do
-        local i = 1
-        while i <= #lthreads do
-            local lthread = lthreads[i]
-            if filters[lthread] == -1 then
-                local ok, yieldData = coroutine.resume(lthread)
-                if not ok then
-                    print("Fatal: Lua thread died: " .. err)
-                    removeThread(i)
-                    if #lthreads == 0 then return end
-                    i = i - 1
-                elseif coroutine.status(lthread) == "dead" then
-                    removeThread(i)
-                    if #lthreads == 0 then return end
-                    i = i - 1
-                elseif yieldData then
-                    filters[lthread] = yieldData
-                end
+        local start = os.clock()
+        -- Run threads for 1 tick.
+        while (os.clock() - start) == 0 do
+            local event
+            if #events > 0 then
+                event = events[#events]
+                events[#events] = nil
             end
-            if eventData then
-                if eventData[1] == "terminate" then
-                    error("JVM has been manually terminated.")
-                end
-                if eventData[1] == filters[lthread] then
-                    local ok, yieldData = coroutine.resume(lthread, unpack(eventData))
+            local i = 1
+            while i <= #lthreads do
+                --print("Running thread #" .. i)
+                local lthread = lthreads[i]
+                currentThread = jthreads[i]
+                if filters[lthread] == -1 then
+                    local ok, yieldData = coroutine.resume(lthread)
                     if not ok then
-                        print("Fatal: Lua thread died: " .. err)
+                        print("Fatal: Lua thread died: " .. yieldData)
                         removeThread(i)
                         if #lthreads == 0 then return end
                         i = i - 1
                     elseif coroutine.status(lthread) == "dead" then
+                        print("Thread #" .. i .. " died")
                         removeThread(i)
                         if #lthreads == 0 then return end
                         i = i - 1
                     elseif yieldData then
+                        active[lthread] = nil
                         filters[lthread] = yieldData
                     end
                 end
+                if event then
+                    if event[1] == "terminate" then
+                        error("JVM has been manually terminated.")
+                    end
+                    if event[1] == filters[lthread] then
+                        local ok, yieldData = coroutine.resume(lthread, unpack(event))
+                        if not ok then
+                            print("Fatal: Lua thread died: " .. yieldData)
+                            removeThread(i)
+                            if #lthreads == 0 then return end
+                            i = i - 1
+                        elseif coroutine.status(lthread) == "dead" then
+                            print("Thread #" .. i .. " died")
+                            removeThread(i)
+                            if #lthreads == 0 then return end
+                            i = i - 1
+                        elseif yieldData then
+                            filters[lthread] = yieldData
+                        end
+                    end
+                end
+                i = i + 1
             end
-            i = i + 1
         end
-        eventData = { coroutine.yield() }
+        -- Queue dummy event.
+        os.queueEvent("\09\29\98")
+        local eventData
+        repeat
+            -- Drain the event queue into our own table.
+            eventData = { coroutine.yield() }
+            events[#events + 1] = eventData
+        until eventData[1] == "\09\29\98"
     end
 end
 
 function createThread(tobj)
     local i = #lthreads + 1
+    --print("Creating thread #", i)
+    stackTraces[tobj] = { }
     jthreads[i] = tobj
     lthreads[i] = coroutine.create(function()
         local tm = findMethod(tobj[1], "run()V")
         local ok, err, exc = pcall(function()
-            tm[1](tobj)
+            return tm[1](tobj)
         end)
         if not ok then
             printError(err)
@@ -294,7 +328,12 @@ function createThread(tobj)
             findMethod(exc[1], "printStackTrace()V")[1](exc)
         end
     end)
+    active[lthreads[i]] = true
     filters[lthreads[i]] = -1
+end
+
+function getCurrentThread()
+    return currentThread
 end
 
 function l2jType(v)

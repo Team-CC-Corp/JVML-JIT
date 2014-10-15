@@ -21,6 +21,7 @@ function wrapPrimitive(value, type)
 end
 
 function toJString(str)
+    str = tostring(str)
     local stringClass = classByName("java.lang.String")
     local obj = newInstance(stringClass)
 

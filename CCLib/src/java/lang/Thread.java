@@ -1,6 +1,10 @@
 package java.lang;
 
 public class Thread implements Runnable {
+    public static native void yield();
+    public static native Thread currentThread();
+    public static native void sleep(long ms);
+
     private Runnable target;
 
     public Thread() { }
