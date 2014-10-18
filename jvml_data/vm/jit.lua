@@ -843,10 +843,7 @@ local function compile(class, method, codeAttr, cp)
         end, function() -- 57
             free()
         end, function() -- 58
-            local pv = pop()
-            if pv[1] ~= "D" and pv[1] ~= "J" then
-                pop()
-            end
+            error("58 not implemented.")
         end, function() -- 59
             local r = peek(0)
             local rd = alloc(1)
@@ -858,31 +855,15 @@ local function compile(class, method, codeAttr, cp)
             emit("move %i %i", r2, r1)
             emit("move %i %i", r1, r3)
         end, function() -- 5B
-            local v = pop()
-            push(v)
-            table.insert(stack,sp-(pv[1] == "D" or pv[1] == "J" and 2 or 3),{v[1], v[2]})
-            sp = sp+1
+            error("5B not implemented.")
         end, function() -- 5C
-            local a = pop()
-            if a[1] ~= "D" and a[1] ~= "J" then
-                local b = pop()
-                push(b)
-                push(a)
-                push({b[1], b[2]})
-                push({a[1], a[2]})
-            else
-                push(a)
-                push({a[1], a[2]})
-            end
+            error("5C not implemented.")
         end, function() -- 5D
-            error("swap2_x1 is bullshit and you know it")
+            error("5D not implemented.")
         end, function() -- 5E
-            error("swap2_x2 is bullshit and you know it")
+            error("5E not implemented.")
         end, function() -- 5F
-            local a = pop()
-            local b = pop()
-            push(a)
-            push(b)
+            error("5F not implemented.")
         end, function() -- 60
             --add
             local r1 = peek(1)
@@ -1273,54 +1254,19 @@ local function compile(class, method, codeAttr, cp)
             emit("sub %i %i %s", r, r, k(32768))
         end, function() -- 94
             --lcmp
-            local a, b = pop()[2], pop()[2]
-            if bigInt.cmp_eq(a, b) then
-                push(asInt(0))
-            elseif bigInt.cmp_lt(a, b) then
-                push(asInt(1))
-            else
-                push(asInt(-1))
-            end
+            error("94 not implemented.")
         end, function() -- 95
             --fcmpl/g
-            local a, b = pop()[2], pop()[2]
-            if a == b then
-                push(asInt(0))
-            elseif a < b then
-                push(asInt(1))
-            else
-                push(asInt(-1))
-            end
+            error("95 not implemented.")
         end, function() -- 96
             --fcmpl/g
-            local a, b = pop()[2], pop()[2]
-            if a == b then
-                push(asInt(0))
-            elseif a < b then
-                push(asInt(1))
-            else
-                push(asInt(-1))
-            end
+            error("96 not implemented.")
         end, function() -- 97
             --fcmpl/g
-            local a, b = pop()[2], pop()[2]
-            if a == b then
-                push(asInt(0))
-            elseif a < b then
-                push(asInt(1))
-            else
-                push(asInt(-1))
-            end
+            error("97 not implemented.")
         end, function() -- 98
             --fcmpl/g
-            local a, b = pop()[2], pop()[2]
-            if a == b then
-                push(asInt(0))
-            elseif a < b then
-                push(asInt(1))
-            else
-                push(asInt(-1))
-            end
+            error("98 not implemented.")
         end, function() -- 99
             --ifeq
             local joffset = u2ToSignedShort(u2())
@@ -1415,20 +1361,10 @@ local function compile(class, method, codeAttr, cp)
             emit("#jmp %i %i", joffset, 0)
         end, function() -- A8
             --jsr
-            error()
-            local addr = pc() + 3
-            local offset = u2ToSignedShort(u2())
-            push({"address", addr})
-            pc(pc() + offset - 2)
+            error("A8 not implemented.")
         end, function() -- A9
             --ret
-            error()
-            local index = u1()
-            local addr = lvars[index]
-            if addr[1] ~= "address" then
-                error("Not an address", 0)
-            end
-            pc(addr[2])
+            error("A9 not implemented.")
         end, function() -- AA
             -- Unfortunately can't do any jump table optimization here since Lua doesn't
             -- have a dynamic jump instruction...
