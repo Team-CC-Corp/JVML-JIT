@@ -83,6 +83,12 @@ public class EventLoop implements Runnable {
                 }
             } else if (e.type.equals("term_resize")) {
                 bus.post(new TermResizeEvent());
+            } else if(e.type.equals("modem_message")) {
+                bus.post(new ModemMessageEvent((String)e.getArgument(0),
+                        (Integer)e.getArgument(1),
+                        (Integer)e.getArgument(2),
+                        (String)e.getArgument(3),
+                        (Integer)e.getArgument(4)));
             }
 
             if (shouldBreak) {
