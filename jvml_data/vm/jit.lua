@@ -1066,7 +1066,6 @@ local function compile(class, method, codeAttr, cp)
             emit("move %i %i", r3, r1)
             asmGetRTInfo(r1, info(bit.blshift))
             emit("call %i 3 2", r1)
-            emit("move %i %i", r1, r2)
             free(2)
         end, function() -- 79
             --shl
@@ -1076,7 +1075,6 @@ local function compile(class, method, codeAttr, cp)
             emit("move %i %i", r3, r1)
             asmGetRTInfo(r1, info(bit.blshift))
             emit("call %i 3 2", r1)
-            emit("move %i %i", r1, r2)
             free(2)
         end, function() -- 7A
             --shr
@@ -1086,7 +1084,6 @@ local function compile(class, method, codeAttr, cp)
             emit("move %i %i", r3, r1)
             asmGetRTInfo(r1, info(bit.brshift))
             emit("call %i 3 2", r1)
-            emit("move %i %i", r1, r2)
             free(2)
         end, function() -- 7B
             --shr
@@ -1096,7 +1093,6 @@ local function compile(class, method, codeAttr, cp)
             emit("move %i %i", r3, r1)
             asmGetRTInfo(r1, info(bit.brshift))
             emit("call %i 3 2", r1)
-            emit("move %i %i", r1, r2)
             free(2)
         end, function() -- 7C
             --shlr
@@ -1106,7 +1102,6 @@ local function compile(class, method, codeAttr, cp)
             emit("move %i %i", r3, r1)
             asmGetRTInfo(r1, info(bit.blogic_rshift))
             emit("call %i 3 2", r1)
-            emit("move %i %i", r1, r2)
             free(2)
         end, function() -- 7D
             --shlr
@@ -1116,7 +1111,6 @@ local function compile(class, method, codeAttr, cp)
             emit("move %i %i", r3, r1)
             asmGetRTInfo(r1, info(bit.blogic_rshift))
             emit("call %i 3 2", r1)
-            emit("move %i %i", r1, r2)
             free(2)
         end, function() -- 7E
             --and
@@ -1126,7 +1120,6 @@ local function compile(class, method, codeAttr, cp)
             emit("move %i %i", r3, r1)
             asmGetRTInfo(r1, info(bit.band))
             emit("call %i 3 2", r1)
-            emit("move %i %i", r1, r2)
             free(2)
         end, function() -- 7F
             --and
@@ -1136,7 +1129,6 @@ local function compile(class, method, codeAttr, cp)
             emit("move %i %i", r3, r1)
             asmGetRTInfo(r1, info(bit.band))
             emit("call %i 3 2", r1)
-            emit("move %i %i", r1, r2)
             free(2)
         end, function() -- 80
             --or
@@ -1146,7 +1138,6 @@ local function compile(class, method, codeAttr, cp)
             emit("move %i %i", r3, r1)
             asmGetRTInfo(r1, info(bit.bor))
             emit("call %i 3 2", r1)
-            emit("move %i %i", r1, r2)
             free(2)
         end, function() -- 81
             --or
@@ -1156,7 +1147,6 @@ local function compile(class, method, codeAttr, cp)
             emit("move %i %i", r3, r1)
             asmGetRTInfo(r1, info(bit.bor))
             emit("call %i 3 2", r1)
-            emit("move %i %i", r1, r2)
             free(2)
         end, function() -- 82
             --xor
@@ -1166,7 +1156,6 @@ local function compile(class, method, codeAttr, cp)
             emit("move %i %i", r3, r1)
             asmGetRTInfo(r1, info(bit.bxor))
             emit("call %i 3 2", r1)
-            emit("move %i %i", r1, r2)
             free(2)
         end, function() -- 83
             --xor
@@ -1176,7 +1165,6 @@ local function compile(class, method, codeAttr, cp)
             emit("move %i %i", r3, r1)
             asmGetRTInfo(r1, info(bit.bxor))
             emit("call %i 3 2", r1)
-            emit("move %i %i", r1, r2)
             free(2)
         end, function() -- 84
             --iinc

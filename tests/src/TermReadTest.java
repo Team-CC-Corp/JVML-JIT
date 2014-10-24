@@ -2,7 +2,10 @@ public class TermReadTest
 {
     public static void main(String[] args) throws Throwable
     {
-        while (true)
-            System.err.println("read: " + System.in.read());
+        char c = (char)System.in.read();
+        while (c != '\n') {
+            System.out.println("read: " + c);
+            c = (char)System.in.read();
+        }
     }
 }
