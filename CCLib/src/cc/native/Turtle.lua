@@ -29,3 +29,13 @@ natives["cc.turtle.Turtle"]["turnRight()Z"] = function()
 	local success = turtle.turnRight()
 	return success;
 end
+
+natives["cc.turtle.Turtle"]["select(I)Z"] = function(slot)
+	local success = turtle.select(slot)
+	return success;
+end
+
+natives["cc.turtle.Turtle"]["getSelectedSlot()I"] = function()
+	local slot = turtle.getSelectedSlot()
+	return slot;
+end

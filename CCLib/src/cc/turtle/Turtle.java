@@ -13,5 +13,8 @@ public class Turtle {
 	
 	public static native boolean turnLeft();
 	public static native boolean turnRight();
+	
+	public static native boolean select(int i);
+	public static native int getSelectedSlot();
 
 }
