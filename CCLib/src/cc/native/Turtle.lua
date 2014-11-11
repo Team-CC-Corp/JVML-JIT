@@ -39,3 +39,13 @@ natives["cc.turtle.Turtle"]["getSelectedSlot()I"] = function()
 	local slot = turtle.getSelectedSlot()
 	return slot;
 end
+
+natives["cc.turtle.Turtle"]["getItemCount(I)I"] = function(slot)
+	local count = turtle.getItemCount(slot);
+	return count;
+end
+
+natives["cc.turtle.Turtle"]["getItemSpace(I)I"] = function(slot)
+	local space = turtle.getItemSpace(slot);
+	return space;
+end
