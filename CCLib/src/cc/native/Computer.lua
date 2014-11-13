@@ -12,7 +12,7 @@ natives["cc.Computer"]["sleep(D)V"] = function(s)
 end
 
 natives["cc.Computer"]["isTurtle()Z"] = function()
-    return turtle ~= nil
+    return (turtle ~= nil) and 1 or 0
 end
 
 natives["cc.Computer"]["getTime()I"] = function()
