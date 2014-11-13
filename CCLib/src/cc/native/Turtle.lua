@@ -1,38 +1,46 @@
 natives["cc.turtle.Turtle"] = natives["cc.turtle.Turtle"] or {}
 
+function booleanToInt(b)
+	if b then
+		return 1
+	else
+		return 0
+	end
+end
+
 natives["cc.turtle.Turtle"]["forward()Z"] = function()
 	local success = turtle.forward()
-	return success;
+	return booleanToInt(success)
 end
 
 natives["cc.turtle.Turtle"]["back()Z"] = function()
 	local success = turtle.back()
-	return success;
+	return booleanToInt(success)
 end
 
 natives["cc.turtle.Turtle"]["up()Z"] = function()
 	local success = turtle.up()
-	return success;
+	return booleanToInt(success)
 end
 
 natives["cc.turtle.Turtle"]["down()Z"] = function()
 	local success = turtle.down()
-	return success;
+	return booleanToInt(success)
 end
 
 natives["cc.turtle.Turtle"]["turnLeft()Z"] = function()
 	local success = turtle.turnLeft()
-	return success;
+	return booleanToInt(success)
 end
 
 natives["cc.turtle.Turtle"]["turnRight()Z"] = function()
 	local success = turtle.turnRight()
-	return success;
+	return booleanToInt(success)
 end
 
 natives["cc.turtle.Turtle"]["select(I)Z"] = function(slot)
 	local success = turtle.select(slot)
-	return success;
+	return booleanToInt(success)
 end
 
 natives["cc.turtle.Turtle"]["getSelectedSlot()I"] = function()
@@ -76,32 +84,32 @@ end
 
 natives["cc.turtle.Turtle"]["place(Ljava/lang/String;)Z"] = function(text)
 	local success = turtle.place(toLString(text))
-	return success
+	return booleanToInt(success)
 end
 
 natives["cc.turtle.Turtle"]["placeUp()Z"] = function()
 	local success = turtle.placeUp()
-	return success
+	return booleanToInt(success)
 end
 
 natives["cc.turtle.Turtle"]["placeDown()Z"] = function()
 	local success = turtle.placeDown()
-	return success
+	return booleanToInt(success)
 end
 
 natives["cc.turtle.Turtle"]["detect()Z"] = function()
 	local success = turtle.detect()
-	return success
+	return booleanToInt(success)
 end
 
 natives["cc.turtle.Turtle"]["detectUp()Z"] = function()
 	local success = turtle.detect()
-	return success
+	return booleanToInt(success)
 end
 
 natives["cc.turtle.Turtle"]["detectDown()Z"] = function()
 	local success = turtle.detect()
-	return success
+	return booleanToInt(success)
 end
 
 natives["cc.turtle.Turtle"]["inspect()Lcc/turtle/InspectionReport;"] = function()
@@ -132,4 +140,112 @@ function createInspectionReport(success, data)
     	setObjectField(report, "errorMessage", toJString(data))
     end
     return report
+end
+
+natives["cc.turtle.Turtle"]["compare()Z"] = function()
+	local success = turtle.compare()
+	return booleanToInt(success)
+end
+
+natives["cc.turtle.Turtle"]["compareUp()Z"] = function()
+	local success = turtle.compareUp()
+	return booleanToInt(success)
+end
+
+natives["cc.turtle.Turtle"]["compareDown()Z"] = function()
+	local success = turtle.compareDown()
+	return booleanToInt(success)
+end
+
+natives["cc.turtle.Turtle"]["compareTo(I)Z"] = function(slot)
+	local success = turtle.compareTo(slot)
+	return booleanToInt(success)
+end
+
+natives["cc.turtle.Turtle"]["drop(I)Z"] = function(count)
+	local success = turtle.drop(count)
+	return booleanToInt(success)
+end
+
+natives["cc.turtle.Turtle"]["dropUp(I)Z"] = function(count)
+	local success = turtle.dropUp(count)
+	return booleanToInt(success)
+end
+
+natives["cc.turtle.Turtle"]["dropDown(I)Z"] = function(count)
+	local success = turtle.dropDown(count)
+	return booleanToInt(success)
+end
+
+natives["cc.turtle.Turtle"]["suck(I)Z"] = function(count)
+	local success = turtle.suck(count)
+	return booleanToInt(success)
+end
+
+natives["cc.turtle.Turtle"]["suckUp(I)Z"] = function(count)
+	local success = turtle.suckUp(count)
+	return booleanToInt(success)
+end
+
+natives["cc.turtle.Turtle"]["suckDown(I)Z"] = function(count)
+	local success = turtle.suckDown(count)
+	return booleanToInt(success)
+end
+
+natives["cc.turtle.Turtle"]["refuel(I)Z"] = function(quantity)
+	local success = turtle.refuel(quantity)
+	return booleanToInt(success)
+end
+
+natives["cc.turtle.Turtle"]["getFuelLevel()I"] = function()
+	local level = turtle.getFuelLevel()
+	return level
+end
+
+natives["cc.turtle.Turtle"]["getFuelLimit()I"] = function()
+	local level = turtle.getFuelLimit()
+	return level
+end
+
+natives["cc.turtle.Turtle"]["transferTo(II)Z"] = function(slot, quantity)
+	local success = turtle.transferTo(slot, quantity)
+	return booleanToInt(success)
+end
+
+-- crafty turtles only
+natives["cc.turtle.Turtle"]["craft(I)Z"] = function(quantity)
+	local success = turtle.craft(quantity)
+	return booleanToInt(success)
+end
+
+-- digging, felling, mining, farming turtles
+natives["cc.turtle.Turtle"]["dig()Z"] = function()
+	local success = turtle.dig()
+	return booleanToInt(success)
+end
+
+natives["cc.turtle.Turtle"]["digUp()Z"] = function()
+	local success = turtle.digUp()
+	return booleanToInt(success)
+end
+
+natives["cc.turtle.Turtle"]["digDown()Z"] = function()
+	local success = turtle.digDown()
+	return booleanToInt(success)
+end
+
+-- all tools only
+natives["cc.turtle.Turtle"]["attack()Z"] = function()
+	local success = turtle.attack()
+	return booleanToInt(success)
+end
+
+natives["cc.turtle.Turtle"]["attackUp()Z"] = function()
+	local success = turtle.attackUp()
+	return booleanToInt(success)
+end
+
+natives["cc.turtle.Turtle"]["attackDown()Z"] = function()
+	local success = turtle.attackDown()
+	return booleanToInt(success)
 end
