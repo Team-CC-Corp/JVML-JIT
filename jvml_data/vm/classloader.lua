@@ -38,7 +38,7 @@ function toJTable(tab)
     local tableClass = classByName("cc.LuaTable")
     local obj = newInstance(tableClass)
     findMethod(tableClass, "<init>()V")[1](obj)
-    setObjectField(obj,"NATIVE_handle",tab)
+    obj.native_data=tab
     return obj
 end
 
@@ -46,7 +46,7 @@ function toJFunction(fun)
     local funcClass = classByName("cc.LuaFunction")
     local obj = newInstance(funcClass)
     findMethod(funcClass, "<init>()V")[1](obj)
-    setObjectField(obj,"NATIVE_handle",fun)
+    obj.native_data=fun
     return obj
 end
 
@@ -64,11 +64,11 @@ function toLString(str)
 end
 
 function toLTable(tab)
-    return getObjectField(tab,"NATIVE_handle")
+    return tab.native_data
 end
 
 function toLFunction(fun)
-    return getObjectField(fun,"NATIVE_handle")
+    return fun.native_data
 end
 
 function u2ToSignedShort(i)
