@@ -1,6 +1,6 @@
 natives["cc.LuaFunction"] = natives["cc.LuaFunction"] or {}
 
-natives["cc.LuaFunction"]["compileCode([Ljava/lang/String;)V"] = function (this,code)
+natives["cc.LuaFunction"]["compileCode(Ljava/lang/String;)V"] = function (this,code)
     this.native_data=loadstring(code)
 end
 
