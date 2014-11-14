@@ -1,9 +1,10 @@
 package cc;
 /* Contains basic methods for working with native objects.*/
-public class NativeObject {
+public abstract class NativeObject {
 	static {
 		System.load("cc/native/NativeObject.lua");
 	}
+
     public native String toString();
     public native int hashCode();
     public boolean equals(Object other)

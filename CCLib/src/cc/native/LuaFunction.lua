@@ -1,5 +1,9 @@
 natives["cc.LuaFunction"] = natives["cc.LuaFunction"] or {}
 
+natives["cc.LuaFunction"]["compileCode([Ljava/lang/String;)V"] = function (this,code)
+    this.native_data=loadstring(code)
+end
+
 natives["cc.LuaFunction"]["call([Ljava/lang/Object;)[Ljava/lang/Object;"] = function (this, args)
     local t={}
     for k,v in ipairs(args[5]) do
