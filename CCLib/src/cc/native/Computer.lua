@@ -101,3 +101,7 @@ end
 natives["cc.Computer"]["read(Ljava/lang/String;)Ljava/lang/String;"] = function(s)
     return toJString(read(toLString(s)))
 end
+
+natives["cc.Computer"]["getGlobalTable()Lcc/LuaTable;"] = function(s)
+    return toJTable(_G)
+end

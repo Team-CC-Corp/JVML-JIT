@@ -28,4 +28,5 @@ public final class Computer
     public static native void setComputerLabel(String label);
     public static native String read();
     public static native String read(String rep);
+    public static native LuaTable getGlobalTable();
 }

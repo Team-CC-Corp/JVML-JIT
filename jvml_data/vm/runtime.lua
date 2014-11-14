@@ -235,6 +235,10 @@ function l2jType(v)
         return wrapPrimitive(v and 1 or 0, "Z")
     elseif t == "string" then
         return toJString(v)
+    elseif t == "table" then
+        return toJTable(v)
+    elseif t == "function" then
+        return toJFunction(v)
     else
         error("Unsupported lua type for converting to java: "..t)
     end
@@ -258,6 +262,10 @@ function j2lType(obj)
         return getObjectField(obj, "value")
     elseif n == "java.lang.String" then
         return toLString(obj)
+    elseif n == "cc.LuaTable" then
+        return toLTable(obj)
+    elseif n == "cc.LuaFunction" then
+        return toLFunction(obj)
     else
         error("Unsupported java type for converting to lua: "..n)
     end
