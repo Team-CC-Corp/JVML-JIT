@@ -1,6 +1,6 @@
 package cc;
 
-public final class LuaFunction {
+public final class LuaFunction extends NativeObject {
 	static {
 		System.load("cc/native/LuaFunction.lua");
 	}
@@ -8,6 +8,4 @@ public final class LuaFunction {
 	{
 	}
 	public native Object[] call(Object[] args);
-    public native int hashCode();
-    public native boolean equals(Object other);
 }

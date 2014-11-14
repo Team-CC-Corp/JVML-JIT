@@ -8,7 +8,7 @@ public class LuaTableTest {
 		System.out.println(s+"nil");
 		if (o instanceof LuaTable)
 		{
-			System.out.println(s+"-+:table "+o.toString());
+			System.out.println(s+"-+:"+o.toString());
 			LuaTable luaTable=(LuaTable) o;
             for (LuaTable.TableEntry te : luaTable)
             {
@@ -16,6 +16,8 @@ public class LuaTableTest {
 				if (kk==null) continue;
 				Object oo=te.value;
 				if (oo==null) continue;
+				Object oo2=luaTable.getValue(kk);
+                if (!oo.equals(oo2)) throw new RuntimeException("Equality test failure-check equals,getValue,entries.");
 				TreeDisplay(oo,s+" |-"+kk+":");
 			}
             return;
@@ -29,18 +31,27 @@ public class LuaTableTest {
 	}
 	public static void main(String[] args)
 	{
-
+        //Do a basic test on LuaTable and LuaFunction.If this fails,it's completely broken.
 		LuaFunction print=(LuaFunction)(Computer.getGlobalTable().getValue("print"));
 		print.call(new Object[]{"Yep,calling a LuaFunction works."});
 
-		System.out.println("Now testing to see how well reading modem messages will go.");
-		String tableCode="return {\"Cat\",{\"Siamese\",\"Tabby\"}}";
-		System.out.println("Test code to make the table is:"+tableCode);
-		LuaFunction loadstring=(LuaFunction)(Computer.getGlobalTable().getValue("loadstring"));
-		System.out.println("Loadstring compiled");
-		LuaFunction tablemaker=(LuaFunction)(loadstring.call(new Object[]{tableCode})[0]);
-		System.out.println("Table-making function compiled");
-        Object[] returns=tablemaker.call(new Object[]{});
- 		TreeDisplay((LuaTable)(returns[0]),"");
+		System.out.print("Creating table and displaying");
+        //Create a multilevel tree using LuaTable.
+        LuaTable cat=new LuaTable();
+        cat.setValue(1,"Meow");
+        cat.setValue(2,"Nyan");
+		System.out.print(".");
+        LuaTable dog=new LuaTable();
+        dog.setValue(1,"Woof");
+        dog.setValue(2,"Bark");
+		System.out.print(".");
+        LuaTable lt=new LuaTable();
+        //Both pairs should show up.
+        lt.setValue(1,cat);
+        lt.setValue(2,dog);
+        lt.setValue("Cat",cat);
+        lt.setValue("Dog",dog);
+		System.out.println(".");
+ 		TreeDisplay(lt,"");
 	}
 }

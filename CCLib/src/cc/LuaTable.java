@@ -2,7 +2,7 @@ package cc;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 //Interface class to Lua.
-public final class LuaTable implements Iterable<LuaTable.TableEntry> {
+public final class LuaTable extends NativeObject implements Iterable<LuaTable.TableEntry> {
     public static class TableEntry {
         public Object key,value;
     }
@@ -35,9 +35,12 @@ public final class LuaTable implements Iterable<LuaTable.TableEntry> {
 	static {
 		System.load("cc/native/LuaTable.lua");
 	}
-	private LuaTable()
-	{
-	}
+	public LuaTable()
+    {
+        newTable();
+    }
+    private native void newTable();//Constructor can't be native.
+
 	public native Object getValue(Object index);
 	public native void setValue(Object index,Object value);
     //Return the entries in a simple format:Key,then value,then another key,then another value,etc.
@@ -46,6 +49,5 @@ public final class LuaTable implements Iterable<LuaTable.TableEntry> {
     {
         return new TableIterator(entries());
     }
-    public native int hashCode();
-    public native boolean equals(Object other);
+
 }

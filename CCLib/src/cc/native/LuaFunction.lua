@@ -13,18 +13,3 @@ natives["cc.LuaFunction"]["call([Ljava/lang/Object;)[Ljava/lang/Object;"] = func
     end
     return jRet
 end
-
-natives["cc.LuaFunction"]["hashCode()I"] = function (this)
-    local stringClass = classByName("java.lang.String")
-    return findMethod(stringClass, "hashCode()I")[1](toJString(tostring(this.native_data)))
-end
-
-natives["cc.LuaFunction"]["equals(Ljava/lang/Object;)Z"] = function (this,other)
-    if (jInstanceOf(other,classByName("cc.LuaFunction"))~=0) then
-        if other.native_data==this.native_data then
-            return 1
-        end
-    end
-    return 0
-end
-
