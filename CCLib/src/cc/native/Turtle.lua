@@ -103,12 +103,12 @@ natives["cc.turtle.Turtle"]["detect()Z"] = function(this)
 end
 
 natives["cc.turtle.Turtle"]["detectUp()Z"] = function(this)
-	local success = turtle.detect()
+	local success = turtle.detectUp()
 	return booleanToInt(success)
 end
 
 natives["cc.turtle.Turtle"]["detectDown()Z"] = function(this)
-	local success = turtle.detect()
+	local success = turtle.detectDown()
 	return booleanToInt(success)
 end
 
