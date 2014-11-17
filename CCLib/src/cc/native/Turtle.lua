@@ -187,65 +187,65 @@ natives["cc.turtle.Turtle"]["suckUp(I)Z"] = function(this, count)
 	return booleanToInt(success)
 end
 
-natives["cc.turtle.Turtle"]["suckDown(I)Z"] = function(count)
+natives["cc.turtle.Turtle"]["suckDown(I)Z"] = function(this, count)
 	local success = turtle.suckDown(count)
 	return booleanToInt(success)
 end
 
-natives["cc.turtle.Turtle"]["refuel(I)Z"] = function(quantity)
+natives["cc.turtle.Turtle"]["refuel(I)Z"] = function(this, quantity)
 	local success = turtle.refuel(quantity)
 	return booleanToInt(success)
 end
 
-natives["cc.turtle.Turtle"]["getFuelLevel()I"] = function()
+natives["cc.turtle.Turtle"]["getFuelLevel()I"] = function(this)
 	local level = turtle.getFuelLevel()
 	return level
 end
 
-natives["cc.turtle.Turtle"]["getFuelLimit()I"] = function()
+natives["cc.turtle.Turtle"]["getFuelLimit()I"] = function(this)
 	local level = turtle.getFuelLimit()
 	return level
 end
 
-natives["cc.turtle.Turtle"]["transferTo(II)Z"] = function(slot, quantity)
+natives["cc.turtle.Turtle"]["transferTo(II)Z"] = function(this, slot, quantity)
 	local success = turtle.transferTo(slot, quantity)
 	return booleanToInt(success)
 end
 
 -- crafty turtles only
-natives["cc.turtle.Turtle"]["craft(I)Z"] = function(quantity)
+natives["cc.turtle.Turtle"]["craft(I)Z"] = function(this, quantity)
 	local success = turtle.craft(quantity)
 	return booleanToInt(success)
 end
 
 -- digging, felling, mining, farming turtles
-natives["cc.turtle.Turtle"]["dig()Z"] = function()
+natives["cc.turtle.Turtle"]["dig()Z"] = function(this)
 	local success = turtle.dig()
 	return booleanToInt(success)
 end
 
-natives["cc.turtle.Turtle"]["digUp()Z"] = function()
+natives["cc.turtle.Turtle"]["digUp()Z"] = function(this)
 	local success = turtle.digUp()
 	return booleanToInt(success)
 end
 
-natives["cc.turtle.Turtle"]["digDown()Z"] = function()
+natives["cc.turtle.Turtle"]["digDown()Z"] = function(this)
 	local success = turtle.digDown()
 	return booleanToInt(success)
 end
 
 -- all tools only
-natives["cc.turtle.Turtle"]["attack()Z"] = function()
+natives["cc.turtle.Turtle"]["attack()Z"] = function(this)
 	local success = turtle.attack()
 	return booleanToInt(success)
 end
 
-natives["cc.turtle.Turtle"]["attackUp()Z"] = function()
+natives["cc.turtle.Turtle"]["attackUp()Z"] = function(this)
 	local success = turtle.attackUp()
 	return booleanToInt(success)
 end
 
-natives["cc.turtle.Turtle"]["attackDown()Z"] = function()
+natives["cc.turtle.Turtle"]["attackDown()Z"] = function(this)
 	local success = turtle.attackDown()
 	return booleanToInt(success)
 end
