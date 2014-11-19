@@ -60,6 +60,18 @@
 -- C version homepage: http://www.acme.com/software/bigint/
 --
 
+local function assert(condition, errMsg, level)
+    if condition then return condition end
+    if type(level) ~= "number" then
+        level = 2
+    elseif level <= 0 then
+        level = 0
+    else
+        level = level + 1
+    end
+    error(errMsg or "Assertion failed!", level)
+end
+
 -- two functions to help make Lua act more like C
 local function fl(x)
     if x < 0 then
@@ -189,6 +201,8 @@ local function compare(a, b)
 end
 
 function bigintCompare(a, b)
+    assert(a, "Got nil", 2)
+    assert(b, "Got a, nil", 2)
     return compare(a, b)
 end
 
@@ -197,6 +211,8 @@ local function lt(a, b)
 end
 
 function bigintLT(a, b)
+    assert(a, "Got nil", 2)
+    assert(b, "Got a, nil", 2)
     return lt(a, b)
 end
 
@@ -205,6 +221,8 @@ local function eq(a, b)
 end
 
 function bigintEQ(a, b)
+    assert(a, "Got nil", 2)
+    assert(b, "Got a, nil", 2)
     return eq(a, b)
 end
 
@@ -213,6 +231,8 @@ local function le(a, b)
 end
 
 function bigintLE(a, b)
+    assert(a, "Got nil", 2)
+    assert(b, "Got a, nil", 2)
     return le(a, b)
 end
 
@@ -253,6 +273,8 @@ local function add(a, b)
 end
 
 function bigintAdd(a, b)
+    assert(a, "Got nil", 2)
+    assert(b, "Got a, nil", 2)
     return add(a, b)
 end
 
@@ -266,6 +288,8 @@ local function sub(a, b)
 end
 
 function bigintSub(a, b)
+    assert(a, "Got nil", 2)
+    assert(b, "Got a, nil", 2)
     return sub(a, b)
 end
 
@@ -356,6 +380,8 @@ local function mul(a, b)
 end
 
 function bigintMul(a, b)
+    assert(a, "Got nil", 2)
+    assert(b, "Got a, nil", 2)
     return mul(a, b)
 end
 
@@ -449,6 +475,8 @@ local function div(numer, denom)
 end
 
 function bigintDiv(numer, denom)
+    assert(numer, "Got nil", 2)
+    assert(denom, "Got a, nil", 2)
     return div(numer, denom)
 end
 
@@ -494,6 +522,8 @@ local function rem(bi, m)
 end
 
 function bigintRem(bi, m)
+    assert(bi, "Got nil", 2)
+    assert(m, "Got a, nil", 2)
     return rem(bi, m)
 end
 
@@ -506,6 +536,8 @@ local function mod(a, m)
 end
 
 function bigintMod(a, m)
+    assert(a, "Got nil", 2)
+    assert(m, "Got a, nil", 2)
     return mod(a, m)
 end
 
@@ -547,6 +579,7 @@ local cache = {}
 local ncache = 0
 
 function bigint(n)
+    assert(n, "Got nil", 2)
     if cache[n] then
         return cache[n]
     end
@@ -583,5 +616,6 @@ end
 
 -- Approximates double for 64-bit bigints.
 function bigintToDouble(bi)
+    assert(bi, "Got nil", 2)
     return ((bi.comps[3] or 0) * 2^48 + (bi.comps[2] or 0) * radix + bi.comps[1]) * bi.sign
 end
