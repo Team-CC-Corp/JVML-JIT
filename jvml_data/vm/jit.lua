@@ -37,15 +37,16 @@ local function compile(class, method, codeAttr, cp)
     local comments = { }
     local asmPC = 1
 
-    local nextComment
+    local nextComments
     local function emitComment(comment)
-        nextComment = comment
+        nextComments = nextComments or {}
+        table.insert(nextComments, comment)
     end
 
     local function emit(str, ...)
-        if nextComment then
-            comments[asmPC] = "\t\t\t; " .. nextComment
-            nextComment = nil
+        if nextComments then
+            comments[asmPC] = "\t\t\t; " .. table.concat(nextComments, "\n\t\t\t\t")
+            nextComments = nil
         end
         local _, err = pcall(function(...)
             asmPC = asmPC + 1
