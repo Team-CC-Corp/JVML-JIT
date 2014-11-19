@@ -523,7 +523,7 @@ local function compile(class, method, codeAttr, cp)
         local p2 = asmPC
         emitInsert(p1 - 1, "jmp %i", p2 - p1)   -- Insert calculated jump.
 
-        free(4)
+        free(5)
         return r1, r2
     end
 
