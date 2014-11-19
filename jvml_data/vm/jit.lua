@@ -36,9 +36,17 @@ local function compile(class, method, codeAttr, cp)
 
     local comments = { }
     local asmPC = 1
-    local function emitWithComment(comment, str, ...)
-        if comment then
-            comments[asmPC] = "\t\t\t; " .. comment
+
+    local nextComments
+    local function emitComment(comment)
+        nextComments = nextComments or {}
+        table.insert(nextComments, comment)
+    end
+
+    local function emit(str, ...)
+        if nextComments then
+            comments[asmPC] = "\t\t\t; " .. table.concat(nextComments, "\n\t\t\t\t\t\t\t\t\t")
+            nextComments = nil
         end
         local _, err = pcall(function(...)
             asmPC = asmPC + 1
@@ -50,11 +58,16 @@ local function compile(class, method, codeAttr, cp)
         return asmPC
     end
 
-    local function emit(str, ...)
-        return emitWithComment(nil, str, ...)
+    local function emitWithComment(comment, str, ...)
+        emitComment(comment)
+        return emit(str, ...)
     end
 
     local function emitInsert(pc, str, ...)
+        if nextComments then
+            comments[pc] = "\t\t\t; " .. table.concat(nextComments, "\n\t\t\t\t\t\t\t\t\t")
+            nextComments = nil
+        end
         local _, err = pcall(function(...)
             asm[pc] = string.format(str, ...) .. "\n"
         end, ...)
@@ -172,13 +185,17 @@ local function compile(class, method, codeAttr, cp)
         end
     end
 
-    local function asmGetRTInfo(r, i)
-        emit("gettable %i 0 %s ", r, k(i))
+    local function asmGetRTInfo(r, i, comment)
+        if comment then
+            emitWithComment("asmGetRTInfo: " .. comment, "gettable %i 0 %s ", r, k(i))
+        else
+            emitWithComment("asmGetRTInfo", "gettable %i 0 %s ", r, k(i))
+        end
     end
 
     local function asmNewInstance(robj, class, customObjectSize)
         local rclass, rfields, rmethods = alloc(3)
-        asmGetRTInfo(rclass, info(class))
+        asmGetRTInfo(rclass, info(class), "Instantiating class: " .. class.name)
         asmGetRTInfo(rmethods, info(class.methods))
         emit("newtable %i %i 0", robj, customObjectSize or 3)
         emit("newtable %i %i 0", rfields, #class.field_info)
@@ -222,7 +239,7 @@ local function compile(class, method, codeAttr, cp)
 
     local function asmPrintReg(r)
         local rprint, rparam = alloc(2)
-        asmGetRTInfo(rprint, info(print))
+        asmGetRTInfo(rprint, info(print), "Printing register")
         emit("move %i %i", rparam, r)
         emit("call %i 2 1", rprint)
         free(2)
@@ -230,7 +247,7 @@ local function compile(class, method, codeAttr, cp)
 
     local function asmPrintString(str)
         local rprint, rparam = alloc(2)
-        asmGetRTInfo(rprint, info(print))
+        asmGetRTInfo(rprint, info(print), "Printing string: " .. str)
         emit("loadk %i '%s'", rparam, str)
         emit("call %i 2 1", rprint)
         free(2)
@@ -245,14 +262,14 @@ local function compile(class, method, codeAttr, cp)
 
     local function asmRun(func)
         local rfunc = alloc()
-        asmGetRTInfo(rfunc, info(func))
+        asmGetRTInfo(rfunc, info(func), "Running function")
         emit("call %i %i %i", rfunc, 1, 1)
         free()
     end
 
     local function asmPushStackTrace()
         local rpush, rClassName, rMethodName, rFileName, rLineNumber = alloc(5)
-        asmGetRTInfo(rpush, info(pushStackTrace))
+        asmGetRTInfo(rpush, info(pushStackTrace), "Pushing stacktrace")
         asmGetRTInfo(rClassName, info(class.name))
         asmGetRTInfo(rMethodName, info(method.name:sub(1, method.name:find("%(") - 1)))
         asmGetRTInfo(rFileName, info(sourceFileName or ""))
@@ -263,14 +280,14 @@ local function compile(class, method, codeAttr, cp)
 
     local function asmPopStackTrace()
         local rpop = alloc()
-        asmGetRTInfo(rpop, info(popStackTrace))
+        asmGetRTInfo(rpop, info(popStackTrace), "Popping stacktrace")
         emit("call %i 1 1", rpop)
         free()
     end
 
     local function asmSetStackTraceLineNumber(ln)
         local rset, rln = alloc(2)
-        asmGetRTInfo(rset, info(setStackTraceLineNumber))
+        asmGetRTInfo(rset, info(setStackTraceLineNumber), "Setting stacktrace line number")
         asmGetRTInfo(rln, info(ln))
         emit("call %i 2 1", rset)
         free(2)
@@ -279,7 +296,7 @@ local function compile(class, method, codeAttr, cp)
     local function asmInstanceOf(c)
         local r = peek(0)
         local robj, rclass = alloc(2)
-        emit("move %i %i", robj, r)
+        emitWithComment("Instanceof: " .. c.name, "move %i %i", robj, r)
         asmGetRTInfo(rclass, info(c))
         asmGetRTInfo(r, info(jInstanceof))
         emit("call %i 3 2", r)
@@ -287,6 +304,8 @@ local function compile(class, method, codeAttr, cp)
     end
 
     local function asmThrow(rexception)
+        emitComment("Start throw")
+
         local exceptionHandlers = {}
         for i=0, codeAttr.exception_table_length-1 do
             local handler = codeAttr.exception_table[i]
@@ -314,12 +333,12 @@ local function compile(class, method, codeAttr, cp)
         local rnil, rexc = alloc(2)
         emit("loadnil %i %i", rnil, rnil)
         emit("move %i %i", rexc, rexception)
-        emit("return %i 3", rnil)
+        emitWithComment("End throw", "return %i 3", rnil)
         free(2)
     end
 
     local function asmCheckThrow(rexception)
-        emit("test %i 0", rexception)
+        emitWithComment("Check throw", "test %i 0", rexception)
         -- It's expected that no more reading is done after calling asmCheckThrow
         -- TODO: Come up with a better solution tahn expecting that
         emit("#jmp (%i)", pc() + 1)
@@ -358,6 +377,8 @@ local function compile(class, method, codeAttr, cp)
     end
 
     local function asmCheckNullPointer(robj)
+        emitComment("Checking null pointer")
+
         local npException = classByName("java.lang.NullPointerException")
         local con = findMethod(npException, "<init>()V")
 
@@ -372,6 +393,8 @@ local function compile(class, method, codeAttr, cp)
         free(2)
         asmRefillStackTrace(rexc)
         asmThrow(rexc)
+
+        emitComment("Finish null pointer check")
 
         local jmpPC2 = asmPC
         emitInsert(jmpPC1 - 1, "jmp %i", jmpPC2 - jmpPC1)
@@ -411,6 +434,8 @@ local function compile(class, method, codeAttr, cp)
     end
 
     local function asmAAStore()
+        emitComment("Array store")
+
         local oobException = classByName("java.lang.ArrayIndexOutOfBoundsException")
         local con = findMethod(oobException, "<init>(I)V")
 
@@ -436,12 +461,14 @@ local function compile(class, method, codeAttr, cp)
         emitInsert(p1 - 1, "jmp %i", p2 - p1)           -- Insert calculated jump.
         emit("add %i %i %s", ri, ri, k(1))
         emit("gettable %i %i %s", rarr, rarr, k(5))
-        emit("settable %i %i %i", rarr, ri, rval)
+        emitWithComment("Finish array store", "settable %i %i %i", rarr, ri, rval)
 
         free(8)
     end
 
     local function asmDivCheck()
+        emitComment("div check")
+
         local r1 = peek(1)
         local r2 = peek(0)
 
@@ -459,13 +486,18 @@ local function compile(class, method, codeAttr, cp)
         emit("call %i 3 3", rcon)
         asmRefillStackTrace(rexc)
         asmThrow(rexc)
+
+        emitComment("Finish div check")
         local p2 = asmPC
         emitInsert(p1 - 1, "jmp %i", p2 - p1)   -- Insert calculated jump.
 
+        free(4)
         return r1, r2
     end
 
     local function asmLongDivCheck()
+        emitComment("Long div check")
+
         local r1 = peek(1)
         local r2 = peek(0)
 
@@ -473,7 +505,7 @@ local function compile(class, method, codeAttr, cp)
         local con = findMethod(arithException, "<init>(Ljava/lang/String;)V")
 
         local req, rp2, rzero = alloc(3)        -- Check for / by zero.
-        asmGetRTInfo(req, info(bigintEQ))
+        asmGetRTInfo(req, info(bigintEQ), "bigintEQ")
         emit("move %i %i", rp2, r2)
         asmGetRTInfo(rzero, info(bigint(0)))
         emit("call %i 3 2", req)
@@ -490,29 +522,64 @@ local function compile(class, method, codeAttr, cp)
         emit("call %i 3 3", rcon)
         asmRefillStackTrace(rexc)
         asmThrow(rexc)
+
+        emitComment("Finish long div check")
         local p2 = asmPC
         emitInsert(p1 - 1, "jmp %i", p2 - p1)   -- Insert calculated jump.
 
+        free(5)
         return r1, r2
     end
 
     local function asmIntDiv()
+        emitComment("Int div")
         local r1, r2 = asmDivCheck()
         emit("div %i %i %i", r1, r1, r2)
         emit("mod %i %i %s", r2, r1, k(1))      -- Floor the value.
         emit("sub %i %i %i", r1, r1, r2)
-        free(5)
+        free(1)
     end
 
     local function asmFloatDiv()
+        emitComment("Float div")
         local r1, r2 = asmDivCheck()
         emit("div %i %i %i", r1, r1, r2)
-        free(5)
+        free(1)
     end
 
     local function asmMod()
+        emitComment("Modulo")
         local r1, r2 = asmDivCheck()
         emit("mod %i %i %i", r1, r1, r2)
+        free(1)
+    end
+
+    local function asmLongDiv()
+        emitComment("Long div")
+
+        local r1, r2 = asmLongDivCheck()
+        local newR1, newR2 = r2, alloc()
+        emit("move %i %i", newR2, r2)
+        emit("move %i %i", newR1, r1)
+        local rdiv = r1
+        asmGetRTInfo(rdiv, info(bigintDiv))
+
+        emitWithComment("Finish long div", "call %i 3 2", rdiv)
+        free(2)
+    end
+
+    local function asmLongMod()
+        emitComment("Long mod")
+
+        local r1, r2 = asmLongDivCheck()
+        local newR1, newR2 = r2, alloc()
+        emit("move %i %i", newR2, r2)
+        emit("move %i %i", newR1, r1)
+        local rmod = r1
+        asmGetRTInfo(rmod, info(bigintMod))
+
+        emitWithComment("Finish long mod", "call %i 3 2", rmod)
+        free(2)
     end
 
     local function jbInstanceof(...)
@@ -994,16 +1061,7 @@ local function compile(class, method, codeAttr, cp)
             asmIntDiv()
         end, function() -- 6D
             --div
-            local r1, r2 = asmLongDivCheck()
-            free(5)
-            alloc()
-            local rdiv = r1
-            emit("move %i %i", r2 + 1, r2)
-            emit("move %i %i", r2, r1)
-            asmGetRTInfo(rdiv, info(bigintDiv))
-            emit("call %i 3 2", rdiv)
-            free(2)
-            --asmPrintReg(rdiv)
+            asmLongDiv()
         end, function() -- 6E
             --div
             asmFloatDiv()
@@ -1015,8 +1073,7 @@ local function compile(class, method, codeAttr, cp)
             asmMod()
         end, function() -- 71
             --rem
-            asmLongDivCheck()
-
+            asmLongMod()
         end, function() -- 72
             --rem
             asmMod()
