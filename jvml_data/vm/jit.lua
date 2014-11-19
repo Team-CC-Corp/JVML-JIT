@@ -462,6 +462,7 @@ local function compile(class, method, codeAttr, cp)
         local p2 = asmPC
         emitInsert(p1 - 1, "jmp %i", p2 - p1)   -- Insert calculated jump.
 
+        free(4)
         return r1, r2
     end
 
@@ -493,6 +494,7 @@ local function compile(class, method, codeAttr, cp)
         local p2 = asmPC
         emitInsert(p1 - 1, "jmp %i", p2 - p1)   -- Insert calculated jump.
 
+        free(4)
         return r1, r2
     end
 
@@ -501,13 +503,13 @@ local function compile(class, method, codeAttr, cp)
         emit("div %i %i %i", r1, r1, r2)
         emit("mod %i %i %s", r2, r1, k(1))      -- Floor the value.
         emit("sub %i %i %i", r1, r1, r2)
-        free(5)
+        free(1)
     end
 
     local function asmFloatDiv()
         local r1, r2 = asmDivCheck()
         emit("div %i %i %i", r1, r1, r2)
-        free(5)
+        free(1)
     end
 
     local function asmMod()
