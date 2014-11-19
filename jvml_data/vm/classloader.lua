@@ -34,6 +34,22 @@ function toJString(str)
     return obj
 end
 
+function toJTable(tab)
+    local tableClass = classByName("cc.LuaTable")
+    local obj = newInstance(tableClass)
+    findMethod(tableClass, "<init>()V")[1](obj)
+    obj.native_data=tab
+    return obj
+end
+
+function toJFunction(fun)
+    local funcClass = classByName("cc.LuaFunction")
+    local obj = newInstance(funcClass)
+    findMethod(funcClass, "<init>()V")[1](obj)
+    obj.native_data=fun
+    return obj
+end
+
 function toLString(str)
     local stringClass = classByName("java.lang.String")
     local strArray = { }
@@ -45,6 +61,14 @@ function toLString(str)
         strArray[i] = string.char(charArray[i])
     end
     return table.concat(strArray)
+end
+
+function toLTable(tab)
+    return tab.native_data
+end
+
+function toLFunction(fun)
+    return fun.native_data
 end
 
 function u2ToSignedShort(i)
