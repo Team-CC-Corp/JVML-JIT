@@ -77,6 +77,24 @@ local function compile(class, method, codeAttr, cp)
         return pc
     end
 
+
+
+    --[[
+    There are two tables dealing with null check data.
+    The registerNullChecks table relates registers with
+    whether that register has been checked for null or not.
+    The registerNullChecksParents table relates registers with
+    a register lower on the stack that it was created from.
+    The parents table lets us set null check data on all
+    registers from top to bottom that share the same object.
+
+    Whenever a register is freed,
+    its null check data is automatically wiped.
+    Aside from this, all the null check stuff has to be done manually.
+    Forgetting to include code in an instruction for null
+    checking could prove disastrous,
+    creating bugs that could be very hard to track down.
+    ]]
     local registerNullChecks = {}
     local registerNullCheckParents = {}
     local function setRegisterNullCheck(r, b)
