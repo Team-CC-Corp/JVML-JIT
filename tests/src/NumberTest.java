@@ -63,5 +63,9 @@ public class NumberTest {
 
         a = (long)d * 2147483648L;
         System.out.println(a);
+
+        a = 1;
+        b = 3;
+        System.out.println((((int)a - 1) % b) == 0);
     }
 }
