@@ -36,9 +36,16 @@ local function compile(class, method, codeAttr, cp)
 
     local comments = { }
     local asmPC = 1
-    local function emitWithComment(comment, str, ...)
-        if comment then
-            comments[asmPC] = "\t\t\t; " .. comment
+
+    local nextComment
+    local function emitComment(comment)
+        nextComment = comment
+    end
+
+    local function emit(str, ...)
+        if nextComment then
+            comments[asmPC] = "\t\t\t; " .. nextComment
+            nextComment = nil
         end
         local _, err = pcall(function(...)
             asmPC = asmPC + 1
@@ -50,8 +57,9 @@ local function compile(class, method, codeAttr, cp)
         return asmPC
     end
 
-    local function emit(str, ...)
-        return emitWithComment(nil, str, ...)
+    local function emitWithComment(comment, str, ...)
+        emitComment(comment)
+        return emit(str, ...)
     end
 
     local function emitInsert(pc, str, ...)
@@ -172,8 +180,12 @@ local function compile(class, method, codeAttr, cp)
         end
     end
 
-    local function asmGetRTInfo(r, i)
-        emit("gettable %i 0 %s ", r, k(i))
+    local function asmGetRTInfo(r, i, comment)
+        if comment then
+            emitWithComment(comment, "gettable %i 0 %s ", r, k(i))
+        else
+            emit("gettable %i 0 %s ", r, k(i))
+        end
     end
 
     local function asmNewInstance(robj, class, customObjectSize)
