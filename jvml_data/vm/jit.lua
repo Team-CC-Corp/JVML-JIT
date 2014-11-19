@@ -515,6 +515,29 @@ local function compile(class, method, codeAttr, cp)
     local function asmMod()
         local r1, r2 = asmDivCheck()
         emit("mod %i %i %i", r1, r1, r2)
+        free(1)
+    end
+
+    local function asmLongDiv()
+        local r1, r2 = asmLongDivCheck()
+        local newR1, newR2 = r2, alloc()
+        emit("move %i %i", newR2, r2)
+        emit("move %i %i", newR1, r1)
+        local rdiv = r1
+        asmGetRTInfo(rdiv, info(bigintDiv))
+        emit("call %i 3 2", rdiv)
+        free(2)
+    end
+
+    local function asmLongMod()
+        local r1, r2 = asmLongDivCheck()
+        local newR1, newR2 = r2, alloc()
+        emit("move %i %i", newR2, r2)
+        emit("move %i %i", newR1, r1)
+        local rmod = r1
+        asmGetRTInfo(rmod, info(bigintMod))
+        emit("call %i 3 2", rmod)
+        free(2)
     end
 
     local function jbInstanceof(...)
@@ -996,16 +1019,7 @@ local function compile(class, method, codeAttr, cp)
             asmIntDiv()
         end, function() -- 6D
             --div
-            local r1, r2 = asmLongDivCheck()
-            free(5)
-            alloc()
-            local rdiv = r1
-            emit("move %i %i", r2 + 1, r2)
-            emit("move %i %i", r2, r1)
-            asmGetRTInfo(rdiv, info(bigintDiv))
-            emit("call %i 3 2", rdiv)
-            free(2)
-            --asmPrintReg(rdiv)
+            asmLongDiv()
         end, function() -- 6E
             --div
             asmFloatDiv()
@@ -1017,8 +1031,7 @@ local function compile(class, method, codeAttr, cp)
             asmMod()
         end, function() -- 71
             --rem
-            asmLongDivCheck()
-
+            asmLongMod()
         end, function() -- 72
             --rem
             asmMod()
