@@ -64,6 +64,10 @@ local function compile(class, method, codeAttr, cp)
     end
 
     local function emitInsert(pc, str, ...)
+        if nextComments then
+            comments[pc] = "\t\t\t; " .. table.concat(nextComments, "\n\t\t\t\t\t\t\t\t\t")
+            nextComments = nil
+        end
         local _, err = pcall(function(...)
             asm[pc] = string.format(str, ...) .. "\n"
         end, ...)
