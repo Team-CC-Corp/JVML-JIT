@@ -1,6 +1,10 @@
 TIME_SPENT_EMITTING_ASSEMBLY = 0
 TIME_SPENT_COMPILING_LASM = 0
 
+-- Localize ASM objects.
+local Op = Op
+local makeChunkStream = makeChunkStream
+
 local function compile(class, method, codeAttr, cp)
     local startTime = os.time() / 0.02
 
@@ -28,57 +32,14 @@ local function compile(class, method, codeAttr, cp)
         end
     end
 
+    local chunkStream = makeChunkStream()
+    local emit = chunkStream.emit
+
     -- Forward declarations
     local getCurrentLineNumber
 
     local code = codeAttr.code
-    local asm = { }
-
-    local comments = { }
-    local asmPC = 1
-
-    local nextComments
-    local function emitComment(comment)
-        nextComments = nextComments or {}
-        table.insert(nextComments, comment)
-    end
-
-    local function emit(str, ...)
-        if nextComments then
-            comments[asmPC] = "\t\t\t; " .. table.concat(nextComments, "\n\t\t\t\t\t\t\t\t\t")
-            nextComments = nil
-        end
-        local _, err = pcall(function(...)
-            asmPC = asmPC + 1
-            asm[#asm + 1] = string.format(str, ...) .. "\n"
-        end, ...)
-        if err then
-            error(err, 2)
-        end
-        return asmPC
-    end
-
-    local function emitWithComment(comment, str, ...)
-        emitComment(comment)
-        return emit(str, ...)
-    end
-
-    local function emitInsert(pc, str, ...)
-        if nextComments then
-            comments[pc] = "\t\t\t; " .. table.concat(nextComments, "\n\t\t\t\t\t\t\t\t\t")
-            nextComments = nil
-        end
-        local _, err = pcall(function(...)
-            asm[pc] = string.format(str, ...) .. "\n"
-        end, ...)
-        if err then
-            error(err, 2)
-        end
-        return pc
-    end
-
-
-
+    
     --[[
     There are two tables dealing with null check data.
     The registerNullChecks table relates registers with
