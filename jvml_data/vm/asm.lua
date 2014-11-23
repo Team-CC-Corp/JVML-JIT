@@ -1,49 +1,82 @@
-local Op = { }
-Op.MOVE         = 0
-Op.LOADK        = 1
-Op.LOADBOOL     = 2
-Op.LOADNIL      = 3
-Op.GETUPVAL     = 4
-Op.GETGLOBAL    = 5
-Op.GETTABLE     = 6
-Op.SETGLOBAL    = 7
-Op.SETUPVAL     = 8
-Op.SETTABLE     = 9
-Op.NEWTABLE     = 10
-Op.SELF         = 11
-Op.ADD          = 12
-Op.SUB          = 13
-Op.MUL          = 14
-Op.DIV          = 15
-Op.MOD          = 16
-Op.POW          = 17
-Op.UNM          = 18
-Op.NOT          = 19
-Op.LEN          = 20
-Op.CONCAT       = 21
-Op.JMP          = 22
-Op.EQ           = 23
-Op.LT           = 24
-Op.LE           = 25
-Op.TEST         = 26
-Op.TESTSET      = 27
-Op.CALL         = 28
-Op.TAILCALL     = 29
-Op.RETURN       = 30
-Op.FORLOOP      = 31
-Op.FORPREP      = 32
-Op.TFORLOOP     = 33
-Op.SETLIST      = 34
-Op.CLOSE        = 35
-Op.CLOSURE      = 36
-Op.VARARG       = 37
+local InstructionTypes = { }
 
-local Type = { }
-Type.REGISTER   = 1
-Type.CONSTANT   = 2
-Type.INTEGER    = 3
+local sbxBias = 131,071 -- (2^18 - 1) >> 1
 
-local typeNames = { "REGISTER", "CONSTANT", "INTEGER" }
+function InstructionTypes.ABC(opcode, a, b, c)
+    a = bit.blshift(a, 6)
+    b = bit.blshift(b, 14)
+    c = bit.blshift(c, 23)
+    return bit.band(opcode + a + b + c, 2^32 - 1)
+end
+
+function InstructionTypes.ABx(opcode, a, bx)
+    a = bit.blshift(a, 6)
+    bx = bit.blshift(bx, 14)
+    return bit.band(opcode + a + bx, 2^32 - 1)
+end
+
+function InstructionTypes.AsBx(opcode, a, sbx)
+    a = bit.blshift(a, 6)
+    sbx = sbx + sbxBias
+    sbx = bit.blshift(sbx, 14)
+    return bit.band(opcode + a + sbx, 2^32 - 1)
+end
+
+function InstructionTypes.AB(opcode, a, b)
+    return InstructionTypes.ABC(opcode, a, b, 0)
+end
+
+function InstructionTypes.AC(opcode, a, c)
+    return InstructionTypes.ABC(opcode, a, 0, c)
+end
+
+function InstructionTypes.A(opcode, a)
+    return InstructionTypes.ABC(opcode, a, 0, 0)
+end
+
+function InstructionTypes.sBx(opcode, sbx)
+    return InstructionTypes.AsBx(opcode, 0, sbx)
+end
+
+Op = { }
+Op.MOVE         = {opcode = 0, type = InstructionTypes.AB   }
+Op.LOADK        = {opcode = 1, type = InstructionTypes.ABx  }
+Op.LOADBOOL     = {opcode = 2, type = InstructionTypes.ABC  }
+Op.LOADNIL      = {opcode = 3, type = InstructionTypes.AB   }
+Op.GETUPVAL     = {opcode = 4, type = InstructionTypes.AB   }
+Op.GETGLOBAL    = {opcode = 5, type = InstructionTypes.ABx  }
+Op.GETTABLE     = {opcode = 6, type = InstructionTypes.ABC  }
+Op.SETGLOBAL    = {opcode = 7, type = InstructionTypes.ABx  }
+Op.SETUPVAL     = {opcode = 8, type = InstructionTypes.AB   }
+Op.SETTABLE     = {opcode = 9, type = InstructionTypes.ABC  }
+Op.NEWTABLE     = {opcode = 10, type = InstructionTypes.ABC }
+Op.SELF         = {opcode = 11, type = InstructionTypes.ABC }
+Op.ADD          = {opcode = 12, type = InstructionTypes.ABC }
+Op.SUB          = {opcode = 13, type = InstructionTypes.ABC }
+Op.MUL          = {opcode = 14, type = InstructionTypes.ABC }
+Op.DIV          = {opcode = 15, type = InstructionTypes.ABC }
+Op.MOD          = {opcode = 16, type = InstructionTypes.ABC }
+Op.POW          = {opcode = 17, type = InstructionTypes.ABC }
+Op.UNM          = {opcode = 18, type = InstructionTypes.AB  }
+Op.NOT          = {opcode = 19, type = InstructionTypes.AB  }
+Op.LEN          = {opcode = 20, type = InstructionTypes.AB  }
+Op.CONCAT       = {opcode = 21, type = InstructionTypes.ABC }
+Op.JMP          = {opcode = 22, type = InstructionTypes.sBx }
+Op.EQ           = {opcode = 23, type = InstructionTypes.ABC }
+Op.LT           = {opcode = 24, type = InstructionTypes.ABC }
+Op.LE           = {opcode = 25, type = InstructionTypes.ABC }
+Op.TEST         = {opcode = 26, type = InstructionTypes.AC  }
+Op.TESTSET      = {opcode = 27, type = InstructionTypes.ABC }
+Op.CALL         = {opcode = 28, type = InstructionTypes.ABC }
+Op.TAILCALL     = {opcode = 29, type = InstructionTypes.ABC }
+Op.RETURN       = {opcode = 30, type = InstructionTypes.AB  }
+Op.FORLOOP      = {opcode = 31, type = InstructionTypes.AsBx}
+Op.FORPREP      = {opcode = 32, type = InstructionTypes.AsBx}
+Op.TFORLOOP     = {opcode = 33, type = InstructionTypes.AC  }
+Op.SETLIST      = {opcode = 34, type = InstructionTypes.ABC }
+Op.CLOSE        = {opcode = 35, type = InstructionTypes.A   }
+Op.CLOSURE      = {opcode = 36, type = InstructionTypes.ABx }
+Op.VARARG       = {opcode = 37, type = InstructionTypes.AB  }
 
 function makeChunkStream()
     local stream = { }
@@ -74,25 +107,9 @@ function makeChunkStream()
     end
 
     function stream.emit(op, ...)
-        local args = { ... }
-
-        local lookup = {
-            function()
-                -- MOVE     R(A) R(B)
-                instns[#instns + 1] = { op, args[1].value, args[2].value }
-            end, function()
-                -- LOADK    R(A) K(B)
-                instns[#instns + 1] = { op, args[1].value, getConstant(args[2].value) }
-            end, function()
-                -- LOADBOOL R(A) I(B) I(C)
-                instns[#instns + 1] = { op, args[1].value, args[2].value, args[3].value }
-            end, function()
-                -- LOADNIL  R(A) R(B)
-                instns[#instns + 1] = { op, args[1].value, args[2].value }
-            end,            
-        }
-
-        lookup[op]()
+        local ok, inst = pcall(op.type, op.opcode, ...)
+        assert(ok, inst, 2)
+        table.insert(instns, inst)
     end
 
     function stream.compile()
