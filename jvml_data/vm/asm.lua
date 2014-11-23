@@ -112,6 +112,15 @@ function makeChunkStream()
         table.insert(instns, inst)
     end
 
+    function stream.startJump()
+        table.insert(instns, 0)
+        return #instns
+    end
+
+    function stream.fixJump(jumpID)
+        stream.emit(Op.JMP, #instns - jumpID)
+    end
+
     function stream.compile()
         
     end
