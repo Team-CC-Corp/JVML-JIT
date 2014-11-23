@@ -8,4 +8,10 @@ public class Math {
             return a;
         return b;
     }
+
+    public static double abs(double a) {
+        if (a < 0)
+            return -a;
+        return a;
+    }
 }
