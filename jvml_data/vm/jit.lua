@@ -573,6 +573,26 @@ local function compile(class, method, codeAttr, cp)
         free(1)
     end
 
+    local function asmNumericCompare()
+        emitComment("Numeric compare")
+        local r1, r2 = peek(1), peek(0)
+        emit("eq 0 %i %i", r1, r2)
+        emit("jmp 2")
+        emit("loadk %i k(0)", r1)
+        local eqjmp = emit("")
+        emit("lt 0 %i %i", r1, r2)
+        emit("jmp 2")
+        emit("loadk %i k(-1)", r1)
+        local ltjmp = emit("")
+        emit("loadk %i k(1)", r1)
+
+
+        local p2 = asmPC
+        emitInsert(eqjmp - 1, "jmp %i", p2 - eqjmp)           -- Insert calculated jumps.
+        emitInsert(ltjmp - 1, "jmp %i", p2 - ltjmp)
+        free()
+    end
+
     local function asmLongDiv()
         emitComment("Long div")
 
@@ -598,6 +618,20 @@ local function compile(class, method, codeAttr, cp)
         asmGetRTInfo(rmod, info(bigintMod))
 
         emitWithComment("Finish long mod", "call %i 3 2", rmod)
+        free(2)
+    end
+
+    local function asmLongCompare()
+        emitComment("Long compare")
+
+        local r1, r2 = peek(1), peek(0)
+        local newR1, newR2 = r2, alloc()
+        emit("move %i %i", newR2, r2)
+        emit("move %i %i", newR1, r1)
+        local rcmp = r1
+        asmGetRTInfo(rcmp, info(bigintCompare)) -- Luckily, bigintCompare returns -1,0,1 as expected by the JVM
+
+        emitWithComment("Finish long compare", "call %i 3 2", rcmp)
         free(2)
     end
 
@@ -1359,19 +1393,19 @@ local function compile(class, method, codeAttr, cp)
             emit("sub %i %i %s", r, r, k(32768))
         end, function() -- 94
             --lcmp
-            error("94 not implemented.")
+            asmLongCompare()
         end, function() -- 95
             --fcmpl/g
-            error("95 not implemented.")
+            asmNumericCompare()
         end, function() -- 96
             --fcmpl/g
-            error("96 not implemented.")
+            asmNumericCompare()
         end, function() -- 97
             --fcmpl/g
-            error("97 not implemented.")
+            asmNumericCompare()
         end, function() -- 98
             --fcmpl/g
-            error("98 not implemented.")
+            asmNumericCompare()
         end, function() -- 99
             --ifeq
             local joffset = u2ToSignedShort(u2())
