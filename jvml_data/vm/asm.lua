@@ -149,6 +149,12 @@ function makeChunkStream(maxLocals)
         return unpack(ret)
     end
 
+    for k,op in pairs(Op) do
+        stream[k] = function(...)
+            return stream.emit(op, ...)
+        end
+    end
+
     function stream.compile()
         
     end
