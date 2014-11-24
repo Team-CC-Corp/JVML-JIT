@@ -26,11 +26,16 @@ function makeExtendedChunkStream(maxLocals)
 
     local function createPool(reg)
         removeFromPool(reg)
-        table.insert(valuePools, {reg})
+        local pool = {reg}
+        table.insert(valuePools, pool)
+        return pool
     end
 
     local function addToPool(r1, r2)
         local pool = getPool(r2)
+        if not pool then
+            pool = createPool(r2)
+        end
         table.insert(pool, r1)
         return pool
     end
