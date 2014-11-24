@@ -116,21 +116,42 @@ function makeChunkStream(numParams)
         return index
     end
 
-    function stream.allocRK(value)
-        local constant = stream.getConstant(value)
+    function stream.allocNilRK()
+        local constant = stream.getConstant(nil)
+        local rk
         if constant > 255 then
-            local k = stream.alloc()
-            stream.LOADK(k, constant)
-            return k
+            rk = stream.alloc()
+            stream.LOADK(rk, constant)
         else
-            return bit.bor(256, constant)
+            rk = bit.bor(256, constant)
         end
+        return rk
     end
 
-    function stream.freeRK(k)
+    function stream.allocRK(value, ...)
+        if value == nil then
+            return
+        end
+
+        local constant = stream.getConstant(value)
+        local rk
+        if constant > 255 then
+            rk = stream.alloc()
+            stream.LOADK(rk, constant)
+        else
+            rk = bit.bor(256, constant)
+        end
+        return rk, stream.allocRK(...)
+    end
+
+    function stream.freeRK(k, ...)
+        if k == nil then
+            return
+        end
         if k < 256 then
             stream.free()
         end
+        stream.freeRK(...)
     end
 
     function stream.emit(op, ...)
