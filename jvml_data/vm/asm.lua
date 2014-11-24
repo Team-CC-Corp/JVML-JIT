@@ -1,3 +1,6 @@
+local platform = json.decodeFromFile(fs.combine(jcd, "jvml_data/platform.json"))
+
+
 local InstructionTypes = { }
 
 local sbxBias = 131,071 -- (2^18 - 1) >> 1
@@ -83,6 +86,7 @@ function makeChunkStream(maxLocals)
 
     local lastIndex = 0
     local constants = { }
+    local sourceLinePositions = {}
     local nilIndex = nil
     local instns = { }
     local register = maxLocals
@@ -133,11 +137,13 @@ function makeChunkStream(maxLocals)
         local ok, inst = pcall(op.type, op.opcode, ...)
         assert(ok, inst, 2)
         table.insert(instns, inst)
+        sourceLinePositions[#instns] = #instns
         return #instns
     end
 
     function stream.startJump()
         table.insert(instns, 0)
+        sourceLinePositions[#instns] = #instns
         return #instns
     end
 
@@ -172,8 +178,24 @@ function makeChunkStream(maxLocals)
         end
     end
 
-    function stream.compile()
-        
+    function stream.compile(name)
+        local dump = makeDumpster(platform)
+
+        dump.dumpString(name)                               -- source name
+        dump.dumpInteger(1)                                 -- line defined
+        dump.dumpInteger(#instns)                           -- last line defined
+        dump.dumpByte(0)                                    -- number of upvalues
+        dump.dumpByte(maxLocals + 1)                        -- number of parameters
+        dump.dumpByte(0)                                    -- is vararg
+        dump.dumpByte(math.max(2, maxRegister + 1))         -- max stack size
+        dump.dumpInstructionsList(instns)                   -- instructions
+        dump.dumpConstantsList(constants, nilIndex)         -- constants
+        dump.dumpInteger(0)                                 -- empty function prototype list
+        dump.dumpSourceLinePositions(sourceLinePositions)   -- line numbers
+        dump.dumpInteger(0)                                 -- empty list of locals
+        dump.dumpInteger(0)                                 -- empty list of upvalues
+
+        return dump.toString()
     end
 
     return stream
