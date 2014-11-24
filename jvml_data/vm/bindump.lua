@@ -92,10 +92,12 @@ THE SOFTWARE.
         x, byte = grab_byte(exponent * 16 + x); v = v..byte -- 55:48
         x, byte = grab_byte(sign * 128 + x); v = v..byte -- 63:56
 
-        if platform.endianness == 1 then
-            return v
-        else
-            return v:reverse()
+        if platform.endianness == 0 then
+            v = v:reverse()
+        end
+
+        for i=1,#v do
+            dump.dumpByte(v:byte(i,i))
         end
     end
 
