@@ -172,6 +172,10 @@ function makeChunkStream(numParams)
         return unpack(ret)
     end
 
+    function stream.peek(n)
+        return register - n
+    end
+
     for k,op in pairs(Op) do
         stream[k] = function(...)
             return stream.emit(op, ...)
