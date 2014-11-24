@@ -96,6 +96,8 @@ end
 dofile(fs.combine(vm.jcd, "bigint/bigint.lua"))
 dofile(fs.combine(vm.jcd, "jvml_data/vm/classpath.lua"))
 dofile(fs.combine(vm.jcd, "jvml_data/vm/runtime.lua"))
+dofile(fs.combine(vm.jcd, "jvml_data/vm/asm.lua"))
+dofile(fs.combine(vm.jcd, "jvml_data/vm/easm.lua"))
 dofile(fs.combine(vm.jcd, "jvml_data/vm/jit.lua"))
 dofile(fs.combine(vm.jcd, "jvml_data/vm/classloader.lua"))
 dofile(fs.combine(vm.jcd, "jvml_data/vm/arrays.lua"))
