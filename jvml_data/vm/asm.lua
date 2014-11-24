@@ -112,6 +112,23 @@ function makeChunkStream(maxLocals)
         return index
     end
 
+    function stream.allocRK(value)
+        local constant = stream.getConstant(value)
+        if constant > 255 then
+            local k = stream.alloc()
+            stream.LOADK(k, constant)
+            return k
+        else
+            return bit.bor(256, constant)
+        end
+    end
+
+    function stream.freeRK(k)
+        if k < 256 then
+            stream.free()
+        end
+    end
+
     function stream.emit(op, ...)
         local ok, inst = pcall(op.type, op.opcode, ...)
         assert(ok, inst, 2)
