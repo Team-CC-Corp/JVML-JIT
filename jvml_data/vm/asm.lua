@@ -38,7 +38,7 @@ function InstructionTypes.sBx(opcode, sbx)
     return InstructionTypes.AsBx(opcode, 0, sbx)
 end
 
-Op = { }
+local Op = { }
 Op.MOVE         = {opcode = 0, type = InstructionTypes.AB   }
 Op.LOADK        = {opcode = 1, type = InstructionTypes.ABx  }
 Op.LOADBOOL     = {opcode = 2, type = InstructionTypes.ABC  }
@@ -78,13 +78,19 @@ Op.CLOSE        = {opcode = 35, type = InstructionTypes.A   }
 Op.CLOSURE      = {opcode = 36, type = InstructionTypes.ABx }
 Op.VARARG       = {opcode = 37, type = InstructionTypes.AB  }
 
-function makeChunkStream()
+function makeChunkStream(maxLocals)
     local stream = { }
 
     local lastIndex = 0
     local constants = { }
     local nilIndex = nil
     local instns = { }
+    local register = maxLocals
+    local maxRegister = maxLocals -- just tracking the highest we go
+
+    local function getMaxRegister()
+        return maxRegister
+    end
 
     local function getConstant(value)
         local index
@@ -110,6 +116,7 @@ function makeChunkStream()
         local ok, inst = pcall(op.type, op.opcode, ...)
         assert(ok, inst, 2)
         table.insert(instns, inst)
+        return #instns
     end
 
     function stream.startJump()
@@ -118,7 +125,28 @@ function makeChunkStream()
     end
 
     function stream.fixJump(jumpID)
-        stream.emit(Op.JMP, #instns - jumpID)
+        instns[jumpID] = Op.JMP.type(Op.JMP.opcode, #instns - jumpID)
+    end
+
+    function stream.alloc(n)
+        n = n or 1
+        local ret = { }
+        for i = 1, n do
+            register = register + 1
+            maxRegister = math.max(register, maxRegister)
+            ret[i] = register
+        end
+        return unpack(ret)
+    end
+
+    function stream.free(n)
+        n = n or 1
+        local ret = { }
+        for i = n, 1, -1 do
+            ret[i] = register
+            register = register - 1
+        end
+        return unpack(ret)
     end
 
     function stream.compile()
