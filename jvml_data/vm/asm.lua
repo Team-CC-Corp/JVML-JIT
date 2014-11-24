@@ -7,8 +7,8 @@ local sbxBias = 131,071 -- (2^18 - 1) >> 1
 
 function InstructionTypes.ABC(opcode, a, b, c)
     a = bit.blshift(a, 6)
-    b = bit.blshift(b, 14)
-    c = bit.blshift(c, 23)
+    b = bit.blshift(b, 23)
+    c = bit.blshift(c, 14)
     return bit.band(opcode + a + b + c, 2^32 - 1)
 end
 
