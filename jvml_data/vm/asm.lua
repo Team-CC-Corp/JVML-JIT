@@ -92,7 +92,7 @@ function makeChunkStream(maxLocals)
         return maxRegister
     end
 
-    local function getConstant(value)
+    function stream.getConstant(value)
         local index
         if value == nil then
             if not nilIndex then
