@@ -2,7 +2,7 @@
 function makeExtendedChunkStream(maxLocals)
     local stream = makeChunkStream(maxLocals)
 
-    -- null-check data
+    -- value pools are lists of registers known to share the same value
     local valuePools = { }
     local function getPool(reg)
         for poolIndex,pool in ipairs(valuePools) do
@@ -118,6 +118,29 @@ function makeExtendedChunkStream(maxLocals)
         return oldClose(a)
     end
 
+    local rti = { }
+    local reverseRTI = { }
+    local function info(obj)
+        if not obj then error("Bad argument. Index expected, got nil\nAt: " .. class.name .. "." .. method.name .. ":" .. getCurrentLineNumber(), 2) end
+        local i = reverseRTI[obj]
+        if i then
+            return i
+        end
+        local p = #rti + 1
+        rti[p] = obj
+        reverseRTI[obj] = p
+        return p
+    end
+    function stream.getRTI()
+        return rti
+    end
+
+    -- asm utility functions
+    function stream.asmGetObj(r, obj)
+        local rk = stream.allocRK(info(obj))
+        stream.GETTABLE(r, 0, rk)
+        stream.freeRK(rk)
+    end
 
     return stream
 end
