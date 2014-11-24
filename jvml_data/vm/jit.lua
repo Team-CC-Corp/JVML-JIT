@@ -1,10 +1,6 @@
 TIME_SPENT_EMITTING_ASSEMBLY = 0
 TIME_SPENT_COMPILING_LASM = 0
 
--- Localize ASM objects.
-local Op = Op
-local makeChunkStream = makeChunkStream
-
 local function compile(class, method, codeAttr, cp)
     local startTime = os.time() / 0.02
 
