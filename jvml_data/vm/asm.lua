@@ -81,7 +81,7 @@ Op.CLOSE        = {opcode = 35, type = InstructionTypes.A   }
 Op.CLOSURE      = {opcode = 36, type = InstructionTypes.ABx }
 Op.VARARG       = {opcode = 37, type = InstructionTypes.AB  }
 
-function makeChunkStream(maxLocals)
+function makeChunkStream(numParams)
     local stream = { }
 
     local lastIndex = 0
@@ -89,8 +89,8 @@ function makeChunkStream(maxLocals)
     local sourceLinePositions = {}
     local nilIndex = nil
     local instns = { }
-    local register = maxLocals
-    local maxRegister = maxLocals -- just tracking the highest we go
+    local register = numParams - 1
+    local maxRegister = register -- just tracking the highest we go
 
     local function getMaxRegister()
         return maxRegister
@@ -185,7 +185,7 @@ function makeChunkStream(maxLocals)
         dump.dumpInteger(1)                                 -- line defined
         dump.dumpInteger(#instns)                           -- last line defined
         dump.dumpByte(0)                                    -- number of upvalues
-        dump.dumpByte(maxLocals + 1)                        -- number of parameters
+        dump.dumpByte(numParams)                            -- number of parameters
         dump.dumpByte(0)                                    -- is vararg
         dump.dumpByte(math.max(2, maxRegister + 1))         -- max stack size
         dump.dumpInstructionsList(instns)                   -- instructions
