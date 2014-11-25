@@ -80,6 +80,9 @@ Op.SETLIST      = {opcode = 34, type = InstructionTypes.ABC }
 Op.CLOSE        = {opcode = 35, type = InstructionTypes.A   }
 Op.CLOSURE      = {opcode = 36, type = InstructionTypes.ABx }
 Op.VARARG       = {opcode = 37, type = InstructionTypes.AB  }
+for k,v in pairs(Op) do
+    v.name = k
+end
 
 function makeChunkStream(numParams)
     local stream = { }
@@ -92,8 +95,16 @@ function makeChunkStream(numParams)
     local register = numParams - 1
     local maxRegister = register -- just tracking the highest we go
 
+    local debugComments = { }
+    local debugCode = { }
+
     local function getMaxRegister()
         return maxRegister
+    end
+
+    function stream.comment(comment)
+        debugComments[#instns + 1] = debugComments[#instns + 1] or {}
+        table.insert(debugComments[#instns + 1], comment)
     end
 
     function stream.getConstant(value)
@@ -158,18 +169,21 @@ function makeChunkStream(numParams)
         local ok, inst = pcall(op.type, op.opcode, ...)
         assert(ok, inst, 2)
         table.insert(instns, inst)
+        table.insert(debugCode, "[" .. (#instns - 1) .. "] " .. op.name .. " " .. table.concat({...}, " "))
         sourceLinePositions[#instns] = #instns
         return #instns
     end
 
     function stream.startJump()
         table.insert(instns, 0)
+        table.insert(debugCode, "")
         sourceLinePositions[#instns] = #instns
         return #instns
     end
 
     function stream.fixJump(jumpID)
         instns[jumpID] = Op.JMP.type(Op.JMP.opcode, #instns - jumpID)
+        debugCode[jumpID] = "[" .. (#instns - 1) .. "] JMP " .. (#instns - jumpID)
     end
 
     function stream.alloc(n)
@@ -221,6 +235,17 @@ function makeChunkStream(numParams)
         dump.dumpInteger(0)                                 -- empty list of upvalues
 
         return dump.toString()
+    end
+
+    function getDebugCode()
+        local code = ""
+        for i,v in ipairs(debugCode) do
+            if debugComments[i] then
+                code = code .. table.concat(debugComments[i], "\n")
+            end
+            code = code .. v .. "\n"
+        end
+        return code
     end
 
     return stream
