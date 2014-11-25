@@ -237,13 +237,17 @@ function makeChunkStream(numParams)
         return dump.toString()
     end
 
-    function getDebugCode()
+    function stream.getDebugCode()
         local code = ""
         for i,v in ipairs(debugCode) do
+            code = code .. v
             if debugComments[i] then
-                code = code .. table.concat(debugComments[i], "\n")
+                code = code .. (" "):rep(25 - #v) .. ";" .. table.concat(debugComments[i], "\n" .. (" "):rep(25) .. ";")
             end
-            code = code .. v .. "\n"
+            code = code .. "\n"
+            if debugComments[i] and #debugComments[i] > 1 then
+                code = code .. "\n"
+            end
         end
         return code
     end
