@@ -227,5 +227,28 @@ function makeExtendedChunkStream(class, method, codeAttr)
         stream.freeRK(lengthIndex, arrayIndex)
         stream.free()
     end
+
+    function stream.asmNewPrimitiveArray(robj, rlength, class)
+        stream.comment("Creating new primitive array")
+
+        local rarray, ri = stream.alloc(2)
+
+        stream.NEWTABLE(rarray, 0, 0)
+        stream.LOADK(ri, stream.getConstant(1))
+        stream.LE(0, ri, rlength)
+        stream.JMP(3)
+        local rkDefault, rkIter = stream.allocRK(0, 1) -- all primitives are represented by integers and default to 0 -- TODO: Except longs.
+        stream.SETTABLE(rarray, ri, rkDefault)
+        stream.ADD(ri, ri, rkIter)
+        stream.freeRK(rkDefault, rkIter)
+        stream.JMP(-5)
+
+        strea.asmNewInstance(robj, class, 5) -- creates new object
+        local lengthIndex, arrayIndex = stream.allocRK(4, 5)
+        stream.SETTABLE(robj, lengthIndex, rlength)
+        stream.SETTABLE(robj, arrayIndex, rarray)
+        stream.freeRK(lengthIndex, arrayIndex)
+        stream.free(2)
+    end
     return stream
 end
