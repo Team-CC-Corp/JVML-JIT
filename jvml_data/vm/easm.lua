@@ -419,5 +419,35 @@ function makeExtendedChunkStream(class, method, codeAttr, cp)
         stream.free(2)
     end
 
+    local function asmCheckNullPointer(robj)
+        if stream.getPool(robj).nullChecked then
+            return
+        end
+
+        stream.comment("Checking null pointer")
+
+        local npException = classByName("java.lang.NullPointerException")
+        local con = findMethod(npException, "<init>()V")
+
+        stream.TEST(robj, 1)
+        local jid = stream.startJump()
+        
+        local rexc, rcon, rexcDup = stream.alloc(3)
+        stream.asmNewInstance(rexc, npException)
+        stream.asmGetObj(rcon, con[1])
+        stream.MOVE(rexcDup, rexc)
+        stream.CALL(rcon, 2, 1)
+        stream.free(2)
+
+        stream.asmRefillStackTrace(rexc)
+        stream.asmThrow(rexc)
+
+        stream.fixJump(jid)
+
+        stream.free(1)
+
+        stream.getPool(robj).nullChecked = true
+    end
+
     return stream
 end
