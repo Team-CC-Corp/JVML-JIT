@@ -1,6 +1,36 @@
 -- Chunk stream with extensions for null checks and other JVML specific things
-function makeExtendedChunkStream(maxLocals)
-    local stream = makeChunkStream(maxLocals)
+function makeExtendedChunkStream(class, method, codeAttr)
+    local maxLocals = codeAttr.max_locals
+    local stream = makeChunkStream(maxLocals + 1) -- locals + rti
+
+    -- Get attribute data
+    local lineNumberAttribute
+    local stackMapAttribute
+    local sourceFileName
+
+    for i=0,codeAttr.attributes_count-1 do
+        if codeAttr.attributes[i].name == "LineNumberTable" then
+            lineNumberAttribute = codeAttr.attributes[i]
+        elseif codeAttr.attributes[i].name == "StackMapTable" then
+            stackMapAttribute = codeAttr.attributes[i]
+        end
+    end
+
+    for i=0,class.attributes_count-1 do
+        if class.attributes[i].name == "SourceFile" then
+            sourceFileName = cp[class.attributes[i].source_file_index].bytes
+        end
+    end
+
+    function getLineNumberAttribute()
+        return lineNumberAttribute
+    end
+    function getStackMapAttribute()
+        return stackMapAttribute
+    end
+    function getSourceFileName()
+        return sourceFileName
+    end
 
     -- value pools are lists of registers known to share the same value
     local valuePools = { }
