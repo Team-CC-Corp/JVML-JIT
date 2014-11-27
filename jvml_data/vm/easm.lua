@@ -342,5 +342,45 @@ function makeExtendedChunkStream(class, method, codeAttr, cp)
         stream.free(3)
     end
 
+    function stream.asmThrow(rexception)
+        stream.comment("Throw")
+
+        local exceptionHandlers = {}
+        for i=0, codeAttr.exception_table_length-1 do
+            local handler = codeAttr.exception_table[i]
+            if handler.start_pc <= currentInstructionPC and handler.end_pc > currentInstructionPC then
+                table.insert(exceptionHandlers, handler)
+            end
+        end
+        for i=1, #exceptionHandlers do
+            local handler = exceptionHandlers[i]
+            if handler.catch_type == 0 then
+                stream.addJumpToFix(stream.startJump(), handler.handler_pc)
+            else
+                local c = stream.resolveClass(handler.catch_type)
+                local rtest = stream.alloc()
+                stream.MOVE(rtest, rexception)
+                stream.asmInstanceOf(rtest, c)
+
+                local zero = stream.allocRK(0)
+                stream.eq(1, rtest, zero)
+                stream.freeRK(zero)
+
+
+                local jid = stream.startJump()
+                stream.MOVE(maxLocals + 1, rexception)
+                stream.addJumpToFix(stream.startJump(), handler.handler_pc)
+                stream.fixJump(jid)
+                stream.free()
+            end
+        end
+        stream.asmPopStackTrace()
+        local rnil, rexc = stream.alloc(2)
+        stream.LOADNIL(rnil, rnil)
+        stream.MOVE(rexc, rexception)
+        stream.RETURN(rnil, 3)
+        free(2)
+    end
+
     return stream
 end
