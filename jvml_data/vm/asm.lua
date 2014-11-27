@@ -207,6 +207,15 @@ function makeChunkStream(numParams)
         return unpack(ret)
     end
 
+    function stream.alignRegister(n)
+        n = n or 0
+        if n <= register then
+            return stream.free(register - n)
+        else
+            return stream.alloc(n - register)
+        end
+    end
+
     function stream.peek(n)
         return register - n
     end

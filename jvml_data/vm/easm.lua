@@ -187,9 +187,11 @@ function makeExtendedChunkStream(class, method, codeAttr)
         return bit.blshift(u1(),24) + bit.blshift(u1(),16) + bit.blshift(u1(),8) + u1()
     end
 
-
+    -- bridging java and lua instruction stuff
     local l2jMap = { }
     local jumpsToFix = {}
+    local entryIndex = 0
+    local offset = -1
 
     local oldEmit = stream.emit
     function stream.emit(...)
@@ -202,6 +204,18 @@ function makeExtendedChunkStream(class, method, codeAttr)
         if jumpsToFix[currentInstructionPC] then
             for i,v in ipairs(jumpsToFix[currentInstructionPC]) do
                 stream.fixJump(v)
+            end
+        end
+
+        if stackMapAttribute and stackMapAttribute.entries[entryIndex] then
+            local entry = stackMapAttribute.entries[entryIndex]
+            local newOffset = offset + entry.offset_delta + 1
+            if stream.pc() == newOffset then
+                entryIndex = entryIndex + 1
+                offset = newOffset
+
+                stream.alignRegister(entry.stack_items + maxLocals)
+                valuePools = { } -- this should not survive things like if blocks
             end
         end
     end
