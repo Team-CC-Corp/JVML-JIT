@@ -193,5 +193,26 @@ function makeExtendedChunkStream(class, method, codeAttr)
         stream.freeRK(rk)
     end
 
+    function stream.asmNewInstance(robj, class, customObjectSize)
+        stream.comment("Creating new instance: " .. class.name)
+        local rclass, rfields, rmethods = stream.alloc(3)
+        stream.asmGetObj(rclass, class)
+        stream.asmGetObj(rmethods, class.methods)
+        stream.NEWTABLE(robj, customObjectSize or 3, 0)
+        stream.NEWTABLE(rfields, #class.field_info, 0)
+        for i = 1, #class.field_info do
+            local fi = class.field_info[i]
+            local rki = allocRK(i)
+            local rkDefault = PRIMITIVE_WRAPPERS[fi.descriptor] and stream.allocRK(0) or stream.allocNilRK()
+            stream.SETTABLE(rfields, rki, rkDefault)
+            stream.freeRK(rki, rkDefault)
+        end
+        local classIndex, fieldsIndex, methodsIndex = stream.allocRK(1, 2, 3)
+        stream.SETTABLE(robj, classIndex, rclass)
+        stream.SETTABLE(robj, fieldsIndex, rfields)
+        stream.SETTABLE(robj, methodsIndex, rmethods)
+        stream.freeRK(classIndex, fieldsIndex, methodsIndex)
+        stream.free(3)
+    end
     return stream
 end
