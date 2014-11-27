@@ -1,5 +1,5 @@
 -- Chunk stream with extensions for null checks and other JVML specific things
-function makeExtendedChunkStream(class, method, codeAttr)
+function makeExtendedChunkStream(class, method, codeAttr, cp)
     local maxLocals = codeAttr.max_locals
     local stream = makeChunkStream(maxLocals + 1) -- locals + rti
 
@@ -189,6 +189,11 @@ function makeExtendedChunkStream(class, method, codeAttr)
 
     function stream.u4()
         return bit.blshift(u1(),24) + bit.blshift(u1(),16) + bit.blshift(u1(),8) + u1()
+    end
+
+    function stream.resolveClass(cr)
+        local cn = cp[cp[cr].name_index].bytes:gsub("/",".")
+        return classByName(cn)
     end
 
     -- bridging java and lua instruction stuff
