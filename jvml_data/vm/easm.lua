@@ -382,5 +382,13 @@ function makeExtendedChunkStream(class, method, codeAttr, cp)
         free(2)
     end
 
+    function stream.asmCheckThrow(rexception)
+        stream.comment("Check throw")
+        stream.TEST(rexception, 0)
+        local jid = stream.startJump()
+        stream.asmThrow()
+        stream.fixJump(jid)
+    end
+
     return stream
 end
