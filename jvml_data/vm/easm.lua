@@ -148,6 +148,7 @@ function makeExtendedChunkStream(class, method, codeAttr)
         return oldClose(a)
     end
 
+    -- RTI
     local rti = { }
     local reverseRTI = { }
     local function info(obj)
@@ -186,6 +187,7 @@ function makeExtendedChunkStream(class, method, codeAttr)
 
     -- asm utility functions
     function stream.asmGetObj(r, obj)
+        stream.comment("Getting object")
         local rk = stream.allocRK(info(obj))
         stream.GETTABLE(r, 0, rk)
         stream.freeRK(rk)
