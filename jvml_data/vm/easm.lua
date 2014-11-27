@@ -250,5 +250,19 @@ function makeExtendedChunkStream(class, method, codeAttr)
         stream.freeRK(lengthIndex, arrayIndex)
         stream.free(2)
     end
+
+    function stream.asmLoadAndCall(nReturns, f, ...)
+        stream.comment("Loading and calling function")
+
+        local rf = stream.alloc()
+        local rargs = {stream.alloc(#{...})}
+        stream.asmGetObj(rf, f)
+        for i,v in ipairs{...} do
+            stream.asmGetObj(rargs[i], v)
+        end
+        stream.CALL(rf, #rargs + 1, nReturns + 1)
+        stream.free(#rargs + 1)
+        return stream.alloc(nReturns)
+    end
     return stream
 end
