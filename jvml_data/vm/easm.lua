@@ -168,6 +168,8 @@ function makeExtendedChunkStream(class, method, codeAttr)
 
     -- java code functions
     local _pc = 0
+    local currentInstructionPC
+
     function stream.u1()
         _pc = _pc+1
         return code[_pc-1]
@@ -183,6 +185,30 @@ function makeExtendedChunkStream(class, method, codeAttr)
 
     function stream.u4()
         return bit.blshift(u1(),24) + bit.blshift(u1(),16) + bit.blshift(u1(),8) + u1()
+    end
+
+
+    local l2jMap = { }
+    local jumpsToFix = {}
+
+    local oldEmit = stream.emit
+    function stream.emit(...)
+        local index = oldEmit(...)
+        l2jMap[index] = currentInstructionPC
+    end
+
+    function stream.beginJavaInstruction(op) -- fixes jumps and stack map stuff
+        currentInstructionPC = stream.pc()
+        if jumpsToFix[currentInstructionPC] then
+            for i,v in ipairs(jumpsToFix[currentInstructionPC]) do
+                stream.fixJump(v)
+            end
+        end
+    end
+
+    function stream.addJumpToFix(jumpID, jInstruction)
+        jumpsToFix[jInstruction] = jumpsToFix[jInstruction] or {}
+        table.insert(jumpsToFix[jInstruction], jumpID)
     end
 
     -- asm utility functions
