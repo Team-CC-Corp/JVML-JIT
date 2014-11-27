@@ -264,5 +264,11 @@ function makeExtendedChunkStream(class, method, codeAttr)
         stream.free(#rargs + 1)
         return stream.alloc(nReturns)
     end
+
+    function stream.asmPushStackTrace()
+        stream.comment("Pushing stacktrace")
+        stream.asmLoadAndCall(0, pushStackTrace, class.name, method.name:sub(1, method.name:find("%(") - 1), sourceFileName or "", 0)
+    end
+
     return stream
 end
