@@ -280,5 +280,18 @@ function makeExtendedChunkStream(class, method, codeAttr)
         stream.asmLoadAndCall(0, setStackTraceLineNumber, ln)
     end
 
+    function stream.asmInstanceOf(robj, class)
+        stream.comment("Instance of: " .. class.name)
+        local rinstanceof, rNewObj, rClass = stream.alloc(3)
+
+        stream.asmGetObj(rinstanceof, jInstanceof)
+        stream.MOVE(rNewObj, robj)
+        stream.asmGetObj(rClass, class)
+        stream.CALL(rinstanceof, 3, 2)
+        stream.MOVE(robj, rinstanceof)
+
+        stream.free(3)
+    end
+
     return stream
 end
