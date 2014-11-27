@@ -405,5 +405,19 @@ function makeExtendedChunkStream(class, method, codeAttr, cp)
         stream.fixJump(jid)
     end
 
+    function stream.asmRefillStackTrace(rexception)
+        stream.asmSetStackTraceLineNumber(stream.getCurrentLineNumber() or 0)
+
+        local rfill, rexc = stream.alloc(2)
+
+        local fillInStackTrace = findMethod(classByName("java.lang.Throwable"), "fillInStackTrace()Ljava/lang/Throwable;")
+
+        stream.asmGetObj(rfill, fillInStackTrace[1])
+        stream.MOVE(rexc, rexception)
+        stream.CALL(rfill, 2, 1)
+
+        stream.free(2)
+    end
+
     return stream
 end
