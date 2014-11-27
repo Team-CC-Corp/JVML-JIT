@@ -165,6 +165,25 @@ function makeExtendedChunkStream(class, method, codeAttr)
         return rti
     end
 
+    -- java code functions
+    local _pc = 0
+    function stream.u1()
+        _pc = _pc+1
+        return code[_pc-1]
+    end
+    function stream.pc(i)
+        _pc = i or _pc
+        return _pc - 1
+    end
+
+    function stream.u2()
+        return bit.blshift(u1(),8) + u1()
+    end
+
+    function stream.u4()
+        return bit.blshift(u1(),24) + bit.blshift(u1(),16) + bit.blshift(u1(),8) + u1()
+    end
+
     -- asm utility functions
     function stream.asmGetObj(r, obj)
         local rk = stream.allocRK(info(obj))
