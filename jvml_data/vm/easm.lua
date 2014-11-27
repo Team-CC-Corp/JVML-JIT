@@ -34,7 +34,7 @@ function makeExtendedChunkStream(class, method, codeAttr)
 
     -- value pools are lists of registers known to share the same value
     local valuePools = { }
-    local function getPool(reg)
+    function stream.getPool(reg)
         for poolIndex,pool in ipairs(valuePools) do
             for registerIndex,r in ipairs(pool) do
                 if r == reg then
@@ -44,8 +44,8 @@ function makeExtendedChunkStream(class, method, codeAttr)
         end
     end
 
-    local function removeFromPool(reg)
-        local pool, registerIndex, poolIndex = getPool(reg)
+    function stream.removeFromPool(reg)
+        local pool, registerIndex, poolIndex = stream.getPool(reg)
         if pool then
             table.remove(pool, registerIndex)
             if #pool == 0 then
@@ -54,20 +54,24 @@ function makeExtendedChunkStream(class, method, codeAttr)
         end
     end
 
-    local function createPool(reg)
-        removeFromPool(reg)
+    function stream.createPool(reg)
+        stream.removeFromPool(reg)
         local pool = {reg}
         table.insert(valuePools, pool)
         return pool
     end
 
-    local function addToPool(r1, r2)
-        local pool = getPool(r2)
+    function stream.addToPool(r1, r2)
+        local pool = stream.getPool(r2)
         if not pool then
-            pool = createPool(r2)
+            pool = stream.createPool(r2)
         end
         table.insert(pool, r1)
         return pool
+    end
+
+    function stream.clearValuePools()
+        valuePools = { }
     end
 
     -- overwrite memory management functions
@@ -76,7 +80,7 @@ function makeExtendedChunkStream(class, method, codeAttr)
     function stream.alloc(n)
         local ret = {oldAlloc(n)}
         for i,r in ipairs(ret) do
-            createPool(r)
+            stream.createPool(r)
         end
         return unpack(ret)
     end
@@ -84,7 +88,7 @@ function makeExtendedChunkStream(class, method, codeAttr)
     function stream.free(n)
         local ret = {oldFree(n)}
         for i,r in ipairs(ret) do
-            removeFromPool(r)
+            stream.removeFromPool(r)
         end
         return unpack(ret)
     end
@@ -111,14 +115,14 @@ function makeExtendedChunkStream(class, method, codeAttr)
     for i,opName in ipairs(assigners) do
         local old = stream[opName]
         stream[opName] = function(rAssignTo, ...)
-            removeFromPool(rAssignTo)
+            stream.removeFromPool(rAssignTo)
             return old(rAssignTo, ...)
         end
     end
     
     local oldMove = stream.MOVE
     function stream.MOVE(a, b)
-        removeFromPool(a)
+        stream.removeFromPool(a)
         addToPool(a, b)
         return oldMove(a, b)
     end
@@ -126,7 +130,7 @@ function makeExtendedChunkStream(class, method, codeAttr)
     local oldLoadnil = stream.LOADNIL
     function stream.LOADNIL(a, b)
         for r=a,b do
-            removeFromPool(r)
+            stream.removeFromPool(r)
         end
         return oldLoadnil(a, b)
     end
@@ -135,7 +139,7 @@ function makeExtendedChunkStream(class, method, codeAttr)
     function stream.CALL(a, b, c)
         local numArgs = b == 0 and stream.getMaxRegister() - a or b - 1
         for r=a, a + numArgs do
-            removeFromPool(r)
+            stream.removeFromPool(r)
         end
         return oldCall(a, b, c)
     end
@@ -143,7 +147,7 @@ function makeExtendedChunkStream(class, method, codeAttr)
     local oldClose = stream.CLOSE
     function stream.CLOSE(a)
         for i=a,stream.getMaxRegister() do
-            removeFromPool(i)
+            stream.removeFromPool(i)
         end
         return oldClose(a)
     end
@@ -215,7 +219,7 @@ function makeExtendedChunkStream(class, method, codeAttr)
                 offset = newOffset
 
                 stream.alignRegister(entry.stack_items + maxLocals)
-                valuePools = { } -- this should not survive things like if blocks
+                stream.clearValuePools() -- this should not survive things like if blocks
             end
         end
     end
