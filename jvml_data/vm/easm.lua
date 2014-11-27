@@ -214,5 +214,18 @@ function makeExtendedChunkStream(class, method, codeAttr)
         stream.freeRK(classIndex, fieldsIndex, methodsIndex)
         stream.free(3)
     end
+
+    function stream.asmNewArray(robj, rlength, class)
+        stream.comment("Creating new array")
+
+        local rarray = stream.alloc()
+        stream.NEWTABLE(rarray, 0, 0)
+        stream.asmNewInstance(robj, class, 5) -- creates new object
+        local lengthIndex, arrayIndex = stream.allocRK(4, 5)
+        stream.SETTABLE(robj, lengthIndex, rlength)
+        stream.SETTABLE(robj, arrayIndex, rarray)
+        stream.freeRK(lengthIndex, arrayIndex)
+        stream.free()
+    end
     return stream
 end
