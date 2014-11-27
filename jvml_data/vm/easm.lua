@@ -218,7 +218,7 @@ function makeExtendedChunkStream(class, method, codeAttr)
                 entryIndex = entryIndex + 1
                 offset = newOffset
 
-                stream.alignRegister(entry.stack_items + maxLocals)
+                stream.alignToRegister(entry.stack_items + maxLocals)
                 stream.clearValuePools() -- this should not survive things like if blocks
             end
         end

@@ -207,7 +207,7 @@ function makeChunkStream(numParams)
         return unpack(ret)
     end
 
-    function stream.alignRegister(n)
+    function stream.alignToRegister(n)
         n = n or 0
         if n <= register then
             return stream.free(register - n)
