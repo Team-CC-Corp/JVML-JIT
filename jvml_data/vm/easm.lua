@@ -275,5 +275,10 @@ function makeExtendedChunkStream(class, method, codeAttr)
         stream.asmLoadAndCall(0, popStackTrace)
     end
 
+    function stream.asmSetStackTraceLineNumber(ln)
+        stream.comment("Setting line number")
+        stream.asmLoadAndCall(0, setStackTraceLineNumber, ln)
+    end
+
     return stream
 end
