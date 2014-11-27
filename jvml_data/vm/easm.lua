@@ -196,6 +196,21 @@ function makeExtendedChunkStream(class, method, codeAttr, cp)
         return classByName(cn)
     end
 
+    function stream.getCurrentLineNumber()
+        local ln
+        if lineNumberAttribute then
+            local len = lineNumberAttribute.line_number_table_length
+            for i = 0, len - 1 do
+                local entry = lineNumberAttribute.line_number_table[i]
+                if entry.start_pc > stream.pc() then
+                    ln = lineNumberAttribute.line_number_table[i - 1].line_number
+                    break
+                end
+            end
+        end
+        return ln
+    end
+
     -- bridging java and lua instruction stuff
     local l2jMap = { }
     local jumpsToFix = {}
