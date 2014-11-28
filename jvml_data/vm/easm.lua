@@ -449,5 +449,63 @@ function makeExtendedChunkStream(class, method, codeAttr, cp)
         stream.getPool(robj).nullChecked = true
     end
 
+    function stream.asmCheckArrayIndexOutOfBounds(rarr, ri)
+        local oobException = classByName("java.lang.ArrayIndexOutOfBoundsException")
+        local con = findMethod(oobException, "<init>(I)V")
+
+        local rlen, rexc, rcon, rpexc, rpi = stream.alloc(5)
+        local lengthIndex = stream.allocRK(4)
+
+        stream.GETTABLE(rlen, rarr, lengthIndex)
+        stream.LT(1, ri, rlen)
+        local jid = stream.startJump()
+
+        stream.asmNewInstance(rexc, oobException)
+        stream.asmGetObj(rcon, con[1])
+        stream.MOVE(rpi, ri)
+        stream.MOVE(rpexc, rexc)
+        stream.CALL(rcon, 3, 3)
+        stream.asmRefillStackTrace(rexc)
+        stream.asmThrow(rexc)
+        stream.fixJump(jid)
+
+        stream.freeRK(lengthIndex)
+        stream.free(5)
+    end
+
+    function stream.asmAALoad() -- does do memory management
+        stream.comment("Array load")
+        local rarr, ri = stream.peek(1), stream.peek(0)
+
+        stream.asmCheckNullPointer(rarr)
+        stream.asmCheckArrayIndexOutOfBounds(rarr, ri)
+
+        local j2lOffset, arrayIndex = stream.allocRK(1, 5)
+
+        stream.ADD(ri, ri, j2lOffset)
+        stream.GETTABLE(rarr, rarr, arrayIndex)
+        stream.GETTABLE(rarr, rarr, ri)
+
+        stream.freeRK(j2lOffset, arrayIndex)
+        stream.free()
+    end
+
+    function stream.asmAAStore() -- does do memory management
+        stream.comment("Array store")
+        local rarr, ri, rval = stream.peek(2), stream.peek(1), stream.peek(0)
+
+        stream.asmCheckNullPointer(rarr)
+        stream.asmCheckArrayIndexOutOfBounds(rarr, ri)
+
+        local j2lOffset, arrayIndex = stream.allocRK(1, 5)
+
+        stream.ADD(ri, ri, j2lOffset)
+        stream.GETTABLE(rarr, rarr, arrayIndex)
+        stream.SETTABLE(rarr, ri, rval)
+
+        stream.freeRK(j2lOffset, arrayIndex)
+        stream.free(3)
+    end
+
     return stream
 end
