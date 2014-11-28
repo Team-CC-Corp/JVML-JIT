@@ -378,7 +378,7 @@ function makeExtendedChunkStream(class, method, codeAttr, cp)
                 stream.asmInstanceOf(rtest, c)
 
                 local zero = stream.allocRK(0)
-                stream.eq(1, rtest, zero)
+                stream.EQ(1, rtest, zero)
                 stream.freeRK(zero)
 
 
