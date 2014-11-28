@@ -507,5 +507,76 @@ function makeExtendedChunkStream(class, method, codeAttr, cp)
         stream.free(3)
     end
 
+    local divByZeroJString = toJString("/ by zero")
+    function stream.asmDivCheck(r1, r2)
+        if stream.getPool(r2).zeroChecked then
+            return
+        end
+
+        stream.comment("Div check")
+
+        local arithException = classByName("java.lang.ArithmeticException")
+        local con = findMethod(arithException, "<init>(Ljava/lang/String;)V")
+
+        local rexc, rcon, rpexc, rmsg = stream.alloc(4)
+        local zero = stream.allocRK(0)
+
+        stream.EQ(0, r2, zero)            -- Check for / by zero.
+        local jid = stream.startJump()
+
+        stream.asmNewInstance(rexc, arithException)
+        stream.asmGetObj(rmsg, divByZeroJString)
+        stream.asmGetObj(rcon, con[1])
+        stream.MOVE(rpexc, rexc)
+        stream.CALL(rcon, 3, 3)
+
+        stream.asmRefillStackTrace(rexc)
+        stream.asmThrow(rexc)
+
+        stream.fixJump(jid)
+
+        stream.freeRK(zero)
+        stream.free(4)
+
+        stream.getPool(r2).zeroChecked = true
+    end
+
+    function stream.asmLongDivCheck(r1, r2)
+        if stream.getPool(r2).zeroChecked then
+            return
+        end
+
+        stream.comment("Long div check")
+
+        local arithException = classByName("java.lang.ArithmeticException")
+        local con = findMethod(arithException, "<init>(Ljava/lang/String;)V")
+
+        local req, rp2, rzero = stream.alloc(3)        -- Check for / by zero.
+        stream.asmGetObj(req, bigintEQ)
+        stream.MOVE(rp2, r2)
+        stream.asmGetObj(rzero, bigint(0))
+        stream.CALL(req, 3, 2)
+        free(2)
+
+        local rexc, rcon, rpexc, rmsg = stream.alloc(4)
+
+        stream.TEST(req, 0)                  -- Check result.
+        local jid = stream.startJump()
+
+        stream.asmNewInstance(rexc, arithException)
+        stream.asmGetObj(rmsg, divByZeroJString)
+        stream.asmGetObj(rcon, con[1])
+        stream.MOVE(rpexc, rexc)
+        stream.CALL(rcon, 3, 3)
+        stream.asmRefillStackTrace(rexc)
+        stream.asmThrow(rexc)
+
+        stream.fixJump(jid)
+
+        stream.free(5)
+
+        stream.getPool(r2).zeroChecked = true
+    end
+
     return stream
 end
