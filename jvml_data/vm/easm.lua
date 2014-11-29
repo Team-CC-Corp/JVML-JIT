@@ -578,5 +578,99 @@ function makeExtendedChunkStream(class, method, codeAttr, cp)
         stream.getPool(r2).zeroChecked = true
     end
 
+    function stream.asmIntDiv() -- does memory management
+        stream.comment("Int div")
+        local r1, r2 = stream.peek(1), stream.peek(0)
+        stream.asmDivCheck(r1, r2)
+
+        local one = stream.allocRK(1)
+        stream.DIV(r1, r1, r2)
+        stream.MOD(r2, r1, one)      -- Floor the value.
+        stream.SUB(r1, r1, r2)
+        stream.freeRK(one)
+        stream.free(1)
+    end
+
+    function stream.asmFloatDiv()
+        stream.comment("Int div")
+        local r1, r2 = stream.peek(1), stream.peek(0)
+        stream.asmDivCheck(r1, r2)
+
+        stream.DIV(r1, r1, r2)
+        stream.free(1)
+    end
+
+    function stream.asmMod()
+        stream.comment("Modulo")
+        local r1, r2 = stream.peek(1), stream.peek(0)
+        stream.asmDivCheck(r1, r2)
+
+        stream.MOD(r1, r1, r2)
+        stream.free(1)
+    end
+
+    function stream.asmNumericCompare() -- does memory management
+        stream.comment("Numeric compare")
+        local r1, r2 = stream.peek(1), stream.peek(0)
+        stream.EQ(0, r1, r2)
+        stream.JMP(2)
+        stream.LOADK(r1, stream.getConstant(0))
+        local eqjmp = stream.startJump()
+        stream.LT(0, r1, r2)
+        stream.JMP(2)
+        stream.LOADK(r1, stream.getConstant(-1))
+        local ltjmp = stream.startJump()
+        stream.LOADK(r1, stream.getConstant(1))
+
+
+        stream.fixJump(eqjmp)
+        stream.fixJump(ltjmp)
+        stream.free()
+    end
+
+    function stream.asmLongDiv()
+        stream.comment("Long div")
+
+        local r1, r2 = stream.peek(1), stream.peek(0)
+        stream.asmLongDivCheck(r1, r2)
+        local newR1, newR2 = r2, stream.alloc()
+        stream.MOVE(newR2, r2)
+        stream.MOVE(newR1, r1)
+        local rdiv = r1
+        stream.asmGetObj(rdiv, bigintDiv)
+
+        stream.call(rdiv, 3, 2)
+        stream.free(2)
+    end
+
+    function stream.asmLongMod()
+        stream.comment("Long mod")
+
+        local r1, r2 = stream.peek(1), stream.peek(0)
+        stream.asmLongDivCheck(r1, r2)
+        local newR1, newR2 = r2, stream.alloc()
+        stream.MOVE(newR2, r2)
+        stream.MOVE(newR1, r1)
+        local rmod = r1
+        stream.asmGetObj(rmod, bigintMod)
+
+        stream.CALL(rmod, 3, 2)
+        stream.free(2)
+    end
+
+    function stream.asmLongCompare()
+        stream.comment("Long compare")
+
+        local r1, r2 = stream.peek(1), stream.peek(0)
+        local newR1, newR2 = r2, stream.alloc()
+        stream.MOVE(newR2, r2)
+        stream.MOVE(newR1, r1)
+        local rcmp = r1
+        stream.asmGetObj(rcmp, bigintCompare) -- Luckily, bigintCompare returns -1,0,1 as expected by the JVM
+
+        stream.CALL(rcmp, 3, 2)
+        stream.free(2)
+    end
+
     return stream
 end
