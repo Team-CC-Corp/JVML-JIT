@@ -8,35 +8,51 @@ local function compile(class, method, codeAttr, cp)
 
     local oplookup = {
         function() -- 01
-            error("01 not implemented")
+            -- null
+            local r = stream.alloc()
+            stream.LOADNIL(r, r)
         end, function() -- 02
-            error("02 not implemented")
+            -- iconst_m1
+            stream.asmLoadk(stream.alloc(), -1)
         end, function() -- 03
-            error("03 not implemented")
+            -- iconst_0
+            stream.asmLoadk(stream.alloc(), 0)
         end, function() -- 04
-            error("04 not implemented")
+            -- iconst_1
+            stream.asmLoadk(stream.alloc(), 1)
         end, function() -- 05
-            error("05 not implemented")
+            -- iconst_2
+            stream.asmLoadk(stream.alloc(), 2)
         end, function() -- 06
-            error("06 not implemented")
+            -- iconst_3
+            stream.asmLoadk(stream.alloc(), 3)
         end, function() -- 07
-            error("07 not implemented")
+            -- iconst_4
+            stream.asmLoadk(stream.alloc(), 4)
         end, function() -- 08
-            error("08 not implemented")
+            -- iconst_5
+            stream.asmLoadk(stream.alloc(), 5)
         end, function() -- 09
-            error("09 not implemented")
+            -- lconst_0
+            stream.asmGetObj(stream.alloc(), bigint(0))
         end, function() -- 0A
-            error("0A not implemented")
+            -- lconst_1
+            stream.asmGetObj(stream.alloc(), bigint(1))
         end, function() -- 0B
-            error("0B not implemented")
+            -- fconst_0
+            stream.asmLoadk(stream.alloc(), 0)
         end, function() -- 0C
-            error("0C not implemented")
+            -- fconst_1
+            stream.asmLoadk(stream.alloc(), 1)
         end, function() -- 0D
-            error("0D not implemented")
+            -- fconst_2
+            stream.asmLoadk(stream.alloc(), 2)
         end, function() -- 0E
-            error("0E not implemented")
+            -- dconst_0
+            stream.asmLoadk(stream.alloc(), 0)
         end, function() -- 0F
-            error("0F not implemented")
+            -- dconst_1
+            stream.asmLoadk(stream.alloc(), 1)
         end, function() -- 10
             error("10 not implemented")
         end, function() -- 11
