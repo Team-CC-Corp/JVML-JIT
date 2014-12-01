@@ -261,5 +261,10 @@ function makeChunkStream(numParams)
         return code
     end
 
+    -- utility functions
+    function stream.asmLoadk(r, k)
+        stream.LOADK(r, stream.getConstant(k))
+    end
+
     return stream
 end
