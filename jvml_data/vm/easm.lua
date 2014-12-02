@@ -277,6 +277,8 @@ function makeExtendedChunkStream(class, method, codeAttr, cp)
         stream.SETTABLE(robj, methodsIndex, rmethods)
         stream.freeRK(classIndex, fieldsIndex, methodsIndex)
         stream.free(3)
+
+        stream.getPool(robj).nullChecked = true
     end
 
     function stream.asmNewArray(robj, rlength, class)
@@ -290,6 +292,8 @@ function makeExtendedChunkStream(class, method, codeAttr, cp)
         stream.SETTABLE(robj, arrayIndex, rarray)
         stream.freeRK(lengthIndex, arrayIndex)
         stream.free()
+
+        stream.getPool(robj).nullChecked = true
     end
 
     function stream.asmNewPrimitiveArray(robj, rlength, class)
@@ -313,6 +317,8 @@ function makeExtendedChunkStream(class, method, codeAttr, cp)
         stream.SETTABLE(robj, arrayIndex, rarray)
         stream.freeRK(lengthIndex, arrayIndex)
         stream.free(2)
+
+        stream.getPool(robj).nullChecked = true
     end
 
     function stream.asmLoadAndCall(nReturns, f, ...)
