@@ -696,5 +696,28 @@ function makeExtendedChunkStream(class, method, codeAttr, cp)
         stream.asmGetObj(reg, jstr)
     end
 
+    function stream.asmFixLongOverflow(r)
+        local rop, rnum, rarg = stream.alloc(3)
+
+        stream.MOVE(rnum, r)
+        stream.asmGetObj(rop, bigintAdd)
+        stream.asmGetObj(rarg, bigint("9223372036854775808"))
+        stream.CALL(rop, 3, 2)
+
+        stream.MOVE(rnum, rop)
+        stream.asmGetObj(rop, bigintMod)
+        stream.asmGetObj(rarg, bigint("18446744073709551616"))
+        stream.CALL(rop, 3, 2)
+
+        stream.MOVE(rnum, rop)
+        stream.asmGetObj(rop, bigintSub)
+        stream.asmGetObj(rarg, bigint("9223372036854775808"))
+        stream.CALL(rop, 3, 2)
+
+        stream.MOVE(r, rop)
+
+        stream.free(3)
+    end
+
     return stream
 end

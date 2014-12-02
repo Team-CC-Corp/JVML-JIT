@@ -312,13 +312,34 @@ local function compile(class, method, codeAttr, cp)
         end, function() -- 5F
             error("5F not implemented")
         end, function() -- 60
-            error("60 not implemented")
+            -- add
+            local r1 = stream.peek(1)
+            local r2 = stream.peek(0)
+            stream.ADD(r1, r1, r2)
+            stream.free(1)
         end, function() -- 61
-            error("61 not implemented")
+            -- ladd
+            local r1 = stream.peek(1)
+            local r2 = stream.peek(0)
+            local r3 = stream.alloc()
+            stream.MOVE(r3, r2)
+            stream.MOVE(r2, r1)
+            stream.asmGetObj(r1, bigintAdd)
+            stream.CALL(r1, 3, 2)
+            stream.free(2)
+            stream.asmFixLongOverflow(r1)
         end, function() -- 62
-            error("62 not implemented")
+            -- add
+            local r1 = stream.peek(1)
+            local r2 = stream.peek(0)
+            stream.ADD(r1, r1, r2)
+            stream.free(1)
         end, function() -- 63
-            error("63 not implemented")
+            -- add
+            local r1 = stream.peek(1)
+            local r2 = stream.peek(0)
+            stream.ADD(r1, r1, r2)
+            stream.free(1)
         end, function() -- 64
             error("64 not implemented")
         end, function() -- 65
