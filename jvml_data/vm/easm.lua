@@ -672,5 +672,15 @@ function makeExtendedChunkStream(class, method, codeAttr, cp)
         stream.free(2)
     end
 
+    function stream.asmLoadJString(reg, str)
+        local jstr = cp.jitStrings[str]
+        if not jstr then
+            cp.jitStrings[str] = toJString(str)
+            jstr = cp.jitStrings[str]
+        end
+        
+        stream.asmGetObj(reg, jstr)
+    end
+
     return stream
 end
