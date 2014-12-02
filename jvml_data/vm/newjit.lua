@@ -1,8 +1,5 @@
 local function compile(class, method, codeAttr, cp)
     -- declarations
-    local getCurrentLineNumber
-
-    local code = codeAttr.code
     local stream = makeExtendedChunkStream(class, method, codeAttr, cp)
 
 
