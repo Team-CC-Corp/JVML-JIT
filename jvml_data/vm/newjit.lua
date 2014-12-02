@@ -341,13 +341,34 @@ local function compile(class, method, codeAttr, cp)
             stream.ADD(r1, r1, r2)
             stream.free(1)
         end, function() -- 64
-            error("64 not implemented")
+            -- sub
+            local r1 = stream.peek(1)
+            local r2 = stream.peek(0)
+            stream.SUB(r1, r1, r2)
+            stream.free(1)
         end, function() -- 65
-            error("65 not implemented")
+            -- lsub
+            local r1 = stream.peek(1)
+            local r2 = stream.peek(0)
+            local r3 = stream.alloc()
+            stream.MOVE(r3, r2)
+            stream.MOVE(r2, r1)
+            stream.asmGetObj(r1, bigintSub)
+            stream.CALL(r1, 3, 2)
+            stream.free(2)
+            stream.asmFixLongOverflow(r1)
         end, function() -- 66
-            error("66 not implemented")
+            -- sub
+            local r1 = stream.peek(1)
+            local r2 = stream.peek(0)
+            stream.SUB(r1, r1, r2)
+            stream.free(1)
         end, function() -- 67
-            error("67 not implemented")
+            -- sub
+            local r1 = stream.peek(1)
+            local r2 = stream.peek(0)
+            stream.SUB(r1, r1, r2)
+            stream.free(1)
         end, function() -- 68
             error("68 not implemented")
         end, function() -- 69
