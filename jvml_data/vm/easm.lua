@@ -61,13 +61,19 @@ function makeExtendedChunkStream(class, method, codeAttr, cp)
         return pool
     end
 
-    function stream.addToPool(r1, r2)
-        local pool = stream.getPool(r2)
-        if not pool then
-            pool = stream.createPool(r2)
+    function stream.addToPool(add, to)
+        local toPool = stream.getPool(to)
+        if not toPool then
+            toPool = stream.createPool(2)
         end
-        table.insert(pool, r1)
-        return pool
+        local addPool = stream.getPool(add)
+        if addPool and addPool ~= toPool then
+            stream.removeFromPool(add)
+        end
+        if addPool ~= toPool then
+            table.insert(toPool, add)
+        end
+        return toPool
     end
 
     function stream.clearValuePools()
