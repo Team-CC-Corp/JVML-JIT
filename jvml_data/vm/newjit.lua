@@ -262,21 +262,29 @@ local function compile(class, method, codeAttr, cp)
             -- stores
             stream.MOVE(4, stream.free())
         end, function() -- 4F
-            error("4F not implemented")
+            -- aastore
+            stream.asmAAStore()
         end, function() -- 50
-            error("50 not implemented")
+            -- aastore
+            stream.asmAAStore()
         end, function() -- 51
-            error("51 not implemented")
+            -- aastore
+            stream.asmAAStore()
         end, function() -- 52
-            error("52 not implemented")
+            -- aastore
+            stream.asmAAStore()
         end, function() -- 53
-            error("53 not implemented")
+            -- aastore
+            stream.asmAAStore()
         end, function() -- 54
-            error("54 not implemented")
+            -- aastore
+            stream.asmAAStore()
         end, function() -- 55
-            error("55 not implemented")
+            -- aastore
+            stream.asmAAStore()
         end, function() -- 56
-            error("56 not implemented")
+            -- aastore
+            stream.asmAAStore()
         end, function() -- 57
             error("57 not implemented")
         end, function() -- 58
