@@ -396,21 +396,29 @@ local function compile(class, method, codeAttr, cp)
             stream.MUL(r1, r1, r2)
             stream.free(1)
         end, function() -- 6C
-            error("6C not implemented")
+            -- div
+            stream.asmIntDiv()
         end, function() -- 6D
-            error("6D not implemented")
+            -- div
+            stream.asmLongDiv()
         end, function() -- 6E
-            error("6E not implemented")
+            -- div
+            stream.asmFloatDiv()
         end, function() -- 6F
-            error("6F not implemented")
+            -- div
+            stream.asmFloatDiv()
         end, function() -- 70
-            error("70 not implemented")
+            -- rem
+            stream.asmMod()
         end, function() -- 71
-            error("71 not implemented")
+            -- rem
+            stream.asmLongMod()
         end, function() -- 72
-            error("72 not implemented")
+            -- rem
+            stream.asmMod()
         end, function() -- 73
-            error("73 not implemented")
+            -- rem
+            stream.asmMod()
         end, function() -- 74
             error("74 not implemented")
         end, function() -- 75
