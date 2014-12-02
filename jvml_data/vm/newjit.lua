@@ -54,65 +54,122 @@ local function compile(class, method, codeAttr, cp)
             -- dconst_1
             stream.asmLoadk(stream.alloc(), 1)
         end, function() -- 10
-            error("10 not implemented")
+            -- bipush
+            stream.asmLoadk(stream.alloc(), stream.u1())
         end, function() -- 11
-            error("11 not implemented")
+            -- sipush
+            stream.asmLoadk(stream.alloc(), stream.u2())
         end, function() -- 12
-            error("12 not implemented")
+            -- ldc
+            local s = cp[stream.u1()]
+            local reg = stream.alloc()
+            if s.bytes then
+                stream.asmLoadk(reg, s.bytes)
+            elseif s.tag == CONSTANT.Class then
+                stream.asmGetObj(reg, getJClass(cp[s.name_index].bytes:gsub("/", ".")))
+                stream.getPool(reg).nullChecked = true
+            else
+                stream.asmLoadString(reg, cp[s.string_index].bytes)
+                stream.getPool(reg).nullChecked = true
+            end
         end, function() -- 13
-            error("13 not implemented")
+            -- ldc_w
+            local s = cp[stream.u2()]
+            local reg = stream.alloc()
+            if s.bytes then
+                stream.asmLoadk(reg, s.bytes)
+            elseif s.tag == CONSTANT.Class then
+                stream.asmGetObj(reg, getJClass(cp[s.name_index].bytes:gsub("/", ".")))
+                stream.getPool(reg).nullChecked = true
+            else
+                stream.asmLoadString(reg, cp[s.string_index].bytes)
+                stream.getPool(reg).nullChecked = true
+            end
         end, function() -- 14
-            error("14 not implemented")
+            -- ldc2_w
+            local s = cp[stream.u2()]
+            if s.cl == "D" then
+                stream.asmLoadk(stream.alloc(), s.bytes)
+            elseif s.cl == "J" then
+                stream.asmGetObj(stream.alloc(), s.bytes)
+            else
+                error("Unknown wide constant type.")
+            end
         end, function() -- 15
-            error("15 not implemented")
+            -- loads
+            stream.MOVE(stream.alloc(), stream.u1() + 1)
         end, function() -- 16
-            error("16 not implemented")
+            -- loads
+            stream.MOVE(stream.alloc(), stream.u1() + 1)
         end, function() -- 17
-            error("17 not implemented")
+            -- loads
+            stream.MOVE(stream.alloc(), stream.u1() + 1)
         end, function() -- 18
-            error("18 not implemented")
+            -- loads
+            stream.MOVE(stream.alloc(), stream.u1() + 1)
         end, function() -- 19
-            error("19 not implemented")
+            -- loads
+            stream.MOVE(stream.alloc(), stream.u1() + 1)
         end, function() -- 1A
-            error("1A not implemented")
+            -- load_0
+            stream.MOVE(stream.alloc(), 1)
         end, function() -- 1B
-            error("1B not implemented")
+            -- load_1
+            stream.MOVE(stream.alloc(), 2)
         end, function() -- 1C
-            error("1C not implemented")
+            -- load_2
+            stream.MOVE(stream.alloc(), 3)
         end, function() -- 1D
-            error("1D not implemented")
+            -- load_3
+            stream.MOVE(stream.alloc(), 4)
         end, function() -- 1E
-            error("1E not implemented")
+            -- load_0
+            stream.MOVE(stream.alloc(), 1)
         end, function() -- 1F
-            error("1F not implemented")
+            -- load_1
+            stream.MOVE(stream.alloc(), 2)
         end, function() -- 20
-            error("20 not implemented")
+            -- load_2
+            stream.MOVE(stream.alloc(), 3)
         end, function() -- 21
-            error("21 not implemented")
+            -- load_3
+            stream.MOVE(stream.alloc(), 4)
         end, function() -- 22
-            error("22 not implemented")
+            -- load_0
+            stream.MOVE(stream.alloc(), 1)
         end, function() -- 23
-            error("23 not implemented")
+            -- load_1
+            stream.MOVE(stream.alloc(), 2)
         end, function() -- 24
-            error("24 not implemented")
+            -- load_2
+            stream.MOVE(stream.alloc(), 3)
         end, function() -- 25
-            error("25 not implemented")
+            -- load_3
+            stream.MOVE(stream.alloc(), 4)
         end, function() -- 26
-            error("26 not implemented")
+            -- load_0
+            stream.MOVE(stream.alloc(), 1)
         end, function() -- 27
-            error("27 not implemented")
+            -- load_1
+            stream.MOVE(stream.alloc(), 2)
         end, function() -- 28
-            error("28 not implemented")
+            -- load_2
+            stream.MOVE(stream.alloc(), 3)
         end, function() -- 29
-            error("29 not implemented")
+            -- load_3
+            stream.MOVE(stream.alloc(), 4)
         end, function() -- 2A
-            error("2A not implemented")
+            -- load_0
+            stream.MOVE(stream.alloc(), 1)
         end, function() -- 2B
-            error("2B not implemented")
+            -- load_1
+            stream.MOVE(stream.alloc(), 2)
         end, function() -- 2C
-            error("2C not implemented")
+            -- load_2
+            stream.MOVE(stream.alloc(), 3)
         end, function() -- 2D
-            error("2D not implemented")
+            -- load_3
+            stream.MOVE(stream.alloc(), 4)
         end, function() -- 2E
             error("2E not implemented")
         end, function() -- 2F
