@@ -370,13 +370,34 @@ local function compile(class, method, codeAttr, cp)
             stream.SUB(r1, r1, r2)
             stream.free(1)
         end, function() -- 68
-            error("68 not implemented")
+            -- mul
+            local r1 = stream.peek(1)
+            local r2 = stream.peek(0)
+            stream.MUL(r1, r1, r2)
+            stream.free(1)
         end, function() -- 69
-            error("69 not implemented")
+            -- lmul
+            local r1 = stream.peek(1)
+            local r2 = stream.peek(0)
+            local r3 = stream.alloc()
+            stream.MOVE(r3, r2)
+            stream.MOVE(r2, r1)
+            stream.asmGetObj(r1, bigintMul)
+            stream.CALL(r1, 3, 2)
+            stream.free(2)
+            stream.asmFixLongOverflow(r1)
         end, function() -- 6A
-            error("6A not implemented")
+            -- mul
+            local r1 = stream.peek(1)
+            local r2 = stream.peek(0)
+            stream.MUL(r1, r1, r2)
+            stream.free(1)
         end, function() -- 6B
-            error("6B not implemented")
+            -- mul
+            local r1 = stream.peek(1)
+            local r2 = stream.peek(0)
+            stream.MUL(r1, r1, r2)
+            stream.free(1)
         end, function() -- 6C
             error("6C not implemented")
         end, function() -- 6D
