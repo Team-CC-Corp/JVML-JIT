@@ -187,55 +187,80 @@ local function compile(class, method, codeAttr, cp)
         end, function() -- 35
             stream.asmAALoad()
         end, function() -- 36
-            error("36 not implemented")
+            -- stores
+            stream.MOVE(stream.u1() + 1, stream.free())
         end, function() -- 37
-            error("37 not implemented")
+            -- stores
+            stream.MOVE(stream.u1() + 1, stream.free())
         end, function() -- 38
-            error("38 not implemented")
+            -- stores
+            stream.MOVE(stream.u1() + 1, stream.free())
         end, function() -- 39
-            error("39 not implemented")
+            -- stores
+            stream.MOVE(stream.u1() + 1, stream.free())
         end, function() -- 3A
-            error("3A not implemented")
+            -- stores
+            stream.MOVE(stream.u1() + 1, stream.free())
         end, function() -- 3B
-            error("3B not implemented")
+            -- stores
+            stream.MOVE(1, stream.free())
         end, function() -- 3C
-            error("3C not implemented")
+            -- stores
+            stream.MOVE(2, stream.free())
         end, function() -- 3D
-            error("3D not implemented")
+            -- stores
+            stream.MOVE(3, stream.free())
         end, function() -- 3E
-            error("3E not implemented")
+            -- stores
+            stream.MOVE(4, stream.free())
         end, function() -- 3F
-            error("3F not implemented")
+            -- stores
+            stream.MOVE(1, stream.free())
         end, function() -- 40
-            error("40 not implemented")
+            -- stores
+            stream.MOVE(2, stream.free())
         end, function() -- 41
-            error("41 not implemented")
+            -- stores
+            stream.MOVE(3, stream.free())
         end, function() -- 42
-            error("42 not implemented")
+            -- stores
+            stream.MOVE(4, stream.free())
         end, function() -- 43
-            error("43 not implemented")
+            -- stores
+            stream.MOVE(1, stream.free())
         end, function() -- 44
-            error("44 not implemented")
+            -- stores
+            stream.MOVE(2, stream.free())
         end, function() -- 45
-            error("45 not implemented")
+            -- stores
+            stream.MOVE(3, stream.free())
         end, function() -- 46
-            error("46 not implemented")
+            -- stores
+            stream.MOVE(4, stream.free())
         end, function() -- 47
-            error("47 not implemented")
+            -- stores
+            stream.MOVE(1, stream.free())
         end, function() -- 48
-            error("48 not implemented")
+            -- stores
+            stream.MOVE(2, stream.free())
         end, function() -- 49
-            error("49 not implemented")
+            -- stores
+            stream.MOVE(3, stream.free())
         end, function() -- 4A
-            error("4A not implemented")
+            -- stores
+            stream.MOVE(4, stream.free())
         end, function() -- 4B
-            error("4B not implemented")
+            -- stores
+            stream.MOVE(1, stream.free())
         end, function() -- 4C
-            error("4C not implemented")
+            -- stores
+            stream.MOVE(2, stream.free())
         end, function() -- 4D
-            error("4D not implemented")
+            -- stores
+            stream.MOVE(3, stream.free())
         end, function() -- 4E
-            error("4E not implemented")
+            -- stores
+            stream.MOVE(4, stream.free())
         end, function() -- 4F
             error("4F not implemented")
         end, function() -- 50
