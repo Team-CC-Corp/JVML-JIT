@@ -67,5 +67,9 @@ public class NumberTest {
         a = 1;
         b = 3;
         System.out.println((((int)a - 1) % b) == 0);
+
+        System.out.println((double)a < (double)b);
+        System.out.println((long)a < (long)b);
+        System.out.println(Math.abs(-1));
     }
 }
