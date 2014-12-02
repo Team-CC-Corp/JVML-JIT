@@ -446,6 +446,7 @@ local function compile(class, method, codeAttr, cp)
             stream.MUL(r1, r1, k)
             stream.freeRK(k)
         end, function() -- 78
+            --shl
             local r1 = stream.peek(1)
             local r2 = stream.peek(0)
             local r3 = stream.alloc()
@@ -456,6 +457,7 @@ local function compile(class, method, codeAttr, cp)
         end, function() -- 79
             error("79 not implemented")
         end, function() -- 7A
+            -- shr
             local r1 = stream.peek(1)
             local r2 = stream.peek(0)
             local r3 = stream.alloc()
@@ -466,6 +468,7 @@ local function compile(class, method, codeAttr, cp)
         end, function() -- 7B
             error("7B not implemented")
         end, function() -- 7C
+            -- ushr
             local r1 = stream.peek(1)
             local r2 = stream.peek(0)
             local r3 = stream.alloc()
@@ -476,15 +479,37 @@ local function compile(class, method, codeAttr, cp)
         end, function() -- 7D
             error("7D not implemented")
         end, function() -- 7E
-            error("7E not implemented")
+            -- and
+            local r1 = stream.peek(1)
+            local r2 = stream.peek(0)
+            local r3 = stream.alloc()
+            stream.MOVE(r3, r1)
+            stream.asmGetObj(r1, info(bit.band))
+            stream.CALL(r1, 3, 2)
+            stream.free(2)
         end, function() -- 7F
             error("7F not implemented")
         end, function() -- 80
+            -- or
+            local r1 = stream.peek(1)
+            local r2 = stream.peek(0)
+            local r3 = stream.alloc()
+            stream.MOVE(r3, r1)
+            stream.asmGetObj(r1, info(bit.bor))
+            stream.CALL(r1, 3, 2)
+            stream.free(2)
             error("80 not implemented")
         end, function() -- 81
             error("81 not implemented")
         end, function() -- 82
-            error("82 not implemented")
+            -- xor
+            local r1 = stream.peek(1)
+            local r2 = stream.peek(0)
+            local r3 = stream.alloc()
+            stream.MOVE(r3, r1)
+            stream.asmGetObj(r1, info(bit.bxor))
+            stream.CALL(r1, 3, 2)
+            stream.free(2)
         end, function() -- 83
             error("83 not implemented")
         end, function() -- 84
