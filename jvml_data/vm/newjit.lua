@@ -171,21 +171,21 @@ local function compile(class, method, codeAttr, cp)
             -- load_3
             stream.MOVE(stream.alloc(), 4)
         end, function() -- 2E
-            error("2E not implemented")
+            stream.asmAALoad()
         end, function() -- 2F
-            error("2F not implemented")
+            stream.asmAALoad()
         end, function() -- 30
-            error("30 not implemented")
+            stream.asmAALoad()
         end, function() -- 31
-            error("31 not implemented")
+            stream.asmAALoad()
         end, function() -- 32
-            error("32 not implemented")
+            stream.asmAALoad()
         end, function() -- 33
-            error("33 not implemented")
+            stream.asmAALoad()
         end, function() -- 34
-            error("34 not implemented")
+            stream.asmAALoad()
         end, function() -- 35
-            error("35 not implemented")
+            stream.asmAALoad()
         end, function() -- 36
             error("36 not implemented")
         end, function() -- 37
