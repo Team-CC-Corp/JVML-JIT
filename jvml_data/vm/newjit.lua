@@ -446,15 +446,33 @@ local function compile(class, method, codeAttr, cp)
             stream.MUL(r1, r1, k)
             stream.freeRK(k)
         end, function() -- 78
-            error("78 not implemented")
+            local r1 = stream.peek(1)
+            local r2 = stream.peek(0)
+            local r3 = stream.alloc()
+            stream.MOVE(r3, r1)
+            stream.asmGetObj(r1, info(bit.blshift))
+            stream.CALL(r1, 3, 2)
+            stream.free(2)
         end, function() -- 79
             error("79 not implemented")
         end, function() -- 7A
-            error("7A not implemented")
+            local r1 = stream.peek(1)
+            local r2 = stream.peek(0)
+            local r3 = stream.alloc()
+            stream.MOVE(r3, r1)
+            stream.asmGetObj(r1, info(bit.brshift))
+            stream.CALL(r1, 3, 2)
+            stream.free(2)
         end, function() -- 7B
             error("7B not implemented")
         end, function() -- 7C
-            error("7C not implemented")
+            local r1 = stream.peek(1)
+            local r2 = stream.peek(0)
+            local r3 = stream.alloc()
+            stream.MOVE(r3, r1)
+            stream.asmGetObj(r1, info(bit.blogic_rshift))
+            stream.CALL(r1, 3, 2)
+            stream.free(2)
         end, function() -- 7D
             error("7D not implemented")
         end, function() -- 7E
