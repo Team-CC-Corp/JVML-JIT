@@ -420,13 +420,31 @@ local function compile(class, method, codeAttr, cp)
             -- rem
             stream.asmMod()
         end, function() -- 74
-            error("74 not implemented")
+            -- neg
+            local r1 = stream.peek(0)
+            local k = stream.allocRK(-1)
+            stream.MUL(r1, r1, k)
+            stream.freeRK(k)
         end, function() -- 75
-            error("75 not implemented")
+            -- lneg
+            local rmul, rarg, rk = stream.peek(0), stream.alloc(2)
+            stream.asmGetObj(rk, bigint(-1))
+            stream.MOVE(rarg, rmul)
+            stream.asmGetObj(rmul, bigintMul)
+            stream.CALL(rmul, 3, 2)
+            stream.free(2)
         end, function() -- 76
-            error("76 not implemented")
+            -- neg
+            local r1 = stream.peek(0)
+            local k = stream.allocRK(-1)
+            stream.MUL(r1, r1, k)
+            stream.freeRK(k)
         end, function() -- 77
-            error("77 not implemented")
+            -- neg
+            local r1 = stream.peek(0)
+            local k = stream.allocRK(-1)
+            stream.MUL(r1, r1, k)
+            stream.freeRK(k)
         end, function() -- 78
             error("78 not implemented")
         end, function() -- 79
