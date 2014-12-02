@@ -513,7 +513,12 @@ local function compile(class, method, codeAttr, cp)
         end, function() -- 83
             error("83 not implemented")
         end, function() -- 84
-            error("84 not implemented")
+            --iinc
+            local r = stream.u1() + 1
+            local c = u1ToSignedByte(stream.u1())
+            local k = stream.allocRK(c)
+            stream.ADD(r, r, k)
+            stream.freeRK(k)
         end, function() -- 85
             error("85 not implemented")
         end, function() -- 86
