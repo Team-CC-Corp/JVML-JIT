@@ -123,7 +123,7 @@ function makeExtendedChunkStream(class, method, codeAttr, cp)
     local oldMove = stream.MOVE
     function stream.MOVE(a, b)
         stream.removeFromPool(a)
-        addToPool(a, b)
+        stream.addToPool(a, b)
         return oldMove(a, b)
     end
 
