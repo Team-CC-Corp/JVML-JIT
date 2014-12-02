@@ -286,13 +286,21 @@ local function compile(class, method, codeAttr, cp)
             -- aastore
             stream.asmAAStore()
         end, function() -- 57
-            error("57 not implemented")
+            -- pop
+            stream.free()
         end, function() -- 58
             error("58 not implemented")
         end, function() -- 59
-            error("59 not implemented")
+            -- dup
+            local r = stream.peek(0)
+            stream.MOVE(stream.alloc(), r)
         end, function() -- 5A
-            error("5A not implemented")
+            -- dup_x1
+            local r2, r1 = stream.peek(0), stream.peek(1)
+            local r3 = stream.alloc(1)
+            stream.MOVE(r3, r2)
+            stream.MOVE(r2, r1)
+            stream.MOVE(r1, r3)
         end, function() -- 5B
             error("5B not implemented")
         end, function() -- 5C
