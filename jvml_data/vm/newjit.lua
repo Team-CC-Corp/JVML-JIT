@@ -455,7 +455,17 @@ local function compile(class, method, codeAttr, cp)
             stream.CALL(r1, 3, 2)
             stream.free(2)
         end, function() -- 79
-            error("79 not implemented")
+            -- shl
+            -- x * n^s
+            local r1 = stream.peek(1)
+            local r2 = stream.peek(0)
+            local r3 = stream.alloc()
+            local k = stream.loadRK(2)
+            stream.POW(r3, k, r1)
+            stream.freeRK(k)
+            stream.asmGetObj(r1, info(bigintMul))
+            stream.CALL(r1, 3, 2)
+            stream.free(2)
         end, function() -- 7A
             -- shr
             local r1 = stream.peek(1)
@@ -466,7 +476,34 @@ local function compile(class, method, codeAttr, cp)
             stream.CALL(r1, 3, 2)
             stream.free(2)
         end, function() -- 7B
-            error("7B not implemented")
+            -- shr
+            -- x / n^s
+            local r1 = stream.peek(1)
+            local r2 = stream.peek(0)
+            local r3 = stream.alloc()
+            local two = stream.loadRK(2)
+            local zero = stream.loadRK(0)
+
+            -- Check if bit shift is zero.
+            stream.EQ(1, r1, zero)
+            local ifZero = stream.startJump()
+
+            stream.POW(r3, two, r1)
+            stream.asmGetObj(r1, info(bigintDiv))
+            stream.CALL(r1, 3, 2)
+
+            -- Skip zero handling code.
+            local skip = stream.startJump()
+
+            -- Do nothing if shifting by zero.
+            stream.fixJump(ifZero)
+            stream.MOVE(r2, r1)
+
+            stream.fixJump(skip)
+
+            stream.freeRK(two)
+            stream.freeRK(zero)
+            stream.free(2)
         end, function() -- 7C
             -- ushr
             local r1 = stream.peek(1)
