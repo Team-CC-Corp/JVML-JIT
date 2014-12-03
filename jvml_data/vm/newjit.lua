@@ -550,42 +550,125 @@ local function compile(class, method, codeAttr, cp)
         end, function() -- 83
             error("83 not implemented")
         end, function() -- 84
-            --iinc
+            -- iinc
             local r = stream.u1() + 1
             local c = u1ToSignedByte(stream.u1())
             local k = stream.allocRK(c)
             stream.ADD(r, r, k)
             stream.freeRK(k)
         end, function() -- 85
-            error("85 not implemented")
+            -- i2l
+            local rconv = stream.peek(0)
+            local r = stream.alloc()
+            stream.MOVE(r, rconv)
+            stream.asmGetObj(rconv, bigint)
+            stream.CALL(rconv, 2, 2)
+            stream.free()
         end, function() -- 86
             error("86 not implemented")
         end, function() -- 87
             error("87 not implemented")
         end, function() -- 88
-            error("88 not implemented")
+            -- l2i
+            local rconv = stream.peek(0)
+            local r1, r2 = stream.alloc(2)
+
+            stream.MOVE(r1, rconv)                  -- Over/underflow.
+            stream.asmGetObj(rconv, bigintAdd)
+            stream.asmGetObj(r2, bigint(2147483648))
+            stream.CALL(rconv, 3, 2)                -- Align to range 0 to 2^32-1
+
+            stream.MOVE(r1, rconv)
+            stream.asmGetObj(rconv, bigintMod)
+            stream.asmGetObj(r2, bigint(4294967296))
+            stream.CALL(rconv, 3, 2)                -- Wrap value.
+
+            stream.MOVE(r1, rconv)
+            stream.asmGetObj(rconv, bigintSub)
+            stream.asmGetObj(r2, bigint(2147483648))
+            stream.CALL(rconv, 3, 2)                -- Align to range -2^31 to 2^31-1
+            
+            stream.MOV(r1, rconv)
+            stream.asmGetObj(rconv, bigintToDouble)
+            stream.CALL(rconv, 2, 2)                -- Convert to Lua number.
+            
+            stream.free(2)
         end, function() -- 89
-            error("89 not implemented")
+            -- l2f
+            local rconv = stream.peek(0)
+            local r = stream.alloc()
+            stream.MOVE(r, conv)
+            stream.asmGetObj(rconv, bigintToDouble)
+            stream.CALL(rconv, 2, 2)
+            stream.free()
         end, function() -- 8A
-            error("8A not implemented")
+            -- l2d
+            local rconv = stream.peek(0)
+            local r = stream.alloc()
+            stream.MOVE(r, conv)
+            stream.asmGetObj(rconv, bigintToDouble)
+            stream.CALL(rconv, 2, 2)
+            stream.free()
         end, function() -- 8B
-            error("8B not implemented")
+            -- f2i
+            local rconv = peek(0)
+            local r = alloc()
+            stream.MOVE(r, conv)
+            stream.asmGetObj(rconv, math.floor)
+            stream.CALL(rconv, 2, 2)
+            stream.free()
         end, function() -- 8C
-            error("8C not implemented")
+            -- f2l
+            local rconv = stream.peek(0)
+            local r = stream.alloc()
+            stream.MOVE(r, conv)
+            stream.asmGetObj(rconv, bigint)
+            stream.CALL(rconv, 2, 2)
+            stream.free()
         end, function() -- 8D
-            error("8D not implemented")
+            -- f2d
         end, function() -- 8E
-            error("8E not implemented")
+            -- d2i
+            local rconv = stream.peek(0)
+            local r = stream.alloc()
+            stream.MOVE(r, conv)
+            stream.asmGetObj(rconv, math.floor)
+            stream.CALL(rconv, 2, 2)
+            stream.free()
         end, function() -- 8F
-            error("8F not implemented")
+            -- d2l
+            local rconv = stream.peek(0)
+            local r = stream.alloc()
+            stream.MOVE(r, conv)
+            stream.asmGetObj(rconv, bigint)
+            stream.CALL(rconv, 2, 2)
+            stream.free()
         end, function() -- 90
-            error("90 not implemented")
+            -- d2f
         end, function() -- 91
-            error("91 not implemented")
+            -- i2b
+            local r = stream.peek(0)
+            local k1, k2 = stream.allocRK(128), stream.allocRK(256)
+            stream.ADD(r, r, k1)
+            stream.MOD(r, r, k2)
+            stream.SUB(r, r, k1)
+            stream.freeRK(k1)
+            stream.freeRK(k2)
         end, function() -- 92
-            error("92 not implemented")
+            -- i2c
+            local r = stream.peek(0)
+            local k = stream.allocRK(65536)
+            stream.MOD(r, r, k)
+            stream.freeRK(k)
         end, function() -- 93
-            error("93 not implemented")
+            -- i2s
+            local r = stream.peek(0)
+            local k1, k2 = stream.allocRK(32768), stream.allocRK(65536)
+            stream.ADD(r, r, k1)
+            stream.MOD(r, r, k2)
+            stream.SUB(r, r, k1)
+            stream.freeRK(k1)
+            stream.freeRK(k2)
         end, function() -- 94
             error("94 not implemented")
         end, function() -- 95
