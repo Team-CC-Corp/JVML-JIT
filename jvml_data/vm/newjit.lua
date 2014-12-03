@@ -670,15 +670,20 @@ local function compile(class, method, codeAttr, cp)
             stream.freeRK(k1)
             stream.freeRK(k2)
         end, function() -- 94
-            error("94 not implemented")
+            -- lcmp
+            stream.asmLongCompare()
         end, function() -- 95
-            error("95 not implemented")
+            -- fcmpl/g
+            stream.asmNumericCompare()
         end, function() -- 96
-            error("96 not implemented")
+            -- fcmpl/g
+            stream.asmNumericCompare()
         end, function() -- 97
-            error("97 not implemented")
+            -- fcmpl/g
+            stream.asmNumericCompare()
         end, function() -- 98
-            error("98 not implemented")
+            -- fcmpl/g
+            stream.asmNumericCompare()
         end, function() -- 99
             error("99 not implemented")
         end, function() -- 9A
