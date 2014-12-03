@@ -446,7 +446,7 @@ local function compile(class, method, codeAttr, cp)
             stream.MUL(r1, r1, k)
             stream.freeRK(k)
         end, function() -- 78
-            --shl
+            -- shl
             local r1 = stream.peek(1)
             local r2 = stream.peek(0)
             local r3 = stream.alloc()
@@ -462,9 +462,9 @@ local function compile(class, method, codeAttr, cp)
             local r3 = stream.alloc()
             local k = stream.loadRK(2)
             stream.POW(r3, k, r1)
-            stream.freeRK(k)
             stream.asmGetObj(r1, info(bigintMul))
             stream.CALL(r1, 3, 2)
+            stream.freeRK(k)
             stream.free(2)
         end, function() -- 7A
             -- shr
