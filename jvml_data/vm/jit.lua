@@ -77,6 +77,51 @@ local function compile(class, method, codeAttr, cp)
         return pc
     end
 
+
+
+    --[[
+    There are two tables dealing with null check data.
+    The registerNullChecks table relates registers with
+    whether that register has been checked for null or not.
+    The registerNullChecksParents table relates registers with
+    a register lower on the stack that it was created from.
+    The parents table lets us set null check data on all
+    registers from top to bottom that share the same object.
+
+    Whenever a register is freed,
+    its null check data is automatically wiped.
+    Aside from this, all the null check stuff has to be done manually.
+    Forgetting to include code in an instruction for null
+    checking could prove disastrous,
+    creating bugs that could be very hard to track down.
+    ]]
+    local registerNullChecks = {}
+    local registerNullCheckParents = {}
+    local function setRegisterNullCheck(r, b)
+        repeat
+            registerNullChecks[r] = b
+            r = registerNullCheckParents[r]
+        until not r
+    end
+
+    local function getRegisterNullCheck(r)
+        return registerNullChecks[r]
+    end
+
+    local function setRegisterNullCheckParent(r, p)
+        assert(type(p) == "nil" or (type(p) == "number" and p < r), "Parent must be freed after register")
+        registerNullCheckParents[r] = p
+        if p then
+            registerNullChecks[r] = registerNullChecks[p]
+        else
+            registerNullChecks[r] = nil
+        end
+    end
+
+    local function getRegisterNullCheckParent(r)
+        return registerNullCheckParents[r]
+    end
+
     local reg = codeAttr.max_locals
     local function alloc(n)
         if not n then n = 1 end
@@ -93,6 +138,7 @@ local function compile(class, method, codeAttr, cp)
         local ret = { }
         for i = n, 1, -1 do
             ret[i] = reg
+            setRegisterNullCheckParent(reg, nil)
             reg = reg - 1
         end
         return unpack(ret)
@@ -209,12 +255,15 @@ local function compile(class, method, codeAttr, cp)
         emit("settable %i %s %i", robj, k(2), rfields)
         emit("settable %i %s %i", robj, k(3), rmethods)
         free(3)
+
+        setRegisterNullCheckParent(robj, nil)
+        setRegisterNullCheck(robj, true)
     end
 
     local function asmNewArray(robj, rlength, class)
         local rarray = alloc()
         emit("newtable %i 0 0", rarray)
-        asmNewInstance(robj, class, 5)
+        asmNewInstance(robj, class, 5) -- creates new object, also sets the null check
         emit("settable %i %s %i", robj, k(4), rlength)
         emit("settable %i %s %i", robj, k(5), rarray)
         free()
@@ -231,7 +280,7 @@ local function compile(class, method, codeAttr, cp)
         emit("add %i %i %s", ri, ri, k(1))
         emit("jmp -5")
 
-        asmNewInstance(robj, class, 5)
+        asmNewInstance(robj, class, 5) -- creates new object, also sets the null check
         emit("settable %i %s %i", robj, k(4), rlength)
         emit("settable %i %s %i", robj, k(5), rarray)
         free(2)
@@ -301,6 +350,7 @@ local function compile(class, method, codeAttr, cp)
         asmGetRTInfo(r, info(jInstanceof))
         emit("call %i 3 2", r)
         free(2)
+        setRegisterNullCheckParent(r, nil)
     end
 
     local function asmThrow(rexception)
@@ -377,6 +427,10 @@ local function compile(class, method, codeAttr, cp)
     end
 
     local function asmCheckNullPointer(robj)
+        if getRegisterNullCheck(robj) then
+            return
+        end
+
         emitComment("Checking null pointer")
 
         local npException = classByName("java.lang.NullPointerException")
@@ -400,6 +454,8 @@ local function compile(class, method, codeAttr, cp)
         emitInsert(jmpPC1 - 1, "jmp %i", jmpPC2 - jmpPC1)
 
         free(1)
+
+        setRegisterNullCheck(robj, true)
     end
 
     local function asmAALoad()
@@ -431,6 +487,8 @@ local function compile(class, method, codeAttr, cp)
         emit("gettable %i %i %i", rarr, rarr, ri)
 
         free(6)
+
+        setRegisterNullCheckParent(peek(0), nil)
     end
 
     local function asmAAStore()
@@ -627,6 +685,7 @@ local function compile(class, method, codeAttr, cp)
             --null
             local r = alloc()
             emit("loadnil %i %i", r, r)
+            setRegisterNullCheckParent(r, nil)
         end, function() -- 02
             local r = alloc()
             emit("loadk %i k(-1)", r)
@@ -677,28 +736,30 @@ local function compile(class, method, codeAttr, cp)
             emit("loadk %i k(%i)", alloc(), u2())
         end, function() -- 12
             local s = cp[u1()]
+            local reg = alloc()
             if s.bytes then
-                emit("loadk %i k(%s)", alloc(), s.bytes)
+                emit("loadk %i k(%s)", reg, s.bytes)
             elseif s.tag == CONSTANT.Class then
-                local r = alloc()
-                asmGetRTInfo(r, info(getJClass(cp[s.name_index].bytes:gsub("/", "."))))
+                asmGetRTInfo(reg, info(getJClass(cp[s.name_index].bytes:gsub("/", "."))))
             else
-                local rStr = alloc()
-                asmGetRTInfo(rStr, info(loadStringConst(cp[s.string_index].bytes)))
+                asmGetRTInfo(reg, info(loadStringConst(cp[s.string_index].bytes)))
             end
+            setRegisterNullCheckParent(reg, nil)
+            setRegisterNullCheck(reg, true)
         end, function() -- 13
             --ldc_w
             --push constant
             local s = cp[u2()]
+            local reg = alloc()
             if s.bytes then
-                emit("loadk %i k(%s)", alloc(), s.bytes)
+                emit("loadk %i k(%s)", reg, s.bytes)
             elseif s.tag == CONSTANT.Class then
-                local r = alloc()
-                asmGetRTInfo(r, info(getJClass(cp[s.name_index].bytes:gsub("/", "."))))
+                asmGetRTInfo(reg, info(getJClass(cp[s.name_index].bytes:gsub("/", "."))))
             else
-                local rStr = alloc()
-                asmGetRTInfo(rStr, info(loadStringConst(cp[s.string_index].bytes)))
+                asmGetRTInfo(reg, info(loadStringConst(cp[s.string_index].bytes)))
             end
+            setRegisterNullCheckParent(reg, nil)
+            setRegisterNullCheck(reg, true)
         end, function() -- 14
             --ldc2_w
             --push constant
@@ -735,6 +796,7 @@ local function compile(class, method, codeAttr, cp)
             local l = u1()
             local r = alloc()
             emit("move %i %i", r, l + 1)
+            setRegisterNullCheckParent(r, l + 1)
         end, function() -- 1A
             --load_0
             local r = alloc()
@@ -803,18 +865,22 @@ local function compile(class, method, codeAttr, cp)
             --load_0
             local r = alloc()
             emit("move %i 1", r)
+            setRegisterNullCheckParent(r, 1)
         end, function() -- 2B
             --load_1
             local r = alloc()
             emit("move %i 2", r)
+            setRegisterNullCheckParent(r, 2)
         end, function() -- 2C
             --load_2
             local r = alloc()
             emit("move %i 3", r)
+            setRegisterNullCheckParent(r, 3)
         end, function() -- 2D
             --load_3
             local r = alloc()
             emit("move %i 4", r)
+            setRegisterNullCheckParent(r, 4)
         end, function() -- 2E
             asmAALoad()
         end, function() -- 2F
@@ -850,13 +916,16 @@ local function compile(class, method, codeAttr, cp)
         end, function() -- 39
             --stores
             local l = u1()
+            local nullChecked = getRegisterNullCheck(peek(0))
             local r = free()
             emit("move %i %i", l + 1, r)
+            setRegisterNullCheck(l + 1, nullChecked)
         end, function() -- 3A
             --stores
             local l = u1()
             local r = free()
             emit("move %i %i", l + 1, r)
+
         end, function() -- 3B
             local r = free()
             emit("move 1 %i", r)
@@ -906,17 +975,25 @@ local function compile(class, method, codeAttr, cp)
             local r = free()
             emit("move 4 %i", r)
         end, function() -- 4B
+            local nullChecked = getRegisterNullCheck(peek(0))
             local r = free()
             emit("move 1 %i", r)
+            setRegisterNullCheck(1, nullChecked)
         end, function() -- 4C
+            local nullChecked = getRegisterNullCheck(peek(0))
             local r = free()
             emit("move 2 %i", r)
+            setRegisterNullCheck(2, nullChecked)
         end, function() -- 4D
+            local nullChecked = getRegisterNullCheck(peek(0))
             local r = free()
             emit("move 3 %i", r)
+            setRegisterNullCheck(3, nullChecked)
         end, function() -- 4E
+            local nullChecked = getRegisterNullCheck(peek(0))
             local r = free()
             emit("move 4 %i", r)
+            setRegisterNullCheck(4, nullChecked)
         end, function() -- 4F
             --aastore
             asmAAStore()
@@ -949,12 +1026,22 @@ local function compile(class, method, codeAttr, cp)
             local r = peek(0)
             local rd = alloc(1)
             emit("move %i %i", rd, r)
+            setRegisterNullCheckParent(rd, r)
         end, function() -- 5A
             local r2, r1 = peek(0), peek(1)
+            local p2, p1 = getRegisterNullCheckParent(r2), getRegisterNullCheckParent(r1)
             local r3 = alloc(1)
             emit("move %i %i", r3, r2)
             emit("move %i %i", r2, r1)
             emit("move %i %i", r1, r3)
+
+            if p2 == r1 then
+                setRegisterNullCheckParent(r3, r2)
+            else
+                setRegisterNullCheckParent(r1, p2)
+                setRegisterNullCheckParent(r2, p1)
+                setRegisterNullCheckParent(r3, r1)
+            end
         end, function() -- 5B
             error("5B not implemented.")
         end, function() -- 5C
@@ -1551,6 +1638,8 @@ local function compile(class, method, codeAttr, cp)
 
             emit("gettable %i %i %s", r, r, k(2))
             emitWithComment(class.name.."."..name, "gettable %i %i %s", r, r, k(fi))
+
+            setRegisterNullCheckParent(r, nil)
         end, function() -- B5
             --putfield
             local fr = cp[u2()]
@@ -1608,6 +1697,7 @@ local function compile(class, method, codeAttr, cp)
             if mt.desc[#mt.desc].type ~= "V" then
                 -- free exception
                 free()
+                setRegisterNullCheckParent(peek(0), nil)
             else
                 -- free nil, exception
                 free(2)
@@ -1648,6 +1738,7 @@ local function compile(class, method, codeAttr, cp)
             if mt.desc[#mt.desc].type ~= "V" then
                 -- free exception
                 free()
+                setRegisterNullCheckParent(peek(0), nil)
             else
                 -- free nil, exception
                 free(2)
@@ -1692,6 +1783,7 @@ local function compile(class, method, codeAttr, cp)
             if mt.desc[#mt.desc].type ~= "V" then
                 -- free exception
                 free()
+                setRegisterNullCheckParent(peek(0), nil)
             else
                 -- free nil, exception
                 free(2)
@@ -1742,6 +1834,7 @@ local function compile(class, method, codeAttr, cp)
             if mt.desc[#mt.desc].type ~= "V" then
                 -- free exception
                 free()
+                setRegisterNullCheckParent(peek(0), nil)
             else
                 -- free nil, exception
                 free(2)
@@ -1780,6 +1873,7 @@ local function compile(class, method, codeAttr, cp)
             --arraylength
             local r = peek(0)
             emit("gettable %i %i %s", r, r, k(4))
+            setRegisterNullCheckParent(r, nil)
         end, function() -- BF
             local rexception = peek(0)
             asmRefillStackTrace(rexception)
