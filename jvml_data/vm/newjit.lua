@@ -685,17 +685,47 @@ local function compile(class, method, codeAttr, cp)
             -- fcmpl/g
             stream.asmNumericCompare()
         end, function() -- 99
-            error("99 not implemented")
+            --ifeq
+            local joffset = u2ToSignedShort(stream.u2())
+            local k = stream.allocRK()
+            stream.EQ(1, stream.free(), k)
+            emit.addJumpToFix(stream.startJump(), joffset)
+            stream.freeRK(k)
         end, function() -- 9A
-            error("9A not implemented")
+            --ifne
+            local joffset = u2ToSignedShort(stream.u2())
+            local k = stream.allocRK()
+            stream.EQ(0, stream.free(), k)
+            emit.addJumpToFix(stream.startJump(), joffset)
+            stream.freeRK(k)
         end, function() -- 9B
-            error("9B not implemented")
+            --iflt
+            local joffset = u2ToSignedShort(stream.u2())
+            local k = stream.allocRK()
+            stream.LT(1, stream.free(), k)
+            emit.addJumpToFix(stream.startJump(), joffset)
+            stream.freeRK(k)
         end, function() -- 9C
-            error("9C not implemented")
+            --ifge
+            local joffset = u2ToSignedShort(stream.u2())
+            local k = stream.allocRK()
+            stream.LT(0, stream.free(), k)
+            emit.addJumpToFix(stream.startJump(), joffset)
+            stream.freeRK(k)
         end, function() -- 9D
-            error("9D not implemented")
+            --ifgt
+            local joffset = u2ToSignedShort(stream.u2())
+            local k = stream.allocRK()
+            stream.LE(0, stream.free(), k)
+            emit.addJumpToFix(stream.startJump(), joffset)
+            stream.freeRK(k)
         end, function() -- 9E
-            error("9E not implemented")
+            --ifle
+            local joffset = u2ToSignedShort(stream.u2())
+            local k = stream.allocRK()
+            stream.LE(1, stream.free(), k)
+            emit.addJumpToFix(stream.startJump(), joffset)
+            stream.freeRK(k)
         end, function() -- 9F
             error("9F not implemented")
         end, function() -- A0
