@@ -767,7 +767,7 @@ local function compile(class, method, codeAttr, cp)
             stream.EQ(0, stream.free(2))
             stream.addJumpToFix(stream.startJump(), joffset)
         end, function() -- A7
-            error("A7 not implemented")
+            stream.addJumpToFix(stream.startJump(), u2ToSignedShort(stream.u2()))
         end, function() -- A8
             error("A8 not implemented")
         end, function() -- A9
