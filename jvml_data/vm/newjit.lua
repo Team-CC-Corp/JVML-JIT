@@ -773,9 +773,52 @@ local function compile(class, method, codeAttr, cp)
         end, function() -- A9
             error("A9 not implemented")
         end, function() -- AA
-            error("AA not implemented")
+            -- tableswitch
+            -- Unfortunately can't do any jump table optimization here since Lua doesn't
+            -- have a dynamic jump instruction...
+            local rkey = stream.free()
+            local pc = stream.pc()
+
+            -- Align to 4 bytes.
+            local padding = 4 - pc % 4
+            stream.pc(pc + padding)
+
+            local default = stream.s4()
+            local low = stream.s4()
+            local high = stream.s4()
+            local noffsets = high - low + 1
+
+            for i = 1, noffsets do
+                local offset = stream.s4()      -- offset to jump to if rkey == match
+                local k = stream.allocRK(low + i - 1)
+                stream.EQ(1, k, rkey)
+                stream.addJumpToFix(stream.startJump(), offset)
+                stream.freeRK(k)
+            end
+
+            stream.addJumpToFix(stream.startJump(), default)
         end, function() -- AB
-            error("AB not implemented")
+            -- lookupswitch
+            local rkey = stream.free()
+            local pc = stream.pc()
+
+            -- Align to 4 bytes.
+            local padding = 4 - pc % 4
+            stream.pc(pc + padding)
+
+            local default = stream.s4()
+            local npairs = stream.s4()
+
+            for i = 1, npairs do
+                local match = s4()              -- try to match this to the key
+                local offset = stream.s4()      -- offset to jump to if rkey == match
+                local k = stream.allocRK(low + i - 1)
+                stream.EQ(1, k, rkey)
+                stream.addJumpToFix(stream.startJump(), offset)
+                stream.freeRK(k)
+            end
+
+            stream.addJumpToFix(stream.startJump(), default)
         end, function() -- AC
             error("AC not implemented")
         end, function() -- AD

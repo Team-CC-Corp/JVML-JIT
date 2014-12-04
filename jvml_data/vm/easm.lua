@@ -199,6 +199,14 @@ function makeExtendedChunkStream(class, method, codeAttr, cp)
         return bit.blshift(u1(),24) + bit.blshift(u1(),16) + bit.blshift(u1(),8) + u1()
     end
 
+    function stream.s4()
+        local u = u4()
+        if u < 2147483648 then
+            return u
+        end
+        return u - 4294967296
+    end
+
     function stream.resolveClass(cr)
         local cn = cp[cp[cr].name_index].bytes:gsub("/",".")
         return classByName(cn)
