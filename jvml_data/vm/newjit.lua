@@ -820,17 +820,23 @@ local function compile(class, method, codeAttr, cp)
 
             stream.addJumpToFix(stream.startJump(), default)
         end, function() -- AC
-            error("AC not implemented")
+            stream.asmPopStackTrace()
+            stream.RETURN(stream.free(), 2)
         end, function() -- AD
-            error("AD not implemented")
+            stream.asmPopStackTrace()
+            stream.RETURN(stream.free(), 2)
         end, function() -- AE
-            error("AE not implemented")
+            stream.asmPopStackTrace()
+            stream.RETURN(stream.free(), 2)
         end, function() -- AF
-            error("AF not implemented")
+            stream.asmPopStackTrace()
+            stream.RETURN(stream.free(), 2)
         end, function() -- B0
-            error("B0 not implemented")
+            stream.asmPopStackTrace()
+            stream.RETURN(stream.free(), 2)
         end, function() -- B1
-            error("B1 not implemented")
+            stream.asmPopStackTrace()
+            stream.RETURN(0, 1)
         end, function() -- B2
             error("B2 not implemented")
         end, function() -- B3
