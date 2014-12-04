@@ -687,42 +687,42 @@ local function compile(class, method, codeAttr, cp)
         end, function() -- 99
             --ifeq
             local joffset = u2ToSignedShort(stream.u2())
-            local k = stream.allocRK()
+            local k = stream.allocRK(0)
             stream.EQ(1, stream.free(), k)
             emit.addJumpToFix(stream.startJump(), joffset)
             stream.freeRK(k)
         end, function() -- 9A
             --ifne
             local joffset = u2ToSignedShort(stream.u2())
-            local k = stream.allocRK()
+            local k = stream.allocRK(0)
             stream.EQ(0, stream.free(), k)
             emit.addJumpToFix(stream.startJump(), joffset)
             stream.freeRK(k)
         end, function() -- 9B
             --iflt
             local joffset = u2ToSignedShort(stream.u2())
-            local k = stream.allocRK()
+            local k = stream.allocRK(0)
             stream.LT(1, stream.free(), k)
             emit.addJumpToFix(stream.startJump(), joffset)
             stream.freeRK(k)
         end, function() -- 9C
             --ifge
             local joffset = u2ToSignedShort(stream.u2())
-            local k = stream.allocRK()
+            local k = stream.allocRK(0)
             stream.LT(0, stream.free(), k)
             emit.addJumpToFix(stream.startJump(), joffset)
             stream.freeRK(k)
         end, function() -- 9D
             --ifgt
             local joffset = u2ToSignedShort(stream.u2())
-            local k = stream.allocRK()
+            local k = stream.allocRK(0)
             stream.LE(0, stream.free(), k)
             emit.addJumpToFix(stream.startJump(), joffset)
             stream.freeRK(k)
         end, function() -- 9E
             --ifle
             local joffset = u2ToSignedShort(stream.u2())
-            local k = stream.allocRK()
+            local k = stream.allocRK(0)
             stream.LE(1, stream.free(), k)
             emit.addJumpToFix(stream.startJump(), joffset)
             stream.freeRK(k)
