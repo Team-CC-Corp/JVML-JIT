@@ -727,21 +727,45 @@ local function compile(class, method, codeAttr, cp)
             emit.addJumpToFix(stream.startJump(), joffset)
             stream.freeRK(k)
         end, function() -- 9F
-            error("9F not implemented")
+            --if_icmpeq
+            local joffset = u2ToSignedShort(stream.u2())
+            stream.EQ(1, stream.free(2))
+            stream.addJumpToFix(stream.startJump(), joffset)
         end, function() -- A0
-            error("A0 not implemented")
+            --if_icmpne
+            local joffset = u2ToSignedShort(stream.u2())
+            stream.EQ(0, stream.free(2))
+            stream.addJumpToFix(stream.startJump(), joffset)
         end, function() -- A1
-            error("A1 not implemented")
+            --if_icmplt
+            local joffset = u2ToSignedShort(stream.u2())
+            stream.LT(1, stream.free(2))
+            stream.addJumpToFix(stream.startJump(), joffset)
         end, function() -- A2
-            error("A2 not implemented")
+            --if_icmpge
+            local joffset = u2ToSignedShort(stream.u2())
+            stream.LT(0, stream.free(2))
+            stream.addJumpToFix(stream.startJump(), joffset)
         end, function() -- A3
-            error("A3 not implemented")
+            --if_icmpgt
+            local joffset = u2ToSignedShort(stream.u2())
+            stream.LE(0, stream.free(2))
+            stream.addJumpToFix(stream.startJump(), joffset)
         end, function() -- A4
-            error("A4 not implemented")
+            --if_icmple
+            local joffset = u2ToSignedShort(stream.u2())
+            stream.LE(1, stream.free(2))
+            stream.addJumpToFix(stream.startJump(), joffset)
         end, function() -- A5
-            error("A5 not implemented")
+            --if_acmpeq
+            local joffset = u2ToSignedShort(stream.u2())
+            stream.EQ(1, stream.free(2))
+            stream.addJumpToFix(stream.startJump(), joffset)
         end, function() -- A6
-            error("A6 not implemented")
+            --if_acmpne
+            local joffset = u2ToSignedShort(stream.u2())
+            stream.EQ(0, stream.free(2))
+            stream.addJumpToFix(stream.startJump(), joffset)
         end, function() -- A7
             error("A7 not implemented")
         end, function() -- A8
