@@ -192,15 +192,15 @@ function makeExtendedChunkStream(class, method, codeAttr, cp)
     end
 
     function stream.u2()
-        return bit.blshift(u1(),8) + u1()
+        return bit.blshift(stream.u1(),8) + stream.u1()
     end
 
     function stream.u4()
-        return bit.blshift(u1(),24) + bit.blshift(u1(),16) + bit.blshift(u1(),8) + u1()
+        return bit.blshift(stream.u1(),24) + bit.blshift(stream.u1(),16) + bit.blshift(stream.u1(),8) + stream.u1()
     end
 
     function stream.s4()
-        local u = u4()
+        local u = stream.u4()
         if u < 2147483648 then
             return u
         end
