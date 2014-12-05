@@ -838,13 +838,68 @@ local function compile(class, method, codeAttr, cp)
             stream.asmPopStackTrace()
             stream.RETURN(0, 1)
         end, function() -- B2
-            error("B2 not implemented")
+            -- getstatic
+            local fr = cp[stream.u2()]
+            local class = resolveClass(cp[fr.class_index])
+            local name = cp[cp[fr.name_and_type_index].name_index].bytes
+            local fi = class.fieldIndexByName[name]
+            local r = stream.alloc()
+            local kfi = allocRK(fi)
+            stream.asmGetObj(r, class.fields)
+            stream.comment(class.name.."."..name)
+            stream.GETTABLE(r, r, kfi)
+            stream.freeRK(kfi)
         end, function() -- B3
-            error("B3 not implemented")
+            -- putstatic
+            local fr = cp[stream.u2()]
+            local class = resolveClass(cp[fr.class_index])
+            local name = cp[cp[fr.name_and_type_index].name_index].bytes
+            local fi = class.fieldIndexByName[name]
+            local value = stream.peek(0)
+            local r = stream.alloc()
+            local kfi = stream.allocRK(fi)
+            stream.asmGetObj(r, class.fields)
+            stream.comment(class.name.."."..name)
+            stream.SETTABLE(r, kfi, value)
+            stream.freeRK(kfi)
+            stream.free(2)
         end, function() -- B4
-            error("B4 not implemented")
+            -- getfield
+            local fr = cp[stream.u2()]
+            local name = cp[cp[fr.name_and_type_index].name_index].bytes
+            local class = resolveClass(cp[fr.class_index])
+            local fi = class.fieldIndexByName[name]
+            local r = stream.peek(0)
+            local k2 = stream.allocRK(2)
+            local kfi = stream.allocRK(fi)
+
+            stream.asmCheckNullPointer(r)
+
+            stream.GETTABLE(r, r, k2)
+            stream.GETTABLE(r, r, kfi)
+            stream.comment(class.name.."."..name)
+            stream.freeRK(k2)
+            stream.freeRK(kfi)
         end, function() -- B5
-            error("B5 not implemented")
+            -- putfield
+            local fr = cp[stream.u2()]
+            local name = cp[cp[fr.name_and_type_index].name_index].bytes
+            local class = resolveClass(cp[fr.class_index])
+            local fi = class.fieldIndexByName[name]
+            local robj = stream.peek(1)
+            local rval = stream.peek(0)
+            local k2 = stream.allocRK(2)
+            local kfi = stream.allocRK(fi)
+
+            stream.asmCheckNullPointer(robj)
+
+            local rfields = stream.alloc()
+            stream.GETTABLE(rfields, robj, k2)
+            stream.SETTABLE(rfields, kfi, rval)
+            stream.comment(class.name.."."..name)
+            stream.freeRK(k2)
+            stream.freeRK(kfi)
+            stream.free(3)
         end, function() -- B6
             error("B6 not implemented")
         end, function() -- B7
