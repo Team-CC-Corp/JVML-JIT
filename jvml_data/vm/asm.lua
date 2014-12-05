@@ -195,6 +195,10 @@ function makeChunkStream(numParams)
         end
     end
 
+    function stream.getInstructionCount()
+        return #instns
+    end
+
     function stream.alloc(n)
         n = n or 1
         local ret = { }

@@ -227,6 +227,10 @@ function makeExtendedChunkStream(class, method, codeAttr, cp)
         return ln
     end
 
+    function stream.getCurrentInstructionPC()
+        return currentInstructionPC
+    end
+
     -- bridging java and lua instruction stuff
     local l2jMap = { }
     local jumpsToFix = {}
