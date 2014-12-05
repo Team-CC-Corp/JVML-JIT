@@ -241,6 +241,7 @@ function makeExtendedChunkStream(class, method, codeAttr, cp)
     function stream.emit(...)
         local index = oldEmit(...)
         l2jMap[index] = currentInstructionPC
+        return index
     end
 
     function stream.beginJavaInstruction(op) -- fixes jumps and stack map stuff
