@@ -181,8 +181,8 @@ function makeChunkStream(numParams)
         return {instruction = #instns}
     end
 
-    function stream.startBackwardJump()
-        return {instruction = #instns, backward = true}
+    function stream.startBackwardJump(startInstruction)
+        return {instruction = startInstruction or #instns, backward = true}
     end
 
     function stream.fixJump(jump)

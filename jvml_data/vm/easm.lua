@@ -446,7 +446,7 @@ function makeExtendedChunkStream(class, method, codeAttr, cp)
         stream.free(2)
     end
 
-    local function asmCheckNullPointer(robj)
+    function stream.asmCheckNullPointer(robj)
         if stream.getPool(robj).nullChecked then
             return
         end
