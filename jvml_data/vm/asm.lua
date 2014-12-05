@@ -189,7 +189,7 @@ function makeChunkStream(numParams)
         if not jump.backward then
             local jumpID = jump.instruction
             instns[jumpID] = Op.JMP.type(Op.JMP.opcode, #instns - jumpID)
-            debugCode[jumpID] = "[" .. (#instns - 1) .. "] JMP " .. (#instns - jumpID)
+            debugCode[jumpID] = "[" .. (jumpID - 1) .. "] JMP " .. (#instns - jumpID)
         else
             stream.JMP(jump.instruction - (#instns + 1))
         end
