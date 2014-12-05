@@ -178,12 +178,21 @@ function makeChunkStream(numParams)
         table.insert(instns, 0)
         table.insert(debugCode, "")
         sourceLinePositions[#instns] = #instns
-        return #instns
+        return {instruction = #instns}
     end
 
-    function stream.fixJump(jumpID)
-        instns[jumpID] = Op.JMP.type(Op.JMP.opcode, #instns - jumpID)
-        debugCode[jumpID] = "[" .. (#instns - 1) .. "] JMP " .. (#instns - jumpID)
+    function stream.startBackwardJump()
+        return {instruction = #instns, backward = true}
+    end
+
+    function stream.fixJump(jump)
+        if not jump.backward then
+            local jumpID = jump.instruction
+            instns[jumpID] = Op.JMP.type(Op.JMP.opcode, #instns - jumpID)
+            debugCode[jumpID] = "[" .. (#instns - 1) .. "] JMP " .. (#instns - jumpID)
+        else
+            stream.JMP(jump.instruction - (#instns + 1))
+        end
     end
 
     function stream.alloc(n)
