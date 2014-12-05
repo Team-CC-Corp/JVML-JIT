@@ -100,7 +100,7 @@ public class String {
     public int hashCode() {
     	int hash = 0;
     	for(int i = 0; i < value.length; i++) {
-    		hash += 31 * Math.pow(31, value.length - i - 1);
+    		hash += value[i] * Math.pow(31, value.length - i - 1);
     	}
     	return hash;
     }
