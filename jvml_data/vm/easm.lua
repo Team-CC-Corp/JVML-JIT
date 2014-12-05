@@ -233,6 +233,7 @@ function makeExtendedChunkStream(class, method, codeAttr, cp)
 
     -- bridging java and lua instruction stuff
     local l2jMap = { }
+    local j2lMap = { }
     local jumpsToFix = {}
     local entryIndex = 0
     local offset = -1
@@ -246,6 +247,7 @@ function makeExtendedChunkStream(class, method, codeAttr, cp)
 
     function stream.beginJavaInstruction(op) -- fixes jumps and stack map stuff
         currentInstructionPC = stream.pc()
+        j2lMap[currentInstructionPC] = stream.getInstructionCount()
         if jumpsToFix[currentInstructionPC] then
             for i,v in ipairs(jumpsToFix[currentInstructionPC]) do
                 stream.fixJump(v)
@@ -265,9 +267,17 @@ function makeExtendedChunkStream(class, method, codeAttr, cp)
         end
     end
 
-    function stream.addJumpToFix(jumpID, jInstruction)
-        jumpsToFix[jInstruction] = jumpsToFix[jInstruction] or {}
-        table.insert(jumpsToFix[jInstruction], jumpID)
+    function stream.jumpByJOffset(joffset)
+        if joffset > 0 then
+            local jInstruction = currentInstructionPC + joffset
+            jumpsToFix[jInstruction] = jumpsToFix[jInstruction] or {}
+            table.insert(jumpsToFix[jInstruction], stream.startJump())
+        else
+            local jumpToJ = currentInstructionPC + joffset
+            local jumpToL = j2lMap[jumpToJ]
+            local jid = stream.startBackwardJump(jumpToL)
+            stream.fixJump(jid)
+        end
     end
 
     -- asm utility functions
@@ -397,7 +407,7 @@ function makeExtendedChunkStream(class, method, codeAttr, cp)
         for i=1, #exceptionHandlers do
             local handler = exceptionHandlers[i]
             if handler.catch_type == 0 then
-                stream.addJumpToFix(stream.startJump(), handler.handler_pc)
+                stream.jumpByJOffset(handler.handler_pc - currentInstructionPC)
             else
                 local c = stream.resolveClass(handler.catch_type)
                 local rtest = stream.alloc()
@@ -411,7 +421,7 @@ function makeExtendedChunkStream(class, method, codeAttr, cp)
 
                 local jid = stream.startJump()
                 stream.MOVE(maxLocals + 1, rexception)
-                stream.addJumpToFix(stream.startJump(), handler.handler_pc)
+                stream.jumpByJOffset(handler.handler_pc - currentInstructionPC)
                 stream.fixJump(jid)
                 stream.free()
             end

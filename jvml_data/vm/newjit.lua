@@ -689,85 +689,86 @@ local function compile(class, method, codeAttr, cp)
             local joffset = u2ToSignedShort(stream.u2())
             local k = stream.allocRK(0)
             stream.EQ(1, stream.free(), k)
-            emit.addJumpToFix(stream.startJump(), joffset)
+            emit.jumpByJOffset(joffset)
             stream.freeRK(k)
         end, function() -- 9A
             --ifne
             local joffset = u2ToSignedShort(stream.u2())
             local k = stream.allocRK(0)
             stream.EQ(0, stream.free(), k)
-            emit.addJumpToFix(stream.startJump(), joffset)
+            emit.jumpByJOffset(joffset)
             stream.freeRK(k)
         end, function() -- 9B
             --iflt
             local joffset = u2ToSignedShort(stream.u2())
             local k = stream.allocRK(0)
             stream.LT(1, stream.free(), k)
-            emit.addJumpToFix(stream.startJump(), joffset)
+            emit.jumpByJOffset(joffset)
             stream.freeRK(k)
         end, function() -- 9C
             --ifge
             local joffset = u2ToSignedShort(stream.u2())
             local k = stream.allocRK(0)
             stream.LT(0, stream.free(), k)
-            emit.addJumpToFix(stream.startJump(), joffset)
+            emit.jumpByJOffset(joffset)
             stream.freeRK(k)
         end, function() -- 9D
             --ifgt
             local joffset = u2ToSignedShort(stream.u2())
             local k = stream.allocRK(0)
             stream.LE(0, stream.free(), k)
-            emit.addJumpToFix(stream.startJump(), joffset)
+            emit.jumpByJOffset(joffset)
             stream.freeRK(k)
         end, function() -- 9E
             --ifle
             local joffset = u2ToSignedShort(stream.u2())
             local k = stream.allocRK(0)
             stream.LE(1, stream.free(), k)
-            emit.addJumpToFix(stream.startJump(), joffset)
+            emit.jumpByJOffset(joffset)
             stream.freeRK(k)
         end, function() -- 9F
             --if_icmpeq
             local joffset = u2ToSignedShort(stream.u2())
             stream.EQ(1, stream.free(2))
-            stream.addJumpToFix(stream.startJump(), joffset)
+            stream.jumpByJOffset(joffset)
         end, function() -- A0
             --if_icmpne
             local joffset = u2ToSignedShort(stream.u2())
             stream.EQ(0, stream.free(2))
-            stream.addJumpToFix(stream.startJump(), joffset)
+            stream.jumpByJOffset(joffset)
         end, function() -- A1
             --if_icmplt
             local joffset = u2ToSignedShort(stream.u2())
             stream.LT(1, stream.free(2))
-            stream.addJumpToFix(stream.startJump(), joffset)
+            stream.jumpByJOffset(joffset)
         end, function() -- A2
             --if_icmpge
             local joffset = u2ToSignedShort(stream.u2())
             stream.LT(0, stream.free(2))
-            stream.addJumpToFix(stream.startJump(), joffset)
+            stream.jumpByJOffset(joffset)
         end, function() -- A3
             --if_icmpgt
             local joffset = u2ToSignedShort(stream.u2())
             stream.LE(0, stream.free(2))
-            stream.addJumpToFix(stream.startJump(), joffset)
+            stream.jumpByJOffset(joffset)
         end, function() -- A4
             --if_icmple
             local joffset = u2ToSignedShort(stream.u2())
             stream.LE(1, stream.free(2))
-            stream.addJumpToFix(stream.startJump(), joffset)
+            stream.jumpByJOffset(joffset)
         end, function() -- A5
             --if_acmpeq
             local joffset = u2ToSignedShort(stream.u2())
             stream.EQ(1, stream.free(2))
-            stream.addJumpToFix(stream.startJump(), joffset)
+            stream.jumpByJOffset(joffset)
         end, function() -- A6
             --if_acmpne
             local joffset = u2ToSignedShort(stream.u2())
             stream.EQ(0, stream.free(2))
-            stream.addJumpToFix(stream.startJump(), joffset)
+            stream.jumpByJOffset(joffset)
         end, function() -- A7
-            stream.addJumpToFix(stream.startJump(), u2ToSignedShort(stream.u2()))
+            local joffset = u2ToSignedShort(stream.u2())
+            stream.jumpByJOffset(joffset)
         end, function() -- A8
             error("A8 not implemented")
         end, function() -- A9
@@ -792,11 +793,11 @@ local function compile(class, method, codeAttr, cp)
                 local offset = stream.s4()      -- offset to jump to if rkey == match
                 local k = stream.allocRK(low + i - 1)
                 stream.EQ(1, k, rkey)
-                stream.addJumpToFix(stream.startJump(), offset)
+                stream.jumpByJOffset(offset)
                 stream.freeRK(k)
             end
 
-            stream.addJumpToFix(stream.startJump(), default)
+            stream.jumpByJOffset(default)
         end, function() -- AB
             -- lookupswitch
             local rkey = stream.free()
@@ -814,11 +815,11 @@ local function compile(class, method, codeAttr, cp)
                 local offset = stream.s4()      -- offset to jump to if rkey == match
                 local k = stream.allocRK(low + i - 1)
                 stream.EQ(1, k, rkey)
-                stream.addJumpToFix(stream.startJump(), offset)
+                stream.jumpByJOffset(offset)
                 stream.freeRK(k)
             end
 
-            stream.addJumpToFix(stream.startJump(), default)
+            stream.jumpByJOffset(default)
         end, function() -- AC
             stream.asmPopStackTrace()
             stream.RETURN(stream.free(), 2)
