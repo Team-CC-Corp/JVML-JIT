@@ -27,4 +27,9 @@ public class Character {
         }
         return false;
     }
+    
+    @Override
+    public int hashCode() {
+    	return (int) value;
+    }
 }
