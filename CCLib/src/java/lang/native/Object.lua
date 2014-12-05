@@ -6,3 +6,8 @@ end
 natives["java.lang.Object"]["getClass()Ljava/lang/Class;"] = function(this)
     return getJClass(this[1].name)
 end
+
+natives["java.lang.Object"]["hashCode()I"] = function(this)
+	num = tonumber(tostring(this):sub(8), 16)
+    return num
+end

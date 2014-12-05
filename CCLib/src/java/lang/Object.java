@@ -12,4 +12,6 @@ public class Object {
     public boolean equals(Object obj) {
         return this == obj;
     }
+    
+    public native int hashCode();
 }
