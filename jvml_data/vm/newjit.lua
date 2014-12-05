@@ -841,7 +841,7 @@ local function compile(class, method, codeAttr, cp)
         end, function() -- B2
             -- getstatic
             local fr = cp[stream.u2()]
-            local class = resolveClass(cp[fr.class_index])
+            local class = stream.resolveClass(fr.class_index)
             local name = cp[cp[fr.name_and_type_index].name_index].bytes
             local fi = class.fieldIndexByName[name]
             local r = stream.alloc()
@@ -853,7 +853,7 @@ local function compile(class, method, codeAttr, cp)
         end, function() -- B3
             -- putstatic
             local fr = cp[stream.u2()]
-            local class = resolveClass(cp[fr.class_index])
+            local class = stream.resolveClass(fr.class_index)
             local name = cp[cp[fr.name_and_type_index].name_index].bytes
             local fi = class.fieldIndexByName[name]
             local value = stream.peek(0)
@@ -868,7 +868,7 @@ local function compile(class, method, codeAttr, cp)
             -- getfield
             local fr = cp[stream.u2()]
             local name = cp[cp[fr.name_and_type_index].name_index].bytes
-            local class = resolveClass(cp[fr.class_index])
+            local class = stream.resolveClass(fr.class_index)
             local fi = class.fieldIndexByName[name]
             local r = stream.peek(0)
             local k2 = stream.allocRK(2)
@@ -885,7 +885,7 @@ local function compile(class, method, codeAttr, cp)
             -- putfield
             local fr = cp[stream.u2()]
             local name = cp[cp[fr.name_and_type_index].name_index].bytes
-            local class = resolveClass(cp[fr.class_index])
+            local class = stream.resolveClass(fr.class_index)
             local fi = class.fieldIndexByName[name]
             local robj = stream.peek(1)
             local rval = stream.peek(0)
