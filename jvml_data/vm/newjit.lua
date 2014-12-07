@@ -481,8 +481,7 @@ local function compile(class, method, codeAttr, cp)
             local r1 = stream.peek(1)
             local r2 = stream.peek(0)
             local r3 = stream.alloc()
-            local two = stream.allocRK(2)
-            local zero = stream.allocRK(0)
+            local k2, k0 = stream.allocRK(2, 0)
 
             -- Check if bit shift is zero.
             stream.EQ(1, r1, zero)
@@ -501,8 +500,7 @@ local function compile(class, method, codeAttr, cp)
 
             stream.fixJump(skip)
 
-            stream.freeRK(two)
-            stream.freeRK(zero)
+            stream.freeRK(k2, k0)
             stream.free(2)
         end, function() -- 7C
             -- ushr
@@ -648,12 +646,11 @@ local function compile(class, method, codeAttr, cp)
         end, function() -- 91
             -- i2b
             local r = stream.peek(0)
-            local k1, k2 = stream.allocRK(128), stream.allocRK(256)
+            local k1, k2 = stream.allocRK(128, 256)
             stream.ADD(r, r, k1)
             stream.MOD(r, r, k2)
             stream.SUB(r, r, k1)
-            stream.freeRK(k1)
-            stream.freeRK(k2)
+            stream.freeRK(k1, k2)
         end, function() -- 92
             -- i2c
             local r = stream.peek(0)
@@ -663,12 +660,11 @@ local function compile(class, method, codeAttr, cp)
         end, function() -- 93
             -- i2s
             local r = stream.peek(0)
-            local k1, k2 = stream.allocRK(32768), stream.allocRK(65536)
+            local k1, k2 = stream.allocRK(32768, 65536)
             stream.ADD(r, r, k1)
             stream.MOD(r, r, k2)
             stream.SUB(r, r, k1)
-            stream.freeRK(k1)
-            stream.freeRK(k2)
+            stream.freeRK(k1, k2)
         end, function() -- 94
             -- lcmp
             stream.asmLongCompare()
@@ -871,16 +867,14 @@ local function compile(class, method, codeAttr, cp)
             local class = stream.resolveClass(fr.class_index)
             local fi = class.fieldIndexByName[name]
             local r = stream.peek(0)
-            local k2 = stream.allocRK(2)
-            local kfi = stream.allocRK(fi)
+            local k2, kfi = stream.allocRK(2, fi)
 
             stream.asmCheckNullPointer(r)
 
             stream.GETTABLE(r, r, k2)
             stream.GETTABLE(r, r, kfi)
             stream.comment(class.name.."."..name)
-            stream.freeRK(k2)
-            stream.freeRK(kfi)
+            stream.freeRK(k2, kfi)
         end, function() -- B5
             -- putfield
             local fr = cp[stream.u2()]
@@ -889,8 +883,7 @@ local function compile(class, method, codeAttr, cp)
             local fi = class.fieldIndexByName[name]
             local robj = stream.peek(1)
             local rval = stream.peek(0)
-            local k2 = stream.allocRK(2)
-            local kfi = stream.allocRK(fi)
+            local k2, kfi = stream.allocRK(2, fi)
 
             stream.asmCheckNullPointer(robj)
 
@@ -898,8 +891,7 @@ local function compile(class, method, codeAttr, cp)
             stream.GETTABLE(rfields, robj, k2)
             stream.SETTABLE(rfields, kfi, rval)
             stream.comment(class.name.."."..name)
-            stream.freeRK(k2)
-            stream.freeRK(kfi)
+            stream.freeRK(k2, kfi)
             stream.free(3)
         end, function() -- B6
             --invokevirtual
