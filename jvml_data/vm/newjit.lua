@@ -958,7 +958,6 @@ local function compile(class, method, codeAttr, cp)
             local k1, k3 = stream.allocRK(1, 3)                     -- Stack: [x, objref, args...]
 
             stream.asmSetStackTraceLineNumber(stream.getCurrentLineNumber() or 0)
-            stream.asmCheckNullPointer(stream.peek(argslen - 1))
 
             -- Allocate to save register before objectref.
             local rx = stream.peek(argslen)
