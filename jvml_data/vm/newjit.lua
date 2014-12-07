@@ -902,7 +902,60 @@ local function compile(class, method, codeAttr, cp)
             stream.freeRK(kfi)
             stream.free(3)
         end, function() -- B6
-            error("B6 not implemented")
+            --invokevirtual
+            local mr = cp[stream.u2()]
+            local cl = stream.resolveClass(cp[mr.class_index])
+            local name = cp[cp[mr.name_and_type_index].name_index].bytes .. cp[cp[mr.name_and_type_index].descriptor_index].bytes
+            local mt, mIndex = findMethod(cl, name)
+            local argslen = #mt.desc
+            local k1, k3 = stream.allocRK(1, 3)                            -- Stack: [x, objref, args...]
+
+            stream.asmSetStackTraceLineNumber(stream.getCurrentLineNumber() or 0)
+            stream.asmCheckNullPointer(stream.peek(argslen - 1))
+
+            -- Allocate to save register before objectref.
+            local rx = stream.peek(argslen)
+            local rsave = stream.alloc()
+            stream.MOVE(rsave, stream.peek(argslen))                -- Stack: [x, objref, args..., x]
+
+            -- Inject the method under the parameters.
+            local rmt = rx
+            local robj = rmt + 1
+            local rmte = stream.alloc()
+
+            stream.asmGetObj(rmte, mIndex)        -- Stack: [x, objref, args..., x, mte]
+            -- Get the methods table from the object
+            stream.GETTABLE(rmt, robj, k3)                      -- Stack: [objref[3], objref, args..., x, mte]
+            stream.GETTABLE(rmt, rmt, rmte)             -- Stack: [objref[3][mte], objref, args..., x, mte]
+            stream.free(1)                                          -- Stack: [objref[3][mte], objref, args..., x]
+            stream.GETTABLE(rmt, rmt, k1)                           -- Stack: [objref[3][mte][1] = func, objref, args..., x]
+
+            -- Invoke the method. Result overwrites the method.
+            -- argslen arguments and 2 return values.
+            stream.CALL(rmt, argslen + 1, 3)                        -- Stack: [ret, exception, args..., x]
+            stream.comment(cl.name.."."..name)
+
+            local rret, rexc = rmt, rmt + 1
+
+            stream.MOVE(rexc + 1, rexc)                   -- Stack: [ret, exception, exception, args...-1, x]
+            stream.MOVE(rret, rexc)                             -- Stack: [ret, ret, exception, args...-1, x]
+            rret = rexc + 1
+            rexc = rexc + 1
+
+            stream.MOVE(rx, rsave)
+            stream.free()                                           -- Stack: [x (now we don't worry about this), ret, exception, args...-1, x]
+                                                                    -- Stack: [ret, exception, args...-1]
+
+            -- Free down to ret, exception
+            stream.free(argslen - 1)                                -- Stack: [ret, exception]
+            stream.asmCheckThrow(rexc)
+
+            if mt.desc[#mt.desc].type ~= "V" then
+                stream.free()                                       -- Stack: [ret]
+            else
+                stream.free(2)                                      -- Stack: []
+            end
+            stream.freeRK(k1, k3)
         end, function() -- B7
             error("B7 not implemented")
         end, function() -- B8
