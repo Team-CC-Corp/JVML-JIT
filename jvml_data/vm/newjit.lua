@@ -908,7 +908,7 @@ local function compile(class, method, codeAttr, cp)
             local name = cp[cp[mr.name_and_type_index].name_index].bytes .. cp[cp[mr.name_and_type_index].descriptor_index].bytes
             local mt, mIndex = findMethod(cl, name)
             local argslen = #mt.desc
-            local k1, k3 = stream.allocRK(1, 3)                            -- Stack: [x, objref, args...]
+            local k1, k3 = stream.allocRK(1, 3)                     -- Stack: [x, objref, args...]
 
             stream.asmSetStackTraceLineNumber(stream.getCurrentLineNumber() or 0)
             stream.asmCheckNullPointer(stream.peek(argslen - 1))
@@ -923,10 +923,10 @@ local function compile(class, method, codeAttr, cp)
             local robj = rmt + 1
             local rmte = stream.alloc()
 
-            stream.asmGetObj(rmte, mIndex)        -- Stack: [x, objref, args..., x, mte]
+            stream.asmGetObj(rmte, mIndex)                          -- Stack: [x, objref, args..., x, mte]
             -- Get the methods table from the object
-            stream.GETTABLE(rmt, robj, k3)                      -- Stack: [objref[3], objref, args..., x, mte]
-            stream.GETTABLE(rmt, rmt, rmte)             -- Stack: [objref[3][mte], objref, args..., x, mte]
+            stream.GETTABLE(rmt, robj, k3)                          -- Stack: [objref[3], objref, args..., x, mte]
+            stream.GETTABLE(rmt, rmt, rmte)                         -- Stack: [objref[3][mte], objref, args..., x, mte]
             stream.free(1)                                          -- Stack: [objref[3][mte], objref, args..., x]
             stream.GETTABLE(rmt, rmt, k1)                           -- Stack: [objref[3][mte][1] = func, objref, args..., x]
 
@@ -937,8 +937,8 @@ local function compile(class, method, codeAttr, cp)
 
             local rret, rexc = rmt, rmt + 1
 
-            stream.MOVE(rexc + 1, rexc)                   -- Stack: [ret, exception, exception, args...-1, x]
-            stream.MOVE(rret, rexc)                             -- Stack: [ret, ret, exception, args...-1, x]
+            stream.MOVE(rexc + 1, rexc)                             -- Stack: [ret, exception, exception, args...-1, x]
+            stream.MOVE(rret, rexc)                                 -- Stack: [ret, ret, exception, args...-1, x]
             rret = rexc + 1
             rexc = rexc + 1
 
