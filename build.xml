@@ -68,20 +68,7 @@
         <ant dir="grin" target="main" />
     </target>
 
-    <target name="create_installer" depends="grin, if_unix, if_windows">
-        <loadresource property="grin.text">
-            <file file="grin/build/installer.lua"/>
-        </loadresource>
-        <copy file="installer.lua" tofile="release/installer.lua" overwrite="true">
-            <filterchain>
-                <replacetokens>
-                    <token key="GRIN" value="${grin.text}"/>
-                </replacetokens>
-            </filterchain>
-        </copy>
-    </target>
-
-    <target name="main" depends="create_installer">
+    <target name="main" depends="grin, if_unix, if_windows">
         
     </target>
 </project>
