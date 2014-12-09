@@ -13,7 +13,7 @@ natives["java.util.HashMap"]["putHash(Ljava/lang/Object;ILjava/lang/Object;)Ljav
     elseif #bucket == 1 then
         local jKeyEquals = findMethod(key[1], "equals(Ljava/lang/Object;)Z")[1]
         local ret, exception = jKeyEquals(key, bucket[1][1])
-        if exception then return exception end
+        if exception then return nil, exception end
         if ret == 1 then
             bucket[1][2] = value
         else
@@ -24,7 +24,7 @@ natives["java.util.HashMap"]["putHash(Ljava/lang/Object;ILjava/lang/Object;)Ljav
         local found = false
         for _, j in pairs(bucket) do
             local ret, exception = jKeyEquals(key, j[1])
-            if exception then return exception end
+            if exception then return nil, exception end
             if ret == 1 then
                 found = true
                 previous = j[2]
@@ -57,7 +57,7 @@ natives["java.util.HashMap"]["getHash(Ljava/lang/Object;I)Ljava/lang/Object;"] =
         local jKeyEquals = findMethod(key[1], "equals(Ljava/lang/Object;)Z")[1]
         for _, i in pairs(bucket) do
             local ret, exc = jKeyEquals(key, i[1])
-            if exc then return exc end
+            if exc then return nil, exc end
             if ret == 1 then
                 return i[2]
             end
