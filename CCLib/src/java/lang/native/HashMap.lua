@@ -35,13 +35,6 @@ natives["java.util.HashMap"]["putHash(Ljava/lang/Object;ILjava/lang/Object;)Ljav
             table.insert(bucket, {key, value})
         end
     end
-    if newBucket then
-        tables[this][hash] = newBucket
-    else
-        tables[this][hash] = bucket
-    end
-    
-    return previous
 end
 
 natives["java.util.HashMap"]["getHash(Ljava/lang/Object;I)Ljava/lang/Object;"] = function(this, key, hash)
