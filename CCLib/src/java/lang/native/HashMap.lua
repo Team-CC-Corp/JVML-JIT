@@ -35,6 +35,7 @@ natives["java.util.HashMap"]["putHash(Ljava/lang/Object;ILjava/lang/Object;)Ljav
             table.insert(bucket, {key, value})
         end
     end
+    tables[this][hash] = bucket
 end
 
 natives["java.util.HashMap"]["getHash(Ljava/lang/Object;I)Ljava/lang/Object;"] = function(this, key, hash)
