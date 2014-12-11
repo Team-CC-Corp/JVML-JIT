@@ -1,6 +1,6 @@
 natives["java.util.HashMap"] = natives["java.util.HashMap"] or {}
 
-local tables = {}
+local tables = setmetatable({}, {__mode = "k"})
 
 natives["java.util.HashMap"]["putHash(Ljava/lang/Object;ILjava/lang/Object;)Ljava/lang/Object;"] = function(this, key, hash, value)
     tables[this] = tables[this] or {}
