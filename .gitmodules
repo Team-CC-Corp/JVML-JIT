@@ -3,4 +3,4 @@
 	url = https://github.com/Yevano/LuaAssemblyTools.git
 [submodule "grin"]
 	path = grin
-	url = https://github.com/ElvishJerricco/Grin.git
+	url = https://github.com/Team-CC-Corp/Grin.git
