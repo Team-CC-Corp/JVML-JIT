@@ -896,7 +896,7 @@ local function compile(class, method, codeAttr, cp)
         end, function() -- B6
             -- invokevirtual
             local mr = cp[stream.u2()]
-            local cl = stream.resolveClass(cp[mr.class_index])
+            local cl = stream.resolveClass(mr.class_index)
             local name = cp[cp[mr.name_and_type_index].name_index].bytes .. cp[cp[mr.name_and_type_index].descriptor_index].bytes
             local mt, mIndex = findMethod(cl, name)
             local argslen = #mt.desc
@@ -951,7 +951,7 @@ local function compile(class, method, codeAttr, cp)
         end, function() -- B7
             -- invokespecial
             local mr = cp[stream.u2()]
-            local cl = stream.resolveClass(cp[mr.class_index])
+            local cl = stream.resolveClass(mr.class_index)
             local name = cp[cp[mr.name_and_type_index].name_index].bytes .. cp[cp[mr.name_and_type_index].descriptor_index].bytes
             local mt = findMethod(cl, name)
             local argslen = #mt.desc
