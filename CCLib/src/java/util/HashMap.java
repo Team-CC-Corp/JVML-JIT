@@ -1,6 +1,12 @@
 package java.util;
 
 public class HashMap<K, V> implements Map<K, V> {
+
+	@Override
+	public native void clear();
+
+	@Override
+	public native java.util.Map.Entry<K, V>[] entryArray();
 	
 	/**
 	 * Puts a object into the map. If the key is null, it doesn't put a value at all.
@@ -47,6 +53,23 @@ public class HashMap<K, V> implements Map<K, V> {
 	@Override
 	public V remove(K key) {
 		return put(key, null);
+	}
+	
+	class Entry<K, V> implements Map.Entry<K, V> {
+
+		private K key;
+		private V value;
+		
+		@Override
+		public K getKey() {
+			return key;
+		}
+
+		@Override
+		public V getValue() {
+			return value;
+		}
+		
 	}
 
 }

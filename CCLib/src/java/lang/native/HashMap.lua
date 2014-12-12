@@ -2,6 +2,35 @@ natives["java.util.HashMap"] = natives["java.util.HashMap"] or {}
 
 local tables = setmetatable({}, {__mode = "k"})
 
+natives["java.util.HashMap"]["clear()V"] = function(this)
+    tables[this] = nil
+end
+
+natives["java.util.HashMap"]["entryArray()[Ljava/util/Map$Entry;"] = function(this)
+    if not tables[this] then
+        return nil
+    end
+    
+    local ret = {}
+    for _, bucket in pairs(tables[this]) do
+        for _, pair in pairs(bucket) do
+        	local entryClass = classByName("java.util.HashMap$Entry")
+            local entry = newInstance(entryClass)
+            findMethod(entryClass, "<init>()V")[1](entry)
+            setObjectField(entry, "key", pair[1])
+            setObjectField(entry, "value", pair[2])
+            table.insert(ret, entry)
+        end
+    end
+
+
+    local jRet = newArray(getArrayClass("[Ljava/util/HashMap$Entry;"), #ret)
+    for i,v in ipairs(ret) do
+        jRet[5][i] = ret[i]
+    end
+    return jRet
+end
+
 natives["java.util.HashMap"]["putHash(Ljava/lang/Object;ILjava/lang/Object;)Ljava/lang/Object;"] = function(this, key, hash, value)
     tables[this] = tables[this] or {}
     
