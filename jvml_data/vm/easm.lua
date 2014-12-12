@@ -146,7 +146,8 @@ function makeExtendedChunkStream(class, method, codeAttr, cp)
     local oldCall = stream.CALL
     function stream.CALL(a, b, c)
         local numArgs = b == 0 and stream.getMaxRegister() - a or b - 1
-        for r=a, a + numArgs do
+        local numReturns = c == 0 and stream.getMaxRegister() - a or c - 1
+        for r=a, a + math.max(numArgs, numReturns) do
             stream.removeFromPool(r)
         end
         return oldCall(a, b, c)
