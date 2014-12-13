@@ -872,8 +872,8 @@ local function compile(class, method, codeAttr, cp)
             stream.asmCheckNullPointer(r)
 
             stream.GETTABLE(r, r, k2)
-            stream.GETTABLE(r, r, kfi)
             stream.comment(class.name.."."..name)
+            stream.GETTABLE(r, r, kfi)
             stream.freeRK(k2, kfi)
         end, function() -- B5
             -- putfield
@@ -889,8 +889,8 @@ local function compile(class, method, codeAttr, cp)
 
             local rfields = stream.alloc()
             stream.GETTABLE(rfields, robj, k2)
-            stream.SETTABLE(rfields, kfi, rval)
             stream.comment(class.name.."."..name)
+            stream.SETTABLE(rfields, kfi, rval)
             stream.freeRK(k2, kfi)
             stream.free(3)
         end, function() -- B6
@@ -924,8 +924,8 @@ local function compile(class, method, codeAttr, cp)
 
             -- Invoke the method. Result overwrites the method.
             -- argslen arguments and 2 return values.
-            stream.CALL(rmt, argslen + 1, 3)                        -- Stack: [ret, exception, args..., x]
             stream.comment(cl.name.."."..name)
+            stream.CALL(rmt, argslen + 1, 3)                        -- Stack: [ret, exception, args..., x]
 
             local rret, rexc = rmt, rmt + 1
 
@@ -972,8 +972,8 @@ local function compile(class, method, codeAttr, cp)
 
             -- Invoke the method. Result overwrites the method.
             -- argslen arguments and 2 return values.
-            stream.CALL(rmt, argslen + 1, 3)                        -- Stack: [ret, exception, args..., x]
             stream.comment(cl.name.."."..name)
+            stream.CALL(rmt, argslen + 1, 3)                        -- Stack: [ret, exception, args..., x]
 
             local rret, rexc = rmt, rmt + 1
 
