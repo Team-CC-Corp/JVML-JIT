@@ -968,8 +968,7 @@ local function compile(class, method, codeAttr, cp)
             local rmt = rx
             local robj = rmt + 1
 
-            stream.asmGetObj(rmt, mt)                               -- Stack: [mt, objref, args..., x]
-            stream.GETTABLE(rmt, rmt, k1)                           -- Stack: [func, objref, args..., x]
+            stream.asmGetObj(rmt, mt[1])                            -- Stack: [func, objref, args..., x]
 
             -- Invoke the method. Result overwrites the method.
             -- argslen arguments and 2 return values.
