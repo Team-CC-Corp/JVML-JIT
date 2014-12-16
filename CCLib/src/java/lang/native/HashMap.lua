@@ -3,7 +3,15 @@ natives["java.util.HashMap"] = natives["java.util.HashMap"] or {}
 local tables = setmetatable({}, {__mode = "k"})
 
 natives["java.util.HashMap"]["clear()V"] = function(this)
-    tables[this] = nil
+    tables[this] = {}
+end
+
+natives["java.util.HashMap"]["size()I"] = function(this)
+    count = 0
+    for _ in pairs(tables[this]) do
+       count = count + 1 
+    end
+    return count
 end
 
 natives["java.util.HashMap"]["entryArray()[Ljava/util/Map$Entry;"] = function(this)

@@ -8,11 +8,12 @@ public interface Map<K, V> {
 		return get(key) != null;
 	}
 	
-	public Entry<K, V>[] entryArray();
+	public Set<Entry<K, V>> entrySet();
 	
 	public V put(K key, V value);
 	public V get(K key);
 	public V remove(K key);
+	public int size();
 
 	
 	interface Entry<K, V> {
