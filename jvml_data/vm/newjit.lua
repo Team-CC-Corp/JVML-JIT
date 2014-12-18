@@ -1000,7 +1000,53 @@ local function compile(class, method, codeAttr, cp)
                 stream.free()                                       -- Stack: []
             end
         end, function() -- B8
-            error("B8 not implemented")
+            -- invokestatic
+            local mr = cp[stream.u2()]
+            local cl = stream.resolveClass(mr.class_index)
+            local name = cp[cp[mr.name_and_type_index].name_index].bytes .. cp[cp[mr.name_and_type_index].descriptor_index].bytes
+            local mt, mIndex = findMethod(cl, name)
+            local argslen = #mt.desc - 1                            -- Stack: [x, objref, args...]
+
+            -- Define registers
+            local rx = stream.peek(argslen)
+            local rmt = rx
+            local rsave
+            if argslen <= 1 then -- ensure that there is room for the (ret, exception) return values
+                stream.alignToRegister(rx + 3)
+                rsave = stream.peek(0)
+            else
+                rsave = stream.alloc()
+            end
+
+            stream.asmSetStackTraceLineNumber(stream.getCurrentLineNumber() or 0)
+
+            -- Allocate to save register before objectref.
+            stream.MOVE(rsave, rx)                                  -- Stack: [x, objref, args..., x]
+
+            -- Inject the method under the parameters.
+            stream.asmGetObj(rmt, mt[1])
+
+            -- Invoke the method. Result overwrites the method.
+            -- argslen arguments and 2 return values.
+            stream.comment(cl.name.."."..name)
+            stream.CALL(rmt, argslen + 1, 3)                        -- Stack: [ret, exception, args..., x]
+
+            local rret, rexc = rmt, rmt + 1
+            stream.asmCheckThrow(rexc)
+
+            stream.MOVE(rexc + 1, rexc)                             -- Stack: [ret, exception, exception, args...-1, x]
+            stream.MOVE(rret + 1, rret)                             -- Stack: [ret, ret, exception, args...-1, x]
+            rret = rret + 1
+            rexc = rexc + 1
+
+            stream.MOVE(rx, rsave)                                  -- Stack: [x (now we don't worry about this), ret, exception, args...-1, x]
+                                                                    -- Stack: [ret, exception, args...-1]
+
+            -- Free down to ret
+            stream.alignToRegister(rret)                            -- Stack: [ret]
+            if mt.desc[#mt.desc].type == "V" then
+                stream.free()                                       -- Stack: []
+            end
         end, function() -- B9
             error("B9 not implemented")
         end, function() -- BA
