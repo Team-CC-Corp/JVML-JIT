@@ -1107,7 +1107,10 @@ local function compile(class, method, codeAttr, cp)
         end, function() -- BA
             error("BA not implemented")
         end, function() -- BB
-            error("BB not implemented")
+            --new
+            local c = stream.resolveClass(stream.u2())
+            local robj = stream.alloc()
+            stream.asmNewInstance(robj, c)
         end, function() -- BC
             error("BC not implemented")
         end, function() -- BD
