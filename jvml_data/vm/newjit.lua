@@ -1134,7 +1134,11 @@ local function compile(class, method, codeAttr, cp)
             stream.MOVE(rlength, robj)
             stream.free()
         end, function() -- BE
-            error("BE not implemented")
+            --arraylength
+            local r = stream.peek(0)
+            local k4 = stream.allocRK(4)
+            stream.GETTABLE(r, r, k4)
+            stream.freeRK(k4)
         end, function() -- BF
             error("BF not implemented")
         end, function() -- C0
