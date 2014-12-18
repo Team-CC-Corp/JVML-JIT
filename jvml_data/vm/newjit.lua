@@ -1112,7 +1112,16 @@ local function compile(class, method, codeAttr, cp)
             local robj = stream.alloc()
             stream.asmNewInstance(robj, c)
         end, function() -- BC
-            error("BC not implemented")
+            --newarray
+            local cn = "["..ARRAY_TYPES[stream.u1()]
+            local class = getArrayClass(cn)
+
+            local rlength = stream.peek(0)
+            local robj = stream.alloc()
+            stream.asmNewPrimitiveArray(robj, rlength, class)
+            --put array in expected register
+            stream.MOVE(rlength, robj)
+            stream.free()
         end, function() -- BD
             error("BD not implemented")
         end, function() -- BE
