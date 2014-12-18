@@ -1107,12 +1107,12 @@ local function compile(class, method, codeAttr, cp)
         end, function() -- BA
             error("BA not implemented")
         end, function() -- BB
-            --new
+            -- new
             local c = stream.resolveClass(stream.u2())
             local robj = stream.alloc()
             stream.asmNewInstance(robj, c)
         end, function() -- BC
-            --newarray
+            -- newarray
             local cn = "["..ARRAY_TYPES[stream.u1()]
             local class = getArrayClass(cn)
 
@@ -1123,7 +1123,7 @@ local function compile(class, method, codeAttr, cp)
             stream.MOVE(rlength, robj)
             stream.free()
         end, function() -- BD
-            --anewarray
+            -- anewarray
             local cn = "[L"..cp[cp[u2()].name_index].bytes:gsub("/",".")..";"
             local class = getArrayClass(cn)
 
@@ -1134,13 +1134,16 @@ local function compile(class, method, codeAttr, cp)
             stream.MOVE(rlength, robj)
             stream.free()
         end, function() -- BE
-            --arraylength
+            -- arraylength
             local r = stream.peek(0)
             local k4 = stream.allocRK(4)
             stream.GETTABLE(r, r, k4)
             stream.freeRK(k4)
         end, function() -- BF
-            error("BF not implemented")
+            -- athrow
+            local rexception = stream.peek(0)
+            stream.asmRefillStackTrace(rexception)
+            stream.asmThrow(rexception)
         end, function() -- C0
             error("C0 not implemented")
         end, function() -- C1
