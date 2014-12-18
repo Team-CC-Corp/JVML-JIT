@@ -899,28 +899,33 @@ local function compile(class, method, codeAttr, cp)
             local cl = stream.resolveClass(mr.class_index)
             local name = cp[cp[mr.name_and_type_index].name_index].bytes .. cp[cp[mr.name_and_type_index].descriptor_index].bytes
             local mt, mIndex = findMethod(cl, name)
-            local argslen = #mt.desc
-            local k1, k3 = stream.allocRK(1, 3)                     -- Stack: [x, objref, args...]
+            local argslen = #mt.desc                                -- Stack: [x, objref, args...]
 
-            stream.asmSetStackTraceLineNumber(stream.getCurrentLineNumber() or 0)
-            stream.asmCheckNullPointer(stream.peek(argslen - 1))
-
-            -- Allocate to save register before objectref.
+            -- Define registers
             local rx = stream.peek(argslen)
-            local rsave = stream.alloc()
-            stream.MOVE(rsave, stream.peek(argslen))                -- Stack: [x, objref, args..., x]
-
-            -- Inject the method under the parameters.
             local rmt = rx
             local robj = rmt + 1
-            local rmte = stream.alloc()
+            local rsave
+            if argslen <= 1 then -- ensure that there is room for the (ret, exception) return values
+                stream.alignToRegister(rx + 3)
+                rsave = stream.peek(0)
+            else
+                rsave = stream.alloc()
+            end
 
-            stream.asmGetObj(rmte, mIndex)                          -- Stack: [x, objref, args..., x, mte]
+            stream.asmSetStackTraceLineNumber(stream.getCurrentLineNumber() or 0)
+            stream.asmCheckNullPointer(robj)
+
+            -- Allocate to save register before objectref.
+            stream.MOVE(rsave, rx)                                  -- Stack: [x, objref, args..., x]
+
+            -- Inject the method under the parameters.
             -- Get the methods table from the object
-            stream.GETTABLE(rmt, robj, k3)                          -- Stack: [objref[3], objref, args..., x, mte]
-            stream.GETTABLE(rmt, rmt, rmte)                         -- Stack: [objref[3][mte], objref, args..., x, mte]
-            stream.free(1)                                          -- Stack: [objref[3][mte], objref, args..., x]
-            stream.GETTABLE(rmt, rmt, k1)                           -- Stack: [objref[3][mte][1] = func, objref, args..., x]
+            local k1, k3, kIndex = stream.allocRK(1, 3, mIndex)
+            stream.GETTABLE(rmt, robj, k3)                          -- Stack: [objref[3], objref, args..., x]
+            stream.GETTABLE(rmt, rmt, kIndex)                       -- Stack: [objref[3][mIndex], objref, args..., x]
+            stream.GETTABLE(rmt, rmt, k1)                           -- Stack: [objref[3][mIndex][1] = func, objref, args..., x]
+            stream.freeRK(k1, k3, kIndex)
 
             -- Invoke the method. Result overwrites the method.
             -- argslen arguments and 2 return values.
@@ -928,47 +933,50 @@ local function compile(class, method, codeAttr, cp)
             stream.CALL(rmt, argslen + 1, 3)                        -- Stack: [ret, exception, args..., x]
 
             local rret, rexc = rmt, rmt + 1
-
-            stream.MOVE(rexc + 1, rexc)                             -- Stack: [ret, exception, exception, args...-1, x]
-            stream.MOVE(rret, rexc)                                 -- Stack: [ret, ret, exception, args...-1, x]
-            rret = rexc + 1
-            rexc = rexc + 1
-
-            stream.MOVE(rx, rsave)
-            stream.free()                                           -- Stack: [x (now we don't worry about this), ret, exception, args...-1, x]
-                                                                    -- Stack: [ret, exception, args...-1]
-
-            -- Free down to ret, exception
-            stream.free(argslen - 1)                                -- Stack: [ret, exception]
             stream.asmCheckThrow(rexc)
 
-            if mt.desc[#mt.desc].type ~= "V" then
-                stream.free()                                       -- Stack: [ret]
-            else
-                stream.free(2)                                      -- Stack: []
+            stream.MOVE(rexc + 1, rexc)                             -- Stack: [ret, exception, exception, args...-1, x]
+            stream.MOVE(rret + 1, rret)                             -- Stack: [ret, ret, exception, args...-1, x]
+            rret = rret + 1
+            rexc = rexc + 1
+
+            stream.MOVE(rx, rsave)                                  -- Stack: [x (now we don't worry about this), ret, exception, args...-1, x]
+                                                                    -- Stack: [ret, exception, args...-1]
+
+            -- Free down to ret
+            stream.alignToRegister(rret)                            -- Stack: [ret]
+            if mt.desc[#mt.desc].type == "V" then
+                stream.free()                                       -- Stack: []
             end
-            stream.freeRK(k1, k3)
         end, function() -- B7
             -- invokespecial
             local mr = cp[stream.u2()]
             local cl = stream.resolveClass(mr.class_index)
             local name = cp[cp[mr.name_and_type_index].name_index].bytes .. cp[cp[mr.name_and_type_index].descriptor_index].bytes
             local mt = findMethod(cl, name)
-            local argslen = #mt.desc
-            local k1, k3 = stream.allocRK(1, 3)                     -- Stack: [x, objref, args...]
+            local argslen = #mt.desc                                -- Stack: [x, objref, args...]
 
-            stream.asmSetStackTraceLineNumber(stream.getCurrentLineNumber() or 0)
-
-            -- Allocate to save register before objectref.
+            -- Define registers
             local rx = stream.peek(argslen)
-            local rsave = stream.alloc()
-            stream.MOVE(rsave, stream.peek(argslen))                -- Stack: [x, objref, args..., x]
-
-            -- Inject the method under the parameters.
             local rmt = rx
             local robj = rmt + 1
+            local rsave
+            if argslen <= 1 then -- ensure that there is room for the (ret, exception) return values
+                stream.alignToRegister(rx + 3)
+                rsave = stream.peek(0)
+            else
+                rsave = stream.alloc()
+            end
 
-            stream.asmGetObj(rmt, mt[1])                            -- Stack: [func, objref, args..., x]
+            stream.asmSetStackTraceLineNumber(stream.getCurrentLineNumber() or 0)
+            stream.asmCheckNullPointer(robj) -- still need to check, in case of calling a private method on a different object
+
+            -- Allocate to save register before objectref.
+            stream.MOVE(rsave, rx)                                  -- Stack: [x, objref, args..., x]
+
+            -- Inject the method under the parameters.
+            -- Get the methods table from the object
+            stream.asmGetObj(rmt, mt[1])
 
             -- Invoke the method. Result overwrites the method.
             -- argslen arguments and 2 return values.
@@ -976,26 +984,21 @@ local function compile(class, method, codeAttr, cp)
             stream.CALL(rmt, argslen + 1, 3)                        -- Stack: [ret, exception, args..., x]
 
             local rret, rexc = rmt, rmt + 1
-
-            stream.MOVE(rexc + 1, rexc)                             -- Stack: [ret, exception, exception, args...-1, x]
-            stream.MOVE(rret, rexc)                                 -- Stack: [ret, ret, exception, args...-1, x]
-            rret = rexc + 1
-            rexc = rexc + 1
-
-            stream.MOVE(rx, rsave)
-            stream.free()                                           -- Stack: [x (now we don't worry about this), ret, exception, args...-1, x]
-                                                                    -- Stack: [ret, exception, args...-1]
-
-            -- Free down to ret, exception
-            stream.free(argslen - 1)                                -- Stack: [ret, exception]
             stream.asmCheckThrow(rexc)
 
-            if mt.desc[#mt.desc].type ~= "V" then
-                stream.free()                                       -- Stack: [ret]
-            else
-                stream.free(2)                                      -- Stack: []
+            stream.MOVE(rexc + 1, rexc)                             -- Stack: [ret, exception, exception, args...-1, x]
+            stream.MOVE(rret + 1, rret)                             -- Stack: [ret, ret, exception, args...-1, x]
+            rret = rret + 1
+            rexc = rexc + 1
+
+            stream.MOVE(rx, rsave)                                  -- Stack: [x (now we don't worry about this), ret, exception, args...-1, x]
+                                                                    -- Stack: [ret, exception, args...-1]
+
+            -- Free down to ret
+            stream.alignToRegister(rret)                            -- Stack: [ret]
+            if mt.desc[#mt.desc].type == "V" then
+                stream.free()                                       -- Stack: []
             end
-            stream.freeRK(k1, k3)
         end, function() -- B8
             error("B8 not implemented")
         end, function() -- B9
