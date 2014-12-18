@@ -279,5 +279,9 @@ function makeChunkStream(numParams)
         stream.LOADK(r, stream.getConstant(k))
     end
 
+    function stream.asmClose()
+        stream.CLOSE(stream.peek(0) + 1)
+    end
+
     return stream
 end

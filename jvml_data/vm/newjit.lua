@@ -1149,6 +1149,7 @@ local function compile(class, method, codeAttr, cp)
     while instruction do
         stream.beginJavaInstruction(instruction)
         oplookup[instruction]()
+        stream.asmClose()
     end
 
 
