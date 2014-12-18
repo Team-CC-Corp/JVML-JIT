@@ -1123,7 +1123,16 @@ local function compile(class, method, codeAttr, cp)
             stream.MOVE(rlength, robj)
             stream.free()
         end, function() -- BD
-            error("BD not implemented")
+            --anewarray
+            local cn = "[L"..cp[cp[u2()].name_index].bytes:gsub("/",".")..";"
+            local class = getArrayClass(cn)
+
+            local rlength = stream.peek(0)
+            local robj = stream.alloc()
+            stream.asmNewArray(robj, rlength, class)
+            --put array in expected register
+            stream.MOVE(rlength, robj)
+            stream.free()
         end, function() -- BE
             error("BE not implemented")
         end, function() -- BF
