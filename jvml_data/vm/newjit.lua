@@ -1,3 +1,6 @@
+TIME_SPENT_EMITTING_ASSEMBLY = 0
+TIME_SPENT_COMPILING_LASM = 0
+
 local function compile(class, method, codeAttr, cp)
     -- declarations
     local stream = makeExtendedChunkStream(class, method, codeAttr, cp)
@@ -1315,21 +1318,36 @@ local function compile(class, method, codeAttr, cp)
         end
     }
 
+    local startTime = os.time() / 0.02
 
     stream.asmPushStackTrace()
     local instruction = stream.u1()
     while instruction do
+        checkIn()
         stream.beginJavaInstruction(instruction)
         oplookup[instruction]()
         stream.asmClose()
     end
 
-
-
-
-
+    local emitAssemblyTime = os.time() / 0.02
 
     local compiledCode = stream.compile(class.name .. "." .. method.name.."/bytecode")
+
+    local compileEndTime = os.time() / 0.02
+
+    debugH.write(class.name .. "." .. method.name .. "\n")
+    debugH.write("Length: " .. (asmPC - 1) .. "\n")
+    debugH.write("Locals: " .. codeAttr.max_locals .. "\n")
+
+    debugH.write(stream.getDebugCode())
+
+    TIME_SPENT_EMITTING_ASSEMBLY = TIME_SPENT_EMITTING_ASSEMBLY + (emitAssemblyTime - startTime)
+    TIME_SPENT_COMPILING_LASM = TIME_SPENT_COMPILING_LASM + (compileEndTime - emitAssemblyTime)
+    debugH.write("Emit Assembly:\t" .. (emitAssemblyTime - startTime) .. "\n")
+    debugH.write("Compile LASM:\t" .. (compileEndTime - emitAssemblyTime) .. "\n\n")
+    
+    debugH.flush()
+
     local f = loadstring(compiledCode)
     return f, stream.getRTI()
 end
