@@ -1145,7 +1145,34 @@ local function compile(class, method, codeAttr, cp)
             stream.asmRefillStackTrace(rexception)
             stream.asmThrow(rexception)
         end, function() -- C0
-            error("C0 not implemented")
+            -- checkcast
+            local c = stream.resolveClass(stream.u2())
+            local r = stream.peek(0)
+            local rInstanceof = stream.alloc()
+            stream.MOVE(rInstanceof, r)
+            stream.asmInstanceOf(rInstanceof, c)
+
+
+            local k0 = stream.allocRK(0)
+            stream.EQ(1, rInstanceof, k0)
+            stream.freeRK(k0)
+            local jid = stream.startJump()
+
+            local ccException = classByName("java.lang.ClassCastException")
+            local con = findMethod(ccException, "<init>(Ljava/lang/String;)V")
+
+            local rexc, rcon, rpexc, rmsg = stream.alloc(4)
+
+            stream.asmNewInstance(rexc, ccException)
+            stream.asmLoadJString(rmsg, " cannot be cast to " .. c.name)
+            stream.asmGetObj(rcon, con[1])
+            stream.MOVE(rpexc, rexc)
+            stream.CALL(rcon, 3, 3)
+
+            stream.asmRefillStackTrace(rexc)
+            stream.asmThrow(rexc)
+            stream.fixJump(jid)
+            stream.free(5)
         end, function() -- C1
             error("C1 not implemented")
         end, function() -- C2
