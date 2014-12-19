@@ -1185,9 +1185,21 @@ local function compile(class, method, codeAttr, cp)
         end, function() -- C5
             error("C5 not implemented")
         end, function() -- C6
-            error("C6 not implemented")
+            -- ifnull
+            local joffset = u2ToSignedShort(stream.u2())
+            local rvalue = stream.free()
+            local knil = stream.allocNilRK()
+            stream.EQ(1, rvalue, knil)
+            stream.freeRK(knil)
+            stream.jumpByJOffset(joffset)
         end, function() -- C7
-            error("C7 not implemented")
+            -- ifnonnull
+            local joffset = u2ToSignedShort(stream.u2())
+            local rvalue = stream.free()
+            local knil = stream.allocNilRK()
+            stream.EQ(0, rvalue, knil)
+            stream.freeRK(knil)
+            stream.jumpByJOffset(joffset)
         end, function() -- C8
             error("C8 not implemented")
         end, function() -- C9
