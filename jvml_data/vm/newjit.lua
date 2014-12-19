@@ -1174,7 +1174,8 @@ local function compile(class, method, codeAttr, cp)
             stream.fixJump(jid)
             stream.free(5)
         end, function() -- C1
-            error("C1 not implemented")
+            -- instanceof
+            stream.asmInstanceOf(stream.peek(0), stream.resolveClass(stream.u2()))
         end, function() -- C2
             error("C2 not implemented")
         end, function() -- C3
