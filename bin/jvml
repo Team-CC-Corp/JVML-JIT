@@ -80,19 +80,6 @@ function vm.loadfile(path)
     return f, err
 end
 
-do -- load LAT with jvml as virtually the root
-    local f = assert(nloadfile(fs.combine(vm.jcd, "lasm/LAT.lua")))
-    setfenv(f, setmetatable({
-        loadfile=function(path)
-            return vm.loadfile(fs.combine(vm.jcd, path))
-        end
-    }, {
-        __index=vm,
-        __newindex=vm
-    }))
-    f()
-end
-
 dofile(fs.combine(vm.jcd, "bigint/bigint.lua"))
 dofile(fs.combine(vm.jcd, "jvml_data/vm/classpath.lua"))
 dofile(fs.combine(vm.jcd, "jvml_data/vm/runtime.lua"))
