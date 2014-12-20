@@ -1052,6 +1052,7 @@ local function compile(class, method, codeAttr, cp)
         end, function() -- B9
             -- invokeinterface
             local mr = cp[stream.u2()]
+            stream.u2()
             local cl = stream.resolveClass(mr.class_index)
             local name = cp[cp[mr.name_and_type_index].name_index].bytes .. cp[cp[mr.name_and_type_index].descriptor_index].bytes
             local mt, mIndex = findMethod(cl, name)
