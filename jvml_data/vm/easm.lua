@@ -285,7 +285,6 @@ function makeExtendedChunkStream(class, method, codeAttr, cp)
 
     -- asm utility functions
     function stream.asmGetObj(r, obj)
-        stream.comment("Getting object")
         local rk = stream.allocRK(info(obj))
         stream.GETTABLE(r, 0, rk)
         stream.freeRK(rk)
@@ -434,7 +433,7 @@ function makeExtendedChunkStream(class, method, codeAttr, cp)
         stream.LOADNIL(rnil, rnil)
         stream.MOVE(rexc, rexception)
         stream.RETURN(rnil, 3)
-        free(2)
+        stream.free(2)
     end
 
     function stream.asmCheckThrow(rexception)
