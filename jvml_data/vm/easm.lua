@@ -1,6 +1,7 @@
 -- Chunk stream with extensions for null checks and other JVML specific things
 function makeExtendedChunkStream(class, method, codeAttr, cp)
     local maxLocals = codeAttr.max_locals
+    local code = codeAttr.code
     local stream = makeChunkStream(maxLocals + 1) -- locals + rti
 
     -- Get attribute data
