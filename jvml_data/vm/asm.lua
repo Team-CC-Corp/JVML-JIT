@@ -98,7 +98,7 @@ function makeChunkStream(numParams)
     local debugComments = { }
     local debugCode = { }
 
-    local function getMaxRegister()
+    function stream.getMaxRegister()
         return maxRegister
     end
 
