@@ -3,7 +3,7 @@ local platform = json.decodeFromFile(fs.combine(jcd, "jvml_data/platform.json"))
 
 local InstructionTypes = { }
 
-local sbxBias = 131,071 -- (2^18 - 1) >> 1
+local sbxBias = 131071 -- (2^18 - 1) >> 1
 
 function InstructionTypes.ABC(opcode, a, b, c)
     a = bit.blshift(a, 6)
@@ -119,9 +119,8 @@ function makeChunkStream(numParams)
             if not nilIndex then
                 nilIndex = lastIndex
                 lastIndex = lastIndex + 1
-            else
-                index = nilIndex
             end
+            index = nilIndex
         else
             index = constants[value]
             if not index then
@@ -175,7 +174,7 @@ function makeChunkStream(numParams)
         local ok, inst = pcall(op.type, op.opcode, ...)
         assert(ok, inst, 2)
         table.insert(instns, inst)
-        table.insert(debugCode, "[" .. (#instns - 1) .. "] " .. op.name .. " " .. table.concat({...}, " "))
+        table.insert(debugCode, "[" .. (#instns) .. "] " .. op.name .. " " .. table.concat({...}, " "))
         sourceLinePositions[#instns] = #instns
         return #instns
     end
@@ -195,7 +194,7 @@ function makeChunkStream(numParams)
         if not jump.backward then
             local jumpID = jump.instruction
             instns[jumpID] = Op.JMP.type(Op.JMP.opcode, #instns - jumpID)
-            debugCode[jumpID] = "[" .. (jumpID - 1) .. "] JMP " .. (#instns - jumpID)
+            debugCode[jumpID] = "[" .. (jumpID) .. "] JMP " .. (#instns - jumpID)
         else
             stream.JMP(jump.instruction - (#instns + 1))
         end

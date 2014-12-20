@@ -35,7 +35,7 @@ function makeExtendedChunkStream(class, method, codeAttr, cp)
 
     -- value pools are lists of registers known to share the same value
     local valuePools = { }
-    function stream.getPool(reg)
+    function stream.findPool(reg)
         for poolIndex,pool in ipairs(valuePools) do
             for registerIndex,r in ipairs(pool) do
                 if r == reg then
@@ -45,8 +45,16 @@ function makeExtendedChunkStream(class, method, codeAttr, cp)
         end
     end
 
+    function stream.getPool(reg)
+        local pool, registerIndex, poolIndex = stream.findPool(reg)
+        if not pool then
+            pool, registerIndex, poolIndex = stream.createPool(reg)
+        end
+        return pool, registerIndex, poolIndex
+    end
+
     function stream.removeFromPool(reg)
-        local pool, registerIndex, poolIndex = stream.getPool(reg)
+        local pool, registerIndex, poolIndex = stream.findPool(reg)
         if pool then
             table.remove(pool, registerIndex)
             if #pool == 0 then
@@ -59,13 +67,13 @@ function makeExtendedChunkStream(class, method, codeAttr, cp)
         stream.removeFromPool(reg)
         local pool = {reg}
         table.insert(valuePools, pool)
-        return pool
+        return pool, 1, #valuePools
     end
 
     function stream.addToPool(add, to)
         local toPool = stream.getPool(to)
         if not toPool then
-            toPool = stream.createPool(2)
+            toPool = stream.createPool(to)
         end
         local addPool = stream.getPool(add)
         if addPool and addPool ~= toPool then
@@ -122,7 +130,7 @@ function makeExtendedChunkStream(class, method, codeAttr, cp)
     for i,opName in ipairs(assigners) do
         local old = stream[opName]
         stream[opName] = function(rAssignTo, ...)
-            stream.removeFromPool(rAssignTo)
+            stream.createPool(rAssignTo)
             return old(rAssignTo, ...)
         end
     end
@@ -139,7 +147,7 @@ function makeExtendedChunkStream(class, method, codeAttr, cp)
     local oldLoadnil = stream.LOADNIL
     function stream.LOADNIL(a, b)
         for r=a,b do
-            stream.removeFromPool(r)
+            stream.createPool(r)
         end
         return oldLoadnil(a, b)
     end
@@ -149,7 +157,7 @@ function makeExtendedChunkStream(class, method, codeAttr, cp)
         local numArgs = b == 0 and stream.getMaxRegister() - a or b - 1
         local numReturns = c == 0 and stream.getMaxRegister() - a or c - 1
         for r=a, a + math.max(numArgs, numReturns) do
-            stream.removeFromPool(r)
+            stream.createPool(r)
         end
         return oldCall(a, b, c)
     end
@@ -157,7 +165,7 @@ function makeExtendedChunkStream(class, method, codeAttr, cp)
     local oldClose = stream.CLOSE
     function stream.CLOSE(a)
         for i=a,stream.getMaxRegister() do
-            stream.removeFromPool(i)
+            stream.createPool(i)
         end
         return oldClose(a)
     end
@@ -299,8 +307,13 @@ function makeExtendedChunkStream(class, method, codeAttr, cp)
         stream.NEWTABLE(rfields, #class.field_info, 0)
         for i = 1, #class.field_info do
             local fi = class.field_info[i]
-            local rki = allocRK(i)
-            local rkDefault = PRIMITIVE_WRAPPERS[fi.descriptor] and stream.allocRK(0) or stream.allocNilRK()
+            local rki = stream.allocRK(i)
+            local rkDefault
+            if PRIMITIVE_WRAPPERS[fi.descriptor] then
+                rkDefault = stream.allocRK(0)
+            else
+                rkDefault = stream.allocNilRK()
+            end
             stream.SETTABLE(rfields, rki, rkDefault)
             stream.freeRK(rki, rkDefault)
         end
@@ -344,7 +357,7 @@ function makeExtendedChunkStream(class, method, codeAttr, cp)
         stream.freeRK(rkDefault, rkIter)
         stream.JMP(-5)
 
-        strea.asmNewInstance(robj, class, 5) -- creates new object
+        stream.asmNewInstance(robj, class, 5) -- creates new object
         local lengthIndex, arrayIndex = stream.allocRK(4, 5)
         stream.SETTABLE(robj, lengthIndex, rlength)
         stream.SETTABLE(robj, arrayIndex, rarray)
@@ -601,7 +614,7 @@ function makeExtendedChunkStream(class, method, codeAttr, cp)
         stream.MOVE(rp2, r2)
         stream.asmGetObj(rzero, bigint(0))
         stream.CALL(req, 3, 2)
-        free(2)
+        stream.free(2)
 
         local rexc, rcon, rpexc, rmsg = stream.alloc(4)
 
@@ -684,7 +697,7 @@ function makeExtendedChunkStream(class, method, codeAttr, cp)
         local rdiv = r1
         stream.asmGetObj(rdiv, bigintDiv)
 
-        stream.call(rdiv, 3, 2)
+        stream.CALL(rdiv, 3, 2)
         stream.free(2)
     end
 

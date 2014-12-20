@@ -140,7 +140,7 @@ THE SOFTWARE.
             constList[v + 1] = k
         end
         if nilIndex then
-            constList[nilIndex] = nilConst
+            constList[nilIndex + 1] = nilConst
         end
 
         dump.dumpInteger(#constList)

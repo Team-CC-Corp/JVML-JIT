@@ -68,7 +68,7 @@ local function compile(class, method, codeAttr, cp)
                 stream.asmGetObj(reg, getJClass(cp[s.name_index].bytes:gsub("/", ".")))
                 stream.getPool(reg).nullChecked = true
             else
-                stream.asmLoadString(reg, cp[s.string_index].bytes)
+                stream.asmLoadJString(reg, cp[s.string_index].bytes)
                 stream.getPool(reg).nullChecked = true
             end
         end, function() -- 13
@@ -81,7 +81,7 @@ local function compile(class, method, codeAttr, cp)
                 stream.asmGetObj(reg, getJClass(cp[s.name_index].bytes:gsub("/", ".")))
                 stream.getPool(reg).nullChecked = true
             else
-                stream.asmLoadString(reg, cp[s.string_index].bytes)
+                stream.asmLoadJString(reg, cp[s.string_index].bytes)
                 stream.getPool(reg).nullChecked = true
             end
         end, function() -- 14
@@ -565,9 +565,7 @@ local function compile(class, method, codeAttr, cp)
             stream.CALL(rconv, 2, 2)
             stream.free()
         end, function() -- 86
-            error("86 not implemented")
         end, function() -- 87
-            error("87 not implemented")
         end, function() -- 88
             -- l2i
             local rconv = stream.peek(0)
@@ -588,7 +586,7 @@ local function compile(class, method, codeAttr, cp)
             stream.asmGetObj(r2, bigint(2147483648))
             stream.CALL(rconv, 3, 2)                -- Align to range -2^31 to 2^31-1
             
-            stream.MOV(r1, rconv)
+            stream.MOVE(r1, rconv)
             stream.asmGetObj(rconv, bigintToDouble)
             stream.CALL(rconv, 2, 2)                -- Convert to Lua number.
             
@@ -597,7 +595,7 @@ local function compile(class, method, codeAttr, cp)
             -- l2f
             local rconv = stream.peek(0)
             local r = stream.alloc()
-            stream.MOVE(r, conv)
+            stream.MOVE(r, rconv)
             stream.asmGetObj(rconv, bigintToDouble)
             stream.CALL(rconv, 2, 2)
             stream.free()
@@ -605,7 +603,7 @@ local function compile(class, method, codeAttr, cp)
             -- l2d
             local rconv = stream.peek(0)
             local r = stream.alloc()
-            stream.MOVE(r, conv)
+            stream.MOVE(r, rconv)
             stream.asmGetObj(rconv, bigintToDouble)
             stream.CALL(rconv, 2, 2)
             stream.free()
@@ -613,7 +611,7 @@ local function compile(class, method, codeAttr, cp)
             -- f2i
             local rconv = peek(0)
             local r = alloc()
-            stream.MOVE(r, conv)
+            stream.MOVE(r, rconv)
             stream.asmGetObj(rconv, math.floor)
             stream.CALL(rconv, 2, 2)
             stream.free()
@@ -621,7 +619,7 @@ local function compile(class, method, codeAttr, cp)
             -- f2l
             local rconv = stream.peek(0)
             local r = stream.alloc()
-            stream.MOVE(r, conv)
+            stream.MOVE(r, rconv)
             stream.asmGetObj(rconv, bigint)
             stream.CALL(rconv, 2, 2)
             stream.free()
@@ -631,7 +629,7 @@ local function compile(class, method, codeAttr, cp)
             -- d2i
             local rconv = stream.peek(0)
             local r = stream.alloc()
-            stream.MOVE(r, conv)
+            stream.MOVE(r, rconv)
             stream.asmGetObj(rconv, math.floor)
             stream.CALL(rconv, 2, 2)
             stream.free()
@@ -639,7 +637,7 @@ local function compile(class, method, codeAttr, cp)
             -- d2l
             local rconv = stream.peek(0)
             local r = stream.alloc()
-            stream.MOVE(r, conv)
+            stream.MOVE(r, rconv)
             stream.asmGetObj(rconv, bigint)
             stream.CALL(rconv, 2, 2)
             stream.free()
@@ -687,42 +685,42 @@ local function compile(class, method, codeAttr, cp)
             local joffset = u2ToSignedShort(stream.u2())
             local k = stream.allocRK(0)
             stream.EQ(1, stream.free(), k)
-            emit.jumpByJOffset(joffset)
+            stream.jumpByJOffset(joffset)
             stream.freeRK(k)
         end, function() -- 9A
             --ifne
             local joffset = u2ToSignedShort(stream.u2())
             local k = stream.allocRK(0)
             stream.EQ(0, stream.free(), k)
-            emit.jumpByJOffset(joffset)
+            stream.jumpByJOffset(joffset)
             stream.freeRK(k)
         end, function() -- 9B
             --iflt
             local joffset = u2ToSignedShort(stream.u2())
             local k = stream.allocRK(0)
             stream.LT(1, stream.free(), k)
-            emit.jumpByJOffset(joffset)
+            stream.jumpByJOffset(joffset)
             stream.freeRK(k)
         end, function() -- 9C
             --ifge
             local joffset = u2ToSignedShort(stream.u2())
             local k = stream.allocRK(0)
             stream.LT(0, stream.free(), k)
-            emit.jumpByJOffset(joffset)
+            stream.jumpByJOffset(joffset)
             stream.freeRK(k)
         end, function() -- 9D
             --ifgt
             local joffset = u2ToSignedShort(stream.u2())
             local k = stream.allocRK(0)
             stream.LE(0, stream.free(), k)
-            emit.jumpByJOffset(joffset)
+            stream.jumpByJOffset(joffset)
             stream.freeRK(k)
         end, function() -- 9E
             --ifle
             local joffset = u2ToSignedShort(stream.u2())
             local k = stream.allocRK(0)
             stream.LE(1, stream.free(), k)
-            emit.jumpByJOffset(joffset)
+            stream.jumpByJOffset(joffset)
             stream.freeRK(k)
         end, function() -- 9F
             --if_icmpeq
@@ -843,7 +841,7 @@ local function compile(class, method, codeAttr, cp)
             local name = cp[cp[fr.name_and_type_index].name_index].bytes
             local fi = class.fieldIndexByName[name]
             local r = stream.alloc()
-            local kfi = allocRK(fi)
+            local kfi = stream.allocRK(fi)
             stream.asmGetObj(r, class.fields)
             stream.comment(class.name.."."..name)
             stream.GETTABLE(r, r, kfi)
@@ -1085,6 +1083,7 @@ local function compile(class, method, codeAttr, cp)
             stream.MOVE(rmt, find)
             stream.freeRK(k1)
             stream.free(3)
+            stream.GETTABLE(rmt, rmt, k1)
 
             -- Invoke the method. Result overwrites the method.
             -- argslen arguments and 2 return values.
@@ -1127,7 +1126,7 @@ local function compile(class, method, codeAttr, cp)
             stream.free()
         end, function() -- BD
             -- anewarray
-            local cn = "[L"..cp[cp[u2()].name_index].bytes:gsub("/",".")..";"
+            local cn = "[L"..cp[cp[stream.u2()].name_index].bytes:gsub("/",".")..";"
             local class = getArrayClass(cn)
 
             local rlength = stream.peek(0)
@@ -1157,7 +1156,7 @@ local function compile(class, method, codeAttr, cp)
 
 
             local k0 = stream.allocRK(0)
-            stream.EQ(1, rInstanceof, k0)
+            stream.EQ(0, rInstanceof, k0)
             stream.freeRK(k0)
             local jid = stream.startJump()
 
@@ -1350,6 +1349,11 @@ local function compile(class, method, codeAttr, cp)
     debugH.flush()
 
     local f = loadstring(compiledCode)
+    --local fh = fs.open(fs.combine(jcd, "debug_stuff/" .. (class.name .. "." .. method.name):gsub("/", ".")), "wb")
+    --for i=1,#compiledCode do
+    --    fh.write(compiledCode:byte(i,i))
+    --end
+    --fh.close()
     return f, stream.getRTI()
 end
 
