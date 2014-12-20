@@ -96,6 +96,7 @@ function makeChunkStream(numParams)
     local maxRegister = register -- just tracking the highest we go
 
     local debugComments = { }
+    local debugAnnotations = { }
     local debugCode = { }
 
     function stream.getMaxRegister()
@@ -105,6 +106,11 @@ function makeChunkStream(numParams)
     function stream.comment(comment)
         debugComments[#instns + 1] = debugComments[#instns + 1] or {}
         table.insert(debugComments[#instns + 1], comment)
+    end
+
+    function stream.annotate(annot)
+        debugAnnotations[#instns + 1] = debugAnnotations[#instns + 1] or {}
+        table.insert(debugAnnotations[#instns + 1], annot)
     end
 
     function stream.getConstant(value)
@@ -262,14 +268,14 @@ function makeChunkStream(numParams)
     function stream.getDebugCode()
         local code = ""
         for i,v in ipairs(debugCode) do
-            code = code .. v
+            if debugAnnotations[i] then
+                code = code .. "\n" .. table.concat(debugAnnotations[i], "\n") .. "\n"
+            end
+            code = code .. (" "):rep(4) .. v
             if debugComments[i] then
-                code = code .. (" "):rep(25 - #v) .. ";" .. table.concat(debugComments[i], "\n" .. (" "):rep(25) .. ";")
+                code = code .. (" "):rep(25 - #v) .. ";" .. table.concat(debugComments[i], "\n" .. (" "):rep(29) .. ";")
             end
             code = code .. "\n"
-            if debugComments[i] and #debugComments[i] > 1 then
-                code = code .. "\n"
-            end
         end
         return code
     end

@@ -1324,6 +1324,7 @@ local function compile(class, method, codeAttr, cp)
     local instruction = stream.u1()
     while instruction do
         checkIn()
+        stream.annotate(string.format("[%d] %X:", stream.pc(), instruction))
         stream.beginJavaInstruction(instruction)
         oplookup[instruction]()
         instruction = stream.u1()
