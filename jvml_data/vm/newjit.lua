@@ -1326,7 +1326,6 @@ local function compile(class, method, codeAttr, cp)
         checkIn()
         stream.beginJavaInstruction(instruction)
         oplookup[instruction]()
-        stream.asmClose()
         instruction = stream.u1()
     end
 
