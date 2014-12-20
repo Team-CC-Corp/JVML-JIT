@@ -1327,6 +1327,7 @@ local function compile(class, method, codeAttr, cp)
         stream.beginJavaInstruction(instruction)
         oplookup[instruction]()
         stream.asmClose()
+        instruction = stream.u1()
     end
 
     local emitAssemblyTime = os.time() / 0.02
