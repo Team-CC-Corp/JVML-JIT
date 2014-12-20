@@ -1355,9 +1355,13 @@ end
 function createCodeFunction(class, method, codeAttr, cp)
     local f
     local rti
+    local isCompiling = false
     return function(...)
         if not f then
+            assert(not isCompiling, "Recursively compiling " ..class.name.."."..method.name, 0)
+            isCompiling = true
             f, rti = compile(class, method, codeAttr, cp)
+            isCompiling = false
         end
         return f(rti, ...)
     end
