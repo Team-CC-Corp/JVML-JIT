@@ -546,10 +546,13 @@ function makeExtendedChunkStream(class, method, codeAttr, cp)
         stream.free(3)
     end
 
-    local divByZeroJString = toJString("/ by zero")
+    local divByZeroJString
     function stream.asmDivCheck(r1, r2)
         if stream.getPool(r2).zeroChecked then
             return
+        end
+        if not divByZeroJString then
+            divByZeroJString = toJString("/ by zero")
         end
 
         stream.comment("Div check")
@@ -583,6 +586,9 @@ function makeExtendedChunkStream(class, method, codeAttr, cp)
     function stream.asmLongDivCheck(r1, r2)
         if stream.getPool(r2).zeroChecked then
             return
+        end
+        if not divByZeroJString then
+            divByZeroJString = toJString("/ by zero")
         end
 
         stream.comment("Long div check")
