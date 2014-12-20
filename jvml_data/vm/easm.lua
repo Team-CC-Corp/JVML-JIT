@@ -241,7 +241,8 @@ function makeExtendedChunkStream(class, method, codeAttr, cp)
 
     local oldEmit = stream.emit
     function stream.emit(...)
-        local index = oldEmit(...)
+        local ok, index = pcall(oldEmit, ...)
+        assert(ok, index, 2)
         l2jMap[index] = currentInstructionPC
         return index
     end
