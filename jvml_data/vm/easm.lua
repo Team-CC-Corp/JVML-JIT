@@ -440,7 +440,7 @@ function makeExtendedChunkStream(class, method, codeAttr, cp)
         stream.comment("Check throw")
         stream.TEST(rexception, 0)
         local jid = stream.startJump()
-        stream.asmThrow()
+        stream.asmThrow(rexception)
         stream.fixJump(jid)
     end
 
