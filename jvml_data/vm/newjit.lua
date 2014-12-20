@@ -5,7 +5,6 @@ local function compile(class, method, codeAttr, cp)
     -- declarations
     local stream = makeExtendedChunkStream(class, method, codeAttr, cp)
 
-
     local oplookup = {
         function() -- 01
             -- null
@@ -1337,7 +1336,7 @@ local function compile(class, method, codeAttr, cp)
     local compileEndTime = os.time() / 0.02
 
     debugH.write(class.name .. "." .. method.name .. "\n")
-    debugH.write("Length: " .. (asmPC - 1) .. "\n")
+    debugH.write("Length: " .. (stream.getInstructionCount() - 1) .. "\n")
     debugH.write("Locals: " .. codeAttr.max_locals .. "\n")
 
     debugH.write(stream.getDebugCode())
@@ -1346,7 +1345,7 @@ local function compile(class, method, codeAttr, cp)
     TIME_SPENT_COMPILING_LASM = TIME_SPENT_COMPILING_LASM + (compileEndTime - emitAssemblyTime)
     debugH.write("Emit Assembly:\t" .. (emitAssemblyTime - startTime) .. "\n")
     debugH.write("Compile LASM:\t" .. (compileEndTime - emitAssemblyTime) .. "\n\n")
-    
+
     debugH.flush()
 
     local f = loadstring(compiledCode)
