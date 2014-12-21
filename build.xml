@@ -1,8 +1,5 @@
 <project name="JVML_JIT_RELEASE" default="main">
     <property name="release.contents" value="release/jvml" />
-    <condition property="is_windows">
-        <os family="windows"/>
-    </condition>
     <condition property="is_unix">
         <os family="unix" />
     </condition>
@@ -12,6 +9,14 @@
         <ant dir="CCLib" target="clean" />
         <ant dir="tests" target="clean" />
         <delete dir="release" />
+    </target>
+
+    <target name="grin">
+        <ant dir="grin" target="main" />
+    </target>
+
+    <target name="asm">
+        <ant dir="asm" target="main" />
     </target>
 
     <target name="compile">
@@ -24,7 +29,7 @@
         <ant dir="tests" target="jar" />
     </target>
 
-    <target name="make_archive" depends="jar">
+    <target name="make_archive" depends="jar, grin, asm">
         <mkdir dir="${release.contents}" />
         <copy todir="${release.contents}/lib">
             <fileset dir="lib" />
@@ -35,24 +40,15 @@
         <copy todir="${release.contents}/jvml_data">
             <fileset dir="jvml_data" />
         </copy>
-        <copy todir="${release.contents}/lasm/src/Lua51">
-            <fileset dir="lasm/src/Lua51" />
+        <copy todir="${release.contents}/asm/build/asm">
+            <fileset dir="asm/build/asm" />
         </copy>
-        <copy todir="${release.contents}/lasm" file="lasm/LAT.lua" />
         <copy todir="${release.contents}/bin" file="bin/jvml" />
         <copy todir="${release.contents}/CCLib/build/jar">
             <fileset dir="CCLib/build/jar" />
         </copy>
         <copy todir="${release.contents}/bigint" file="bigint/bigint.lua" />
         <zip zip64Mode="never" destfile="release/jvml.zip" basedir="${release.contents}" />
-    </target>
-
-    <target name="if_windows" if="is_windows" depends="make_archive">
-        <exec executable="certutil">
-            <arg value="-encode" />
-            <arg value="release/jvml.zip" />
-            <arg value="release/jvml.zip.base64" />
-        </exec>
     </target>
 
     <target name="if_unix" if="is_unix" depends="make_archive">
@@ -64,11 +60,7 @@
         </exec>
     </target>
 
-    <target name="grin">
-        <ant dir="grin" target="main" />
-    </target>
-
-    <target name="main" depends="grin, if_unix, if_windows">
+    <target name="main" depends="if_unix">
         
     </target>
 </project>

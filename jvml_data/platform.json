@@ -1,0 +1,10 @@
+{
+    "version": 81,
+    "format": 0,
+    "endianness": 0,
+    "size_int": 4,
+    "size_t": 4,
+    "size_instruction": 4,
+    "size_number": 8,
+    "integral": 0
+}
