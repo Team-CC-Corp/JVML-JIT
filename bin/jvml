@@ -80,12 +80,11 @@ function vm.loadfile(path)
     return f, err
 end
 
+shell.run(fs.combine(vm.jcd, "asm/build/asm/load_asm.lua"))
 dofile(fs.combine(vm.jcd, "bigint/bigint.lua"))
 dofile(fs.combine(vm.jcd, "jvml_data/vm/classpath.lua"))
 dofile(fs.combine(vm.jcd, "jvml_data/vm/runtime.lua"))
-dofile(fs.combine(vm.jcd, "jvml_data/vm/asm.lua"))
 dofile(fs.combine(vm.jcd, "jvml_data/vm/easm.lua"))
-dofile(fs.combine(vm.jcd, "jvml_data/vm/bindump.lua"))
 dofile(fs.combine(vm.jcd, "jvml_data/vm/newjit.lua"))
 dofile(fs.combine(vm.jcd, "jvml_data/vm/classloader.lua"))
 dofile(fs.combine(vm.jcd, "jvml_data/vm/arrays.lua"))

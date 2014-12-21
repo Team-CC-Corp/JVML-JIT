@@ -1331,7 +1331,7 @@ local function compile(class, method, codeAttr, cp)
 
     local emitAssemblyTime = os.time() / 0.02
 
-    local compiledCode = stream.compile(class.name .. "." .. method.name.."/bytecode")
+    local compiledCode = stream.compile(asm.getDefaultPlatform(), class.name .. "." .. method.name.."/bytecode")
 
     local compileEndTime = os.time() / 0.02
 

@@ -1,3 +1,6 @@
 [submodule "grin"]
 	path = grin
 	url = https://github.com/Team-CC-Corp/Grin.git
+[submodule "asm"]
+	path = asm
+	url = https://github.com/Team-CC-Corp/asm.lua.git
