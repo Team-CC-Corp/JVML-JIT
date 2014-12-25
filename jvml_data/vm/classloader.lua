@@ -578,6 +578,25 @@ function loadJavaClass(fh)
             end
         elseif an == "AnnotationDefault" then
             attrib.default_value = element_value()
+        elseif an == "BootstrapMethods"
+            attrib.attribute_name_index = u2()
+            attrib.attribute_length = u4()
+            local nbm = u2()
+            attrib.num_bootstrap_methods = nbm
+            local bmt = { }
+            attrib.bootstrap_methods = bm
+            for i = 0, nbm - 1 do
+                local bm = { }
+                bm.bootstrap_method_ref = u2()
+                local nba = u2()
+                bm.num_bootstrap_arguments = nba
+                local bat = { }
+                bm.bootstrap_arguments = bat
+                for i = 0, nba - 1 do
+                    bat[i] = u2()
+                end
+                bmt[i] = bm
+            end
         else
             --print("Unhandled Attrib: "..an)
             attrib.bytes = {}
