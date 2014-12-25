@@ -32,7 +32,10 @@ for i,v in ipairs(testsToRun) do
             term.setTextColor(colors.white)
             local ret, exc = m[1](jArray)
             if exc then
-                vm.findMethod(exc[1], "printStackTrace()V")[1](exc)
+                local void, newExc = vm.findMethod(exc[1], "printStackTrace()V")[1](exc)
+                if newExc then
+                    printError(newExc[1].name .. "\ncaused by:\n" .. exc[1].name)
+                end
             end
             assert(not exc)
             return true
