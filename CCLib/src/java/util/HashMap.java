@@ -65,13 +65,14 @@ public class HashMap<K, V> implements Map<K, V> {
 			
 			@Override
 			public boolean hasNext() {
-				return i < elements.length - 1;
+				return i < elements.length;
 			}
 
 			@Override
 			public java.util.Map.Entry<K, V> next() {
+				java.util.Map.Entry<K, V> e = elements[i];
 				i++;
-				return elements[i];
+				return e;
 			}
 
 			@Override
