@@ -95,6 +95,15 @@ public class String {
     public String toString() {
         return this;
     }
+    
+    @Override
+    public int hashCode() {
+    	int hash = 0;
+    	for(int i = 0; i < value.length; i++) {
+    		hash += value[i] * Math.pow(31, value.length - i - 1);
+    	}
+    	return hash;
+    }
 
     public char[] toCharArray() {
         char[] arr = new char[count];

@@ -59,4 +59,9 @@ public class Integer extends Number {
         }
         return false;
     }
+    
+    @Override
+    public int hashCode() {
+    	return value;
+    }
 }

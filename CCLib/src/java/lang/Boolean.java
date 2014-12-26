@@ -31,4 +31,13 @@ public class Boolean {
         }
         return false;
     }
+    
+    @Override
+    public int hashCode() {
+    	if(value) {
+    		return 1231;
+    	} else {
+    		return 1237;
+    	}
+    }
 }
