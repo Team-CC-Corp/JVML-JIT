@@ -67,7 +67,7 @@ natives["cc.turtle.Turtle"]["getItemDetail(I)Lcc/turtle/ItemStack;"] = function(
     local itemstack = newInstance(class)
     findMethod(class, "<init>()V")[1](itemstack)
 	setObjectField(itemstack, "name", toJString(data.name))
-	setObjectField(itemstack, "damage", data.damage)
+	setObjectField(itemstack, "metadata", data.damage)
 	setObjectField(itemstack, "count", data.count)
 	return itemstack;
 end
