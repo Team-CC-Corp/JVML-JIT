@@ -95,3 +95,29 @@ natives["java.util.HashMap"]["getHash(Ljava/lang/Object;I)Ljava/lang/Object;"] =
         end
     end
 end
+
+function toJMap(map)
+    local class = classByName("java.util.HashMap")
+    local jMap = newInstance(class)
+    findMethod(class, "<init>()V")[1](jMap)
+    local jPut = findMethod(class, "put(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;")[1]
+    for key, val in pairs(map) do
+        key = l2jType(key)
+        val = l2jType(val)
+        local _, exc = jPut(jMap, key, val)
+        if exc then return nil, exc end
+    end
+    return jMap
+end
+
+function toLMap(map)
+    local lMap = {}
+    for _, bucket in pairs(tables[map]) do
+        for _, pair in pairs(bucket) do
+            local key = j2lType(pair[1])
+            local val = j2lType(pair[2])
+            lMap[key] = val
+        end
+    end
+    return lMap;
+end

@@ -235,6 +235,8 @@ function l2jType(v)
         return wrapPrimitive(v and 1 or 0, "Z")
     elseif t == "string" then
         return toJString(v)
+    elseif t == "table" then
+        return toJMap(v)
     else
         error("Unsupported lua type for converting to java: "..t)
     end
@@ -258,6 +260,8 @@ function j2lType(obj)
         return getObjectField(obj, "value")
     elseif n == "java.lang.String" then
         return toLString(obj)
+    elseif n == "java.util.HashMap" then
+        return toLMap(obj)
     else
         error("Unsupported java type for converting to lua: "..n)
     end
