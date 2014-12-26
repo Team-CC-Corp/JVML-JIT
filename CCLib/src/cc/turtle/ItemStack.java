@@ -3,7 +3,7 @@ package cc.turtle;
 public class ItemStack {
 	
 	private String name;
-	private int damage;
+	private int metadata;
 	private int count;
 	
 	public ItemStack(String id) {
@@ -12,12 +12,12 @@ public class ItemStack {
 	
 	public ItemStack(String id, int metadata) {
 		this.name = id;
-		this.damage = metadata;
+		this.metadata = metadata;
 	}
 	
 	public ItemStack(String id, int metadata, int count) {
 		this.name = id;
-		this.damage = metadata;
+		this.metadata = metadata;
 		this.count = count;
 	}
 	
@@ -25,8 +25,8 @@ public class ItemStack {
 		StringBuilder builder = new StringBuilder();
 		builder.append(count).append("x ");
 		builder.append(name);
-		if(damage > 0) {
-			builder.append("(").append(damage).append(")");
+		if(metadata > 0) {
+			builder.append("(").append(metadata).append(")");
 		}
 		return builder.toString();
 	}
@@ -40,19 +40,19 @@ public class ItemStack {
 	}
 
 	public int getMetadata() {
-		return damage;
+		return metadata;
 	}
 
 	public void setMetadata(int metadata) {
-		this.damage = metadata;
+		this.metadata = metadata;
 	}
 
-	public int getDamage() {
+	public int getCount() {
 		return count;
 	}
 
-	public void setDamage(int damage) {
-		this.count = damage;
+	public void setCount(int count) {
+		this.count = count;
 	}
 
 }
