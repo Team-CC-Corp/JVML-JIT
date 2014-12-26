@@ -166,6 +166,18 @@ VERIFICATION_TYPES = {
     Uninitialized_variable_info = 8
 }
 
+REF_TYPES = {
+    getField = 1,
+    getStatic = 2,
+    putField = 3,
+    putStatic = 4,
+    invokeVirtual = 5,
+    invokeStatic = 6,
+    invokeSpecial = 7,
+    newInvokeSpecial = 8,
+    invokeInterface = 9,
+}
+
 function loadJavaClass(fh)
     local cn
     local cp = {}
@@ -449,8 +461,11 @@ function loadJavaClass(fh)
             end
             attrib.attributes_count = u2()
             attrib.attributes = {}
+            attrib.attributeLookup = { }
             for i=0, attrib.attributes_count-1 do
-                attrib.attributes[i] = attribute()
+                local a = attribute()
+                attrib.attributes[i] = a
+                attrib.attributeLookup[a.name] = a
             end
         elseif an == "Exceptions" then
             attrib.number_of_exceptions = u2()
@@ -578,7 +593,7 @@ function loadJavaClass(fh)
             end
         elseif an == "AnnotationDefault" then
             attrib.default_value = element_value()
-        elseif an == "BootstrapMethods"
+        elseif an == "BootstrapMethods" then
             attrib.attribute_name_index = u2()
             attrib.attribute_length = u4()
             local nbm = u2()

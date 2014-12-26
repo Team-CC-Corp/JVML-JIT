@@ -1107,7 +1107,30 @@ local function compile(class, method, codeAttr, cp)
                 stream.free()                                       -- Stack: []
             end
         end, function() -- BA
-            error("BA not implemented")
+            -- invokedynamic
+            local idInfo = cp[stream.u2()]                          -- Symbolic reference to callsite specifier.
+            stream.u2()                                             -- Read over null bytes.
+            local bootstrapMethodAttr = codeAttr.attributesLookup.BootstrapMethods
+            local bootstrapMethod = bootstrapMethodAttr.bootstrap_methods[idInfo.bootstrap_method_attr_index]
+            local nameAndType = cp[idInfo.name_and_type_index]
+            local name = cp[nameAndType.name_index].bytes
+            local desc = cp[nameAndType.descriptor_index].bytes
+
+            local mh = cp[bootstrapMethod]
+            local mhKind = mh.reference_kind
+            local mhRef = cp[mh.reference_index]
+
+            if mhKind == REF_TYPES.getField then
+            elseif mhKind == REF_TYPES.getStatic then
+            elseif mhKind == REF_TYPES.putField then
+            elseif mhKind == REF_TYPES.putStatic then
+            elseif mhKind == REF_TYPES.invokeVirtual then
+            elseif mhKind == REF_TYPES.invokeStatic then
+            elseif mhKind == REF_TYPES.invokeSpecial then
+            elseif mhKind == REF_TYPES.newInvokeSpecial then
+            elseif mhKind == REF_TYPES.invokeInterface then
+            else
+            end
         end, function() -- BB
             -- new
             local c = stream.resolveClass(stream.u2())
