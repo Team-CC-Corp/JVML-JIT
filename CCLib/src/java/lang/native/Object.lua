@@ -8,6 +8,6 @@ natives["java.lang.Object"]["getClass()Ljava/lang/Class;"] = function(this)
 end
 
 natives["java.lang.Object"]["hashCode()I"] = function(this)
-	num = tonumber(tostring(this):sub(8), 16)
+    num = tonumber(tostring(this):sub(8), 16)
     return num
 end

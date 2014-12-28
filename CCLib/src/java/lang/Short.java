@@ -30,6 +30,6 @@ public class Short extends Number {
     
     @Override
     public int hashCode() {
-    	return (int) value;
+        return (int) value;
     }
 }
