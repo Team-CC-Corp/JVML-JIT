@@ -1,6 +1,6 @@
 package java.lang;
 
-public class String {
+public final class String {
     /**
      * The value is used for character storage.
      */
@@ -9,12 +9,12 @@ public class String {
     /**
      * The offset is the first index of the storage that is used.
      */
-    private int offset;
+    private final int offset;
 
     /**
      * The count is the number of characters in the String.
      */
-    private int count;
+    private final int count;
 
     public String() {
         this.offset = 0;
@@ -40,7 +40,7 @@ public class String {
     }
 
     public String concat(String str) {
-        int otherLen = str.length();
+        int otherLen = str.count;
         if (otherLen == 0) {
             return this;
         }
@@ -52,15 +52,15 @@ public class String {
 
     public void getChars(int srcBegin, int srcEnd, char dst[], int dstBegin) {
         for (int i = srcBegin; i < srcEnd; i++) {
-            dst[dstBegin + i - srcBegin] = value[i];
+            dst[dstBegin + i - srcBegin] = charAt(i);
         }
     }
 
     public char charAt(int index) {
-        if ((index < 0) || (index >= value.length)) {
+        if ((index < 0) || (index >= count)) {
             throw new StringIndexOutOfBoundsException(index);
         }
-        return value[index];
+        return value[index + offset];
     }
 
     @Override
@@ -99,8 +99,8 @@ public class String {
     @Override
     public int hashCode() {
     	int hash = 0;
-    	for(int i = 0; i < value.length; i++) {
-    		hash += value[i] * Math.pow(31, value.length - i - 1);
+    	for(int i = 0; i < count; i++) {
+    		hash += charAt(i) * Math.pow(31, count - i - 1);
     	}
     	return hash;
     }
