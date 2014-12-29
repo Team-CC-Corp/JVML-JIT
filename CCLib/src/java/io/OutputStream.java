@@ -1,6 +1,6 @@
 package java.io;
 
-public abstract class OutputStream implements AutoCloseable {
+public abstract class OutputStream implements Closeable {
     @Override
     public void close() throws IOException {
     }
