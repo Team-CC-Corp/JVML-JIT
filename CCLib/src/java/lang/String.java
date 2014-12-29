@@ -98,11 +98,11 @@ public final class String {
     
     @Override
     public int hashCode() {
-    	int hash = 0;
-    	for(int i = 0; i < count; i++) {
-    		hash += charAt(i) * Math.pow(31, count - i - 1);
-    	}
-    	return hash;
+        int hash = 0;
+        for(int i = 0; i < value.length; i++) {
+            hash += charAt(i) * Math.pow(31, count - i - 1);
+        }
+        return hash;
     }
 
     public char[] toCharArray() {

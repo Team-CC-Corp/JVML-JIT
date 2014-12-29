@@ -12,28 +12,28 @@ public class Throwable {
     private StackTraceElement stackTrace[];
     private ArrayList<Throwable> suppressedExceptions;
 
-	public Throwable() {
-		fillInStackTrace();
-	}
+    public Throwable() {
+        fillInStackTrace();
+    }
 
-	public Throwable(String message) {
-		fillInStackTrace();
-		detailMessage = message;
-	}
+    public Throwable(String message) {
+        fillInStackTrace();
+        detailMessage = message;
+    }
 
-	public Throwable(String message, Throwable cause) {
-		fillInStackTrace();
-		detailMessage = message;
-		this.cause = cause;
-	}
+    public Throwable(String message, Throwable cause) {
+        fillInStackTrace();
+        detailMessage = message;
+        this.cause = cause;
+    }
 
-	public Throwable(Throwable cause) {
-		fillInStackTrace();
-		detailMessage = (cause==null ? null : cause.toString());
-		this.cause = cause;
-	}
+    public Throwable(Throwable cause) {
+        fillInStackTrace();
+        detailMessage = (cause==null ? null : cause.toString());
+        this.cause = cause;
+    }
 
-	public String getMessage() {
+    public String getMessage() {
         return detailMessage;
     }
 
@@ -111,11 +111,11 @@ public class Throwable {
     public native Throwable fillInStackTrace();
 
     public StackTraceElement[] getStackTrace() {
-    	StackTraceElement stackTraceCopy[] = new StackTraceElement[stackTrace.length];
-    	for (int i = 0; i < stackTrace.length; ++i) {
-    		stackTraceCopy[i] = stackTrace[i];
-    	}
-    	return stackTraceCopy;
+        StackTraceElement stackTraceCopy[] = new StackTraceElement[stackTrace.length];
+        for (int i = 0; i < stackTrace.length; ++i) {
+            stackTraceCopy[i] = stackTrace[i];
+        }
+        return stackTraceCopy;
     }
 
     public final Throwable[] getSuppressed() {

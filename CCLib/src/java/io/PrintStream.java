@@ -17,7 +17,7 @@ public class PrintStream extends FilterOutputStream {
         print(new char[] {'\n'});
     }
     public void println(Object obj) {
-    	println((String)(obj == null ? null : obj.toString()));
+        println((String)(obj == null ? null : obj.toString()));
     }
     public void println(String str) {
         println((char[])(str == null ? new char[] {'(','n','u','l','l',')'} : str.toCharArray()));

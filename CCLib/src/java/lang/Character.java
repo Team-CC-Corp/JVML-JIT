@@ -30,6 +30,6 @@ public class Character {
     
     @Override
     public int hashCode() {
-    	return (int) value;
+        return (int) value;
     }
 }
