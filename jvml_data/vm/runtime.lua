@@ -262,3 +262,7 @@ function j2lType(obj)
         error("Unsupported java type for converting to lua: "..n)
     end
 end
+
+function booleanToInt(b)
+    return b and 1 or 0
+end

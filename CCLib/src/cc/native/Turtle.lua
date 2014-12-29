@@ -1,13 +1,5 @@
 natives["cc.turtle.Turtle"] = natives["cc.turtle.Turtle"] or {}
 
-function booleanToInt(b)
-    if b then
-        return 1
-    else
-        return 0
-    end
-end
-
 natives["cc.turtle.Turtle"]["forward()Z"] = function(this)
     local success = turtle.forward()
     return booleanToInt(success)
