@@ -102,8 +102,16 @@ function toJMap(map)
     findMethod(class, "<init>()V")[1](jMap)
     local jPut = findMethod(class, "put(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;")[1]
     for key, val in pairs(map) do
-        key = l2jType(key)
-        val = l2jType(val)
+        if type(key) == "table" then
+            key = toJMap(key)
+        else
+            key = l2jType(key)
+        end
+        if type(val) == "table" then
+            val = toJMap(val)
+        else
+            val = l2jType(val)
+        end
         local _, exc = jPut(jMap, key, val)
         if exc then return nil, exc end
     end
@@ -114,8 +122,17 @@ function toLMap(map)
     local lMap = {}
     for _, bucket in pairs(tables[map]) do
         for _, pair in pairs(bucket) do
-            local key = j2lType(pair[1])
-            local val = j2lType(pair[2])
+            local key, val
+            if pair[1][1] == "java.util.HashMap" then
+                key = toLMap(pair[1])
+            else
+                key = j2lType(pair[1])
+            end
+            if pair[2][1] == "java.util.HashMap" then
+                key = toLMap(pair[2])
+            else
+                key = j2lType(pair[2])
+            end
             lMap[key] = val
         end
     end
