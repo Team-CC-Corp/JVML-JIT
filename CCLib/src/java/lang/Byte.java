@@ -49,6 +49,6 @@ public class Byte extends Number {
     
     @Override
     public int hashCode() {
-    	return (int) value;
+        return (int) value;
     }
 }

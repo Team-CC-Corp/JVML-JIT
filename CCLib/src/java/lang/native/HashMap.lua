@@ -22,7 +22,7 @@ natives["java.util.HashMap"]["entryArray()[Ljava/util/Map$Entry;"] = function(th
     local ret = {}
     for _, bucket in pairs(tables[this]) do
         for _, pair in pairs(bucket) do
-        	local entryClass = classByName("java.util.HashMap$Entry")
+            local entryClass = classByName("java.util.HashMap$Entry")
             local entry = newInstance(entryClass)
             findMethod(entryClass, "<init>()V")[1](entry)
             setObjectField(entry, "key", pair[1])

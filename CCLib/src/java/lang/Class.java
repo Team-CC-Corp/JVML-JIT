@@ -4,9 +4,9 @@ import java.lang.reflect.Method;
 import java.lang.annotation.Annotation;
 
 public final class Class<T> {
-	private String name;
+    private String name;
 
-	/*
+    /*
      * Constructor. Only the VM creates Class
      * objects.
      */

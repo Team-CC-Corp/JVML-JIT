@@ -62,6 +62,6 @@ public class Integer extends Number {
     
     @Override
     public int hashCode() {
-    	return value;
+        return value;
     }
 }
