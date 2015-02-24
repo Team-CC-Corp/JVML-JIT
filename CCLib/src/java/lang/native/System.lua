@@ -15,9 +15,9 @@ end
 
 natives["java.lang.System"]["initProperties()V"] = function()
     local defaultProps = {
-        ["file.separator"]  = "/"
-        ["line.separator"]  = "\n"
-        ["path.separator"]  = ":"
+        ["file.separator"]  = "/",
+        ["line.separator"]  = "\n",
+        ["path.separator"]  = ":",
         ["user.dir"      ]  = shell.dir()
     }
 
