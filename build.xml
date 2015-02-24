@@ -8,6 +8,7 @@
     <target name="clean">
         <ant dir="CCLib" target="clean" />
         <ant dir="tests" target="clean" />
+        <ant dir="asm" target="clean" />
         <delete dir="release" />
     </target>
 
