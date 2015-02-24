@@ -82,7 +82,7 @@ function classpath.dofile(path, ...)
     end, function(jarFs)
         fh = fh or assert(jarFs.open(path, "r"), "File not found", 2)
     end)
-    local f = assert(loadstring(fh.readAll()))
+    local f = assert(loadstring(fh.readAll(), fs.getName(path)))
     setfenv(f, getfenv())
     return f(...)
 end
