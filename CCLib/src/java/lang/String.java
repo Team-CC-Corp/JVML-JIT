@@ -237,7 +237,7 @@ public final class String {
         if (subLen < 0) {
             throw new StringIndexOutOfBoundsException(subLen);
         }
-        return (beginIndex == 0) ? this : new String(value, beginIndex, subLen);
+        return (beginIndex == 0) ? this : new String(beginIndex, subLen, value);
     }
 
     public String substring(int beginIndex, int endIndex) {
@@ -252,6 +252,6 @@ public final class String {
             throw new StringIndexOutOfBoundsException(subLen);
         }
         return ((beginIndex == 0) && (endIndex == value.length)) ? this
-                : new String(value, beginIndex, subLen);
+                : new String(beginIndex, subLen, value);
     }
 }
