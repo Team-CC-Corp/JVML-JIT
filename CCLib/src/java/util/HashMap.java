@@ -3,7 +3,7 @@ package java.util;
 import java.util.Map;
 
 public class HashMap<K, V> implements Map<K, V> {
-
+	
     @Override
     public native void clear();
 

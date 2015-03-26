@@ -11,7 +11,11 @@ natives["cc.peripheral.Peripheral"]["call(Ljava/lang/String;[Ljava/lang/Object;)
 
     local jRet = newArray(getArrayClass("[Ljava.lang.Object;"), #ret)
     for i,v in ipairs(ret) do
-        jRet[5][i] = l2jType(v)
+        if type(v) == "table" then
+            jRet[5][i] = toJMap(v)
+        else
+            jRet[5][i] = l2jType(v)
+        end
     end
     return jRet
 end
