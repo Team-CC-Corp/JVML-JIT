@@ -626,5 +626,55 @@ function makeExtendedChunkStream(class, method, codeAttr, cp)
         stream.free(3)
     end
 
+    function stream.asmInvoke(numArgs, name, void, asmMethodGet)
+        local rx = stream.peek(numArgs)
+        local rmt, rsave
+        if rx <= maxLocals then
+            -- Can't be moving locals or RTI.
+            -- Stack needs to be moved up.
+
+            for i=stream.alloc(), stream.peek(numArgs) + 1, -1 do
+                stream.MOVE(i, i - 1)
+            end
+            rmt = stream.peek(numArgs)
+
+            if not (stream.peek(0) > rmt) then
+                -- no room above rmt for (rret, rexc)
+                stream.alignToRegister(rmt + 1)
+            end
+        else
+            rmt = rx
+            if not (stream.peek(0) > rmt) then
+                -- no room above rmt for (rret, rexc)
+                stream.alignToRegister(rmt + 1)
+            end
+            rsave = stream.alloc()
+
+            stream.MOVE(rsave, rx)
+        end
+
+        stream.asmSetStackTraceLineNumber(stream.getCurrentLineNumber() or 0)
+
+        asmMethodGet(rmt)
+
+        stream.comment(name)
+        stream.CALL(rmt, numArgs + 1, 3)
+
+        local rret, rexc = rmt, rmt + 1
+        stream.asmCheckThrow(rexc)
+
+        if rsave then
+            stream.MOVE(rexc, rret)
+            rret = rexc
+            stream.MOVE(rx, rsave)
+        end
+
+        -- Free down to ret
+        stream.alignToRegister(rret)         
+        if void then
+            stream.free()                    
+        end
+    end
+
     return stream
 end
