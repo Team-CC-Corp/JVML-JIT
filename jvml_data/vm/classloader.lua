@@ -175,11 +175,11 @@ function loadJavaClass(fh)
     
     local u1 = fh.read--function() i=i+1 print("at ",i-1) return fh.read() end
     local function u2()
-        return bit.blshift(u1(),8) + u1()
+        return asm.lshift(u1(),8) + u1()
     end
     
     local function u4()
-        return bit.blshift(u1(),24) + bit.blshift(u1(),16) + bit.blshift(u1(),8) + u1()
+        return asm.lshift(u1(),24) + asm.lshift(u1(),16) + asm.lshift(u1(),8) + u1()
     end
 
     local function parse_descriptor(desc,descriptor)
@@ -275,11 +275,11 @@ function loadJavaClass(fh)
         elseif bits >= 0x7f800001 and bits <= 0x7fffffff and bits >= 0xff800001 and bits <= 0xffffffff then
             return nan
         else
-            local s = (bit.brshift(bits, 31) == 0) and 1 or -1;
-            local e = bit.band(bit.brshift(bits, 23), 0xff);
+            local s = (asm.rshift(bits, 31) == 0) and 1 or -1;
+            local e = asm.band(asm.rshift(bits, 23), 0xff);
             local m = (e == 0) and
-                      bit.blshift(bit.band(bits, 0x7fffff), 1) or
-                      bit.band(bits, 0x7fffff) + 0x800000
+                      asm.lshift(asm.band(bits, 0x7fffff), 1) or
+                      asm.band(bits, 0x7fffff) + 0x800000
             return s*m*(2^(e-150))
         end
     end
@@ -299,15 +299,15 @@ function loadJavaClass(fh)
 
     local function parse_double(high_bytes,low_bytes)
         local x = ""
-        x = x..string.char(bit.band(low_bytes,0xFF))
-        x = x..string.char(bit.band(bit.brshift(low_bytes,8),0xFF))
-        x = x..string.char(bit.band(bit.brshift(low_bytes,16),0xFF))
-        x = x..string.char(bit.band(bit.brshift(low_bytes,24),0xFF))
+        x = x..string.char(asm.band(low_bytes,0xFF))
+        x = x..string.char(asm.band(asm.rshift(low_bytes,8),0xFF))
+        x = x..string.char(asm.band(asm.rshift(low_bytes,16),0xFF))
+        x = x..string.char(asm.band(asm.rshift(low_bytes,24),0xFF))
 
-        x = x..string.char(bit.band(high_bytes,0xFF))
-        x = x..string.char(bit.band(bit.brshift(high_bytes,8),0xFF))
-        x = x..string.char(bit.band(bit.brshift(high_bytes,16),0xFF))
-        x = x..string.char(bit.band(bit.brshift(high_bytes,24),0xFF))
+        x = x..string.char(asm.band(high_bytes,0xFF))
+        x = x..string.char(asm.band(asm.rshift(high_bytes,8),0xFF))
+        x = x..string.char(asm.band(asm.rshift(high_bytes,16),0xFF))
+        x = x..string.char(asm.band(asm.rshift(high_bytes,24),0xFF))
         --x = string.reverse(x)
         local sign = 1
         local mantissa = string.byte(x, 7) % 16
@@ -666,7 +666,7 @@ function loadJavaClass(fh)
         local fields_count = u2()
         for i=1, fields_count do
             local newField = field_info()
-            if bit.band(newField.access_flags, FIELD_ACC.STATIC) > 0 then
+            if asm.band(newField.access_flags, FIELD_ACC.STATIC) > 0 then
                 table.insert(Class.static_field_info, newField)
                 Class.fieldIndexByName[newField.name] = #Class.static_field_info
                 Class.fields[#Class.static_field_info] = PRIMITIVE_WRAPPERS[newField.descriptor] and 0 or nil
@@ -682,7 +682,7 @@ function loadJavaClass(fh)
         for i=1, methods_count do
             local m = method_info()
 
-            if bit.band(m.acc,METHOD_ACC.STATIC) == METHOD_ACC.STATIC then
+            if asm.band(m.acc,METHOD_ACC.STATIC) == METHOD_ACC.STATIC then
                 table.insert(Class.staticMethods, m)
             else
                 table.insert(instanceMethods, m)
@@ -696,7 +696,7 @@ function loadJavaClass(fh)
             table.insert(doAfter, function()
                 if ca then
                     m[1] = createCodeFunction(Class, m, ca, cp)
-                elseif bit.band(m.acc,METHOD_ACC.NATIVE) == METHOD_ACC.NATIVE then
+                elseif asm.band(m.acc,METHOD_ACC.NATIVE) == METHOD_ACC.NATIVE then
                     if not natives[cn] then natives[cn] = {} end
                     m[1] = function(...)
                         pushStackTrace(Class.name, m.name:gsub("L.-/(%a+);", "%1;"))

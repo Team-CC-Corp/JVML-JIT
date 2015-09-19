@@ -65,11 +65,11 @@ function makeExtendedChunkStream(class, method, codeAttr, cp)
     end
 
     function stream.u2()
-        return bit.blshift(stream.u1(),8) + stream.u1()
+        return asm.lshift(stream.u1(),8) + stream.u1()
     end
 
     function stream.u4()
-        return bit.blshift(stream.u1(),24) + bit.blshift(stream.u1(),16) + bit.blshift(stream.u1(),8) + stream.u1()
+        return asm.lshift(stream.u1(),24) + asm.lshift(stream.u1(),16) + asm.lshift(stream.u1(),8) + stream.u1()
     end
 
     function stream.s4()
